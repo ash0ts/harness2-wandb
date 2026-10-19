@@ -10,7 +10,7 @@ cannot establish a general benchmark ranking. Negative results are valid results
 
 ## Published pilot
 
-[Evidence browser](https://ash0ts.github.io/harness2-wandb/) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [75-second walkthrough](https://ash0ts.github.io/harness2-wandb/media/walkthrough.mp4) · [Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1)
+[Evidence browser](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [75-second walkthrough](https://github.com/ash0ts/harness2-wandb/releases/download/pilot-v1/walkthrough.mp4) · [Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1)
 
 The completed pilot cost **$9.941318** and has **7/12 available held-out scores**.
 Four planned executions were unavailable after failed adaptation; one judge failed.
@@ -128,3 +128,22 @@ The walkthrough renderer requires ffmpeg, Pillow (included in the pinned depende
 and a TrueType font. Its storyboard names recorded PNG captures, durations, and captions.
 It produces an H.264 MP4 and WebVTT captions. Raw screenshots remain unchanged.
 The release includes the complete ZIP and SHA256 checksum.
+
+The evidence browser is also hosted as public W&B HTML media and embedded in the
+Report. Publish that view after `report --publish` with:
+
+```bash
+python showcase/publish_wandb_demo.py showcase/state/pilot-v1/public
+```
+
+Use `--project` and `--asset-base` when publishing another campaign. The asset base must
+serve the static export's evidence and media files. W&B's embedded iframe restricts
+external navigation; its standalone public file URL permits ordinary links. The helper
+records that URL in `public/publication.json`. Share the API file URL, which redirects
+to a fresh signed file URL, rather than copying the expiring storage URL.
+
+The GitHub Pages mirror is configured at https://ash0ts.github.io/harness2-wandb/.
+Its initial deployment was queued during GitHub's October 19 Actions/Pages incident.
+The W&B-hosted demo and the release download were verified without authentication.
+Agent Lens itself redirected to login in the signed-out check; the exported spans,
+screenshots, and walkthrough provide public access to the evidence.
