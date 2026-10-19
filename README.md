@@ -1,3 +1,5 @@
+> **Pilot-v2:** [qualification report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-pilot-v2--VmlldzoxODE0NTEwMw==) · [evidence notes](showcase/pilot-v2-notes.md). The agent wrote and executed harness changes, including a checker with a false positive. Qualification and cost gates stopped the controlled comparison. New spend: **$5.18**; no held-out v2 results.
+
 > **Public Harness² + Agent Lens pilot:** [demo](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [walkthrough](https://github.com/ash0ts/harness2-wandb/releases/download/pilot-v1/walkthrough.mp4) · [code and reproduction guide](showcase/README.md) · [evidence download](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1). Cost: **$9.94**; available held-out scores: **7/12**. This pilot found no evidence that diagnostics improved the execution harness. The original Harness² documentation follows.
 
 <h3 align="center">

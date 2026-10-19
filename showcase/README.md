@@ -150,6 +150,8 @@ screenshots, and walkthrough provide public access to the evidence.
 
 ## Pilot-v2
 
+The [v2 qualification report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-pilot-v2--VmlldzoxODE0NTEwMw==) records executable changes, a false-positive checker and a failed completion gate. New spending was $5.181534. The reduced comparison projected $132.30 before judging against $67.05, so no fresh-task comparison ran. See [v2 notes](pilot-v2-notes.md) and the [evidence and walkthrough](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v2). The final runtime repairs need live qualification.
+
 The second campaign is specified in [pilot-v2-protocol.md](pilot-v2-protocol.md) and [pilot-v2.json](pilot-v2.json). It uses isolated state, sequential `k=2` refinement, explicit completion receipts, and six fresh task families. Pilot-v1 remains available at its original release.
 
 Run from the fork with Docker and `WANDB_API_KEY` configured:
