@@ -6,6 +6,7 @@ from harness2.showcase.telemetry import (
     diagnostics,
     spans_from_records,
     tool_events,
+    verify_messages,
     verify_readback,
 )
 
@@ -123,6 +124,29 @@ def test_readback_preserves_tool_results_and_times():
     ):
         with pytest.raises(RuntimeError):
             verify_readback([{**row, key: bad}], [], [tool])
+
+
+def test_readback_detects_changed_messages_and_retains_tool_calls():
+    raw = {
+        "role": "assistant",
+        "content": "",
+        "reasoning_content": "Check the files.",
+        "tool_calls": [
+            {"id": "check", "function": {"name": "bash", "arguments": '{"command":"verify"}'}}
+        ],
+    }
+    parts = [
+        {"type": "text"},
+        {"type": "reasoning", "content": "Check the files."},
+        {"type": "tool_call", "id": "check", "name": "bash", "arguments": '{"command":"verify"}'},
+    ]
+    row = {"role": "assistant", "content": json.dumps(parts)}
+    verify_messages([row], [raw])
+    parts[-1]["arguments"] = '{"command":"skip"}'
+    with pytest.raises(RuntimeError, match="message content"):
+        verify_messages([{**row, "content": json.dumps(parts)}], [raw])
+    with pytest.raises(RuntimeError, match="message coverage"):
+        verify_messages([], [raw])
 
 
 def test_readback_preserves_reasoning_usage_limits_and_finish_reason():

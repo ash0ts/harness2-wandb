@@ -173,6 +173,24 @@ def tool_error(part):
     return None
 
 
+def verify_messages(stored, original):
+    if len(stored) != len(original):
+        raise RuntimeError("Stored message coverage differs")
+    for row, raw in zip(stored, original):
+        expected = message(raw)
+        parts = [
+            {
+                key: value
+                for key, value in part.model_dump(mode="json").items()
+                if value not in (None, "")
+            }
+            for part in expected.parts
+        ]
+        content = row.get("content", "[]")
+        if row.get("role") != expected.role or json.loads(content) != parts:
+            raise RuntimeError("Stored message content differs")
+
+
 def verify_readback(rows, calls, tools):
     """Match each provider response and tool ID, with original times and usage."""
     llms = [r for r in rows if r.get("operation_name") == "chat"]
@@ -195,6 +213,17 @@ def verify_readback(rows, calls, tools):
         if len(candidates) != 1:
             raise RuntimeError("Provider response is missing or ambiguous in stored trace")
         row = candidates[0]
+        messages = record["request"].get("messages", [])
+        verify_messages(
+            row.get("input_messages") or [], [m for m in messages if m.get("role") != "system"]
+        )
+        instructions = [
+            m["content"]
+            for m in messages
+            if m.get("role") == "system" and isinstance(m.get("content"), str)
+        ]
+        if (row.get("system_instructions") or []) != instructions:
+            raise RuntimeError("Stored system instructions differ")
         usage = response.get("usage") or {}
         for stored, original in (
             ("input_tokens", "prompt_tokens"),
@@ -211,6 +240,9 @@ def verify_readback(rows, calls, tools):
         if row.get("request_max_tokens") != record["request"].get("max_tokens"):
             raise RuntimeError("Stored output limit differs")
         choice = (response.get("choices") or [{}])[0]
+        verify_messages(
+            row.get("output_messages") or [], [choice["message"]] if choice.get("message") else []
+        )
         reasons = [choice["finish_reason"]] if choice.get("finish_reason") else []
         if row.get("finish_reasons", []) != reasons:
             raise RuntimeError("Stored finish reason differs")
