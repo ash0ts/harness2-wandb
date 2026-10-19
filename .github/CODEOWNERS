@@ -5,3 +5,5 @@
 /pyproject.toml @ash0ts
 /.dockerignore @ash0ts
 /.github/ @ash0ts
+/README.md @ash0ts
+/.gitignore @ash0ts

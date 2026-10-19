@@ -36,3 +36,8 @@ limitations that adaptation can observe, including tool attempts that require un
 internet access. The image is not repaired between conditions. The public report should
 not attribute an observed score difference to diagnostics without inspecting the
 deliverable and judge evidence.
+
+The manifest's seed controls the upstream workflow. It is not an inference sampling
+seed. Sampling parameters were omitted from model requests, retaining provider defaults;
+the independent request records preserve this choice. Exact replay of generated text is
+not promised.
