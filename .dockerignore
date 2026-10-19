@@ -1,0 +1,9 @@
+**
+!showcase/
+!showcase/Dockerfile
+!showcase/Dockerfile.judge
+!showcase/requirements.lock
+!showcase/worker.py
+!third_party/
+!third_party/patches/
+!third_party/patches/opencode-compat.diff

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "campaign": "pilot-v1",
+  "project": "wandb/harness2-agent-lens",
+  "harness2_revision": "1cfe254e8d25b15f37048c3730134686abe60335",
+  "dataset_revision": "d43a66575635da0d3f6cb9a20976dc1a60f3ffc9",
+  "jobbench_revision": "fa03a17f9ff662f136798a274e10011c3aa00fd0",
+  "opencode_revision": "23fb5e0516c99ac04a1aa46c193efda2e1b9bb24",
+  "models": {"actor": "zai-org/GLM-5.3-Flash", "judge": "deepseek-ai/DeepSeek-V4-Pro-0813"},
+  "prices_per_million": {
+    "zai-org/GLM-5.3-Flash": {"input": "0.15", "cached": "0.05", "output": "0.50"},
+    "deepseek-ai/DeepSeek-V4-Pro-0813": {"input": "1.31", "cached": "0.044", "output": "3.96"}
+  },
+  "price_source": "https://coreweave.com/forge-pricing/inference-agents",
+  "prices_checked": "2026-10-19",
+  "budget_usd": "100.00",
+  "qualification_budget_usd": "10.00",
+  "max_output_tokens": 16384,
+  "max_input_tokens": 262144,
+  "max_steps": 60,
+  "timeout_seconds": 1800,
+  "domains": ["technical_writers", "management_analysts"],
+  "adapt_tasks": ["task1", "task2"],
+  "heldout_tasks": ["task3"],
+  "repetitions": 2,
+  "k": 1,
+  "mode": "agg",
+  "seed": 42,
+  "state_dir": "state/pilot-v1",
+  "image": "harness2-showcase:1cfe254",
+  "network": "harness2-pilot-v1",
+  "gateway_port": 18764
+}

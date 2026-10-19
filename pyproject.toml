@@ -23,7 +23,16 @@ dependencies = []
 render = ["openpyxl>=3.1,<4", "python-pptx>=1,<2"]
 bridge = ["litellm[proxy]==1.95.0", "fastapi==0.139.2", "google-auth==2.56.3"]
 
+showcase = [
+    "coreweave==0.1.0b0", "wandb==0.31.0", "wandb-workspaces==0.4.13",
+    "httpx==0.28.1", "openai==3.35.1", "pandas==3.0.6", "numpy==2.5.4",
+    "openpyxl==3.1.5", "python-docx==1.2.0", "python-pptx==1.0.2",
+    "mammoth==1.13.0", "pdfplumber==0.11.10", "beautifulsoup4==4.14.3",
+    "pyyaml==6.0.3", "pillow==12.3.0",
+]
+
 [project.scripts]
+harness2-showcase = "harness2.showcase.cli:main"
 harness2 = "harness2.cli.run_sweep:main"
 harness2-judge = "harness2.cli.judge:main"
 harness2-report = "harness2.cli.report:main"

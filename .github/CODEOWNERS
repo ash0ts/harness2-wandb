@@ -1,0 +1,7 @@
+# Standalone experiment additions maintained by the fork owner.
+/harness2/showcase/ @ash0ts
+/showcase/ @ash0ts
+/tests/showcase/ @ash0ts
+/pyproject.toml @ash0ts
+/.dockerignore @ash0ts
+/.github/ @ash0ts

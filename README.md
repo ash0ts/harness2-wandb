@@ -1,3 +1,5 @@
+> **W&B + Agent Lens experiment fork:** see [the pilot guide](showcase/README.md) for the standalone runner, reproducible protocol, and evidence exports. The original Harness² documentation follows.
+
 <h3 align="center">
   <img src="assets/Harness2-wordmark.png" alt="Harness²" width="360"><br>
   Recursive Agent Harnessing for an Open World
