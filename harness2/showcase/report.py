@@ -179,9 +179,30 @@ def dataset(runtime):
             }
         )
     cost = defaultdict(float)
+    solvers = {
+        (s.get("arm"), s.get("task"), s.get("run_id", "").replace("/", "__")): s
+        for s in sessions
+        if s.get("role") == "solver" and s.get("run_id")
+    }
+    scored = {row["session"]: row for row in rows}
     for session in sessions:
         if session["cost_usd"] is not None:
             cost[session["phase"]] += session["cost_usd"]
+        execution = session if session.get("role") == "solver" else None
+        if session.get("role") == "judge":
+            execution = solvers.get(
+                (session.get("arm"), session.get("task"), session.get("run_id"))
+            )
+        if execution:
+            session["evaluated_session"] = execution["session"]
+            session["harness_fingerprint"] = execution.get("harness_fingerprint")
+            score = scored.get(execution["session"])
+            if score:
+                session.update(
+                    score=score["fraction"],
+                    cohort=score["cohort"],
+                    repetition=score["repetition"],
+                )
     planned = 3 * len(runtime.manifest["domains"]) * allocation_repetitions(runtime)
     heldout = [r for r in rows if r["cohort"] == "heldout"]
     summary = {
@@ -278,6 +299,13 @@ def portable_rows(runtime, data, harnesses):
             Path(condition["result"]).relative_to(runtime.state)
         )
     for row in data["rows"]:
+        row["same_rendered_harness_as_baseline"] = any(
+            harness["arm"] == row["arm"]
+            and harness["domain"] == row["task"].split("/")[0]
+            and harness["source_fingerprint"] == row["harness_fingerprint"]
+            and harness["same_rendered_harness_as_baseline"]
+            for harness in data.get("rendered_harnesses", [])
+        )
         row["output_path"] = "evidence/" + str(Path(row["output_dir"]).relative_to(runtime.state))
         row.pop("output_dir")
         if row.get("judge_evidence"):
@@ -322,21 +350,28 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
         "",
         "A JobBench-based pilot with a frozen-harness transfer test. Two held-out tasks do not support a broad benchmark ranking.",
         "",
-        f"**Coverage:** {data['heldout_judged']}/{data['heldout_planned']} planned held-out judgments. "
+        f"**Coverage:** {data['heldout_judged']}/{data['heldout_planned']} planned held-out scores. "
         f"**Recorded inference cost:** ${data['spent_usd']:.4f}. "
         f"**Unresolved reservations:** ${data['reserved_usd']:.4f}.",
+        "",
+        "**Pilot finding:** no evidence here that trace diagnostics improved the execution harness. "
+        "The diagnostics condition froze the same rendered harness as baseline. Standard Harness² "
+        "had a small adaptation gain and lower scores on its available transfer task. "
+        "Failed adaptation and one unavailable judgment limit coverage.",
         "",
         "Baseline uses the unmodified upstream harness. Harness² runs Propose–Probe–Compose. "
         "The diagnostics condition adds deterministic observations read from stored Agent Lens spans. "
         "Upstream Harness² already provides trajectories to its improver.",
         "",
         "[Reproducible code](https://github.com/ash0ts/harness2-wandb) · "
-        f"[Evidence browser]({demo_url})"
+        f"[Evidence browser]({demo_url}) · "
+        f"[Captioned walkthrough]({demo_url}media/walkthrough.mp4) · "
+        "[Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1)"
         + (f" · [Downloadable evidence artifact]({artifact_url})" if artifact_url else ""),
         "",
         "## Held-out task scores",
         "",
-        "| Task | Condition | Mean score | Repetitions judged |",
+        "| Task | Condition | Mean score | Repetitions scored |",
         "|---|---|---:|---:|",
     ]
     for row in data["task_means"]:
@@ -363,7 +398,10 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
             ]
     lines += [
         "",
-        "Means average repetitions of the same task. Native earned and possible rubric weights appear below; missing judgments are excluded and shown in coverage.",
+        "Means average repetitions of the same task. Native earned and possible rubric weights appear below. "
+        "A completed execution with no deliverables receives the native zero score. A failed judgment "
+        "stays unavailable, even when deliverables exist. Four planned transfer executions could not run "
+        "because no task-2 harness was adopted; they remain in planned coverage.",
         "",
         "## Every held-out occurrence",
         "",
@@ -418,6 +456,11 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
             f"[Harness diff]({demo_url}{row['harness_diff']}) · "
             f"[Agent Lens trace]({row['trace']['url']})",
         ]
+        if row.get("same_rendered_harness_as_baseline"):
+            lines += [
+                "This condition loads the same executable harness as baseline. Its score "
+                "difference is not evidence of an improved harness.",
+            ]
     lines += ["", "## Costs", "", "| Phase | USD |", "|---|---:|"]
     for phase, cost in data["cost_by_phase"].items():
         lines.append(f"| {phase} | ${cost:.4f} |")
@@ -430,6 +473,10 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
         "",
         "The two domains each have one held-out task and one adapted harness per condition. Repetitions describe execution variability, not additional independent tasks. Model IDs do not pin provider weights. Scores can vary with judging. "
         "Trace patterns describe observed operations; a score difference alone does not prove the mechanism.",
+        "",
+        "Some post-execution collectors returned 120 after their output pipe became nonblocking. "
+        "The primary tool stream was retained and reconciled against completed model tool-call IDs; "
+        "those wrapper codes are not evidence of agent failure. See the validation receipt and pilot notes.",
         "",
         "Automatic Agent Lens Insights clustering is outside this pilot. The portable evidence browser includes stored span excerpts and downloadable records when Agent Lens requires a login.",
         "Implementation repairs and trace-coverage limits are documented in [pilot notes](https://github.com/ash0ts/harness2-wandb/blob/showcase/wandb-agent-lens/showcase/pilot-notes.md). No benchmark grades were available while adaptation ran.",
@@ -546,6 +593,11 @@ def publish_results(runtime, data, output):
             "stage",
             "run_id",
             "harness_fingerprint",
+            "input_fingerprint",
+            "evaluated_session",
+            "score",
+            "cohort",
+            "repetition",
             "cost_usd",
             "trace",
         ]
