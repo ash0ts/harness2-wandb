@@ -68,6 +68,14 @@ drift, and unverified trace persistence stop affected execution. Normal agent mi
 invalid harness proposals, and no-output outcomes remain results. Upstream repair
 attempts are retained and charged. Failed judgments remain unavailable.
 
+Upstream `run_domain` continues to the next adaptation task when a task has no
+adoptable final. Its library receives no entry for that task. The showcase follows
+this rule and never reruns a completed no-output attempt on resume. Such adaptation
+attempts receive their native no-output score. If task2 produces no adoptable harness,
+the affected transfer condition stops rather than substituting a different harness.
+This continuation rule was corrected during the pilot, after task1 no-output failures
+and before any benchmark grading or held-out execution; the repair is in the provenance.
+
 There are only two held-out tasks, one adapted harness per condition/domain, and no
 independent adaptation seeds. Findings apply to this pilot. Small score changes can
 reflect judge variability. Trace patterns support observations about operations; they

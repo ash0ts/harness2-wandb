@@ -41,6 +41,8 @@ def reconcile(rows):
             ):
                 raise ValueError("Published value differs from original judge evidence")
         row["fraction"] = ratio(row)
+        row["earned_weight"] = (row.get("score") or {}).get("n_passed")
+        row["possible_weight"] = (row.get("score") or {}).get("n_criteria")
     baselines = {
         (r["task"], r["cohort"], r["repetition"]): r for r in rows if r["arm"] == "baseline"
     }
@@ -68,11 +70,13 @@ def allowed_files(runtime):
         "evaluate-complete.json",
         "stopped.json",
         "setup-repair.json",
+        "phase-provenance.json",
+        "validation.json",
     )
     for name in exact:
         if (state / name).is_file():
             yield state / name
-    for area in ("scores", "frozen", "arms", "setup-failures"):
+    for area in ("scores", "frozen", "arms", "setup-failures", "attempt-history"):
         for path in (state / area).rglob("*"):
             if path.is_file() and not path.is_symlink():
                 yield path
@@ -94,6 +98,8 @@ def allowed_files(runtime):
 
 
 def bundle(runtime, destination):
+    if destination.exists():
+        shutil.rmtree(destination)
     destination.mkdir(parents=True, exist_ok=True)
     secrets = [os.environ.get("WANDB_API_KEY", ""), runtime.admin]
     index = []
@@ -121,6 +127,22 @@ def bundle(runtime, destination):
         )
     (destination / "files.json").write_text(json.dumps(index, indent=2))
     return index
+
+
+def index_generated_files(destination, index):
+    """Include generated harness snapshots and diffs in the downloadable hash manifest."""
+    known = {entry["path"] for entry in index}
+    for path in sorted(destination.rglob("*")):
+        relative = str(path.relative_to(destination))
+        if path.is_file() and relative not in known and relative != "files.json":
+            index.append(
+                {
+                    "path": relative,
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                    "generated": True,
+                }
+            )
+    (destination / "files.json").write_text(json.dumps(index, indent=2))
 
 
 def dataset(runtime):
@@ -395,7 +417,7 @@ def make_public(runtime, api):
         timeout=60,
     )
     response.raise_for_status()
-    if response.json().get("data", {}).get("project", {}).get("access") != "USER_READ":
+    if (response.json().get("data", {}).get("project") or {}).get("access") != "USER_READ":
         raise RuntimeError("Anonymous public project readback failed")
 
 
@@ -525,8 +547,9 @@ def report(runtime, publish=False):
         )
     output = runtime.state / "public"
     output.mkdir(parents=True, exist_ok=True)
-    bundle(runtime, output / "evidence")
+    index = bundle(runtime, output / "evidence")
     harnesses = harness_index(runtime, output / "evidence")
+    index_generated_files(output / "evidence", index)
     data = portable_rows(runtime, data, harnesses)
     (output / "results.json").write_text(json.dumps(data, indent=2))
     with (output / "results.csv").open("w") as stream:
@@ -535,6 +558,8 @@ def report(runtime, publish=False):
             "task",
             "cohort",
             "repetition",
+            "earned_weight",
+            "possible_weight",
             "fraction",
             "paired_change",
             "status",

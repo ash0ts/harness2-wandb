@@ -284,22 +284,34 @@ def _adapt_domain(runtime, domain, arm):
             adapter.execute(task_id, None, "adapt/baseline")
             chosen = adapter.base_harness()
         else:
-            prop = ExperimentProposer(runtime, adapter, task_id, root / "audit" / task_id)
-            result = run_task(
-                task_id,
-                1,
-                adapter=adapter,
-                prop=prop,
-                selector_prop=prop,
-                runs_root=root / "runs",
-                modes=("agg",),
-                seed=42,
-                tag=arm,
-                libraries={"agg": library},
-            )
-            write(root / "results" / (task_id.replace("/", "__") + ".json"), result.to_dict())
-            selected = result.selections.get("agg", {}).get("chosen_label")
+            result_path = root / "results" / (task_id.replace("/", "__") + ".json")
+            if result_path.exists():
+                result = json.loads(result_path.read_text())
+            else:
+                prop = ExperimentProposer(runtime, adapter, task_id, root / "audit" / task_id)
+                result = run_task(
+                    task_id,
+                    1,
+                    adapter=adapter,
+                    prop=prop,
+                    selector_prop=prop,
+                    runs_root=root / "runs",
+                    modes=("agg",),
+                    seed=42,
+                    tag=arm,
+                    libraries={"agg": library},
+                ).to_dict()
+                write(result_path, result)
+            selected = result.get("selections", {}).get("agg", {}).get("chosen_label")
             if not selected:
+                # Upstream run_domain continues after a failed task and adds no library entry.
+                # Preserve its final attempt; do not rerun a completed failure on resume.
+                if task != runtime.manifest["adapt_tasks"][-1]:
+                    print(
+                        f"no adoption {arm} {task_id}; continuing with unchanged library",
+                        flush=True,
+                    )
+                    continue
                 raise CampaignStop(f"No adoptable harness for {arm} {task_id}; attempts preserved")
             chosen = (
                 Namespace("jb", "oc", "agg", 1, 42, arm).task_dir(root / "runs", task_id)
@@ -384,7 +396,13 @@ def _evaluate_domain(runtime, domain, arm, reps):
                     / (task_id.replace("/", "__") + ".json")
                 ).read_text()
             )
-            output = Path(result["selections"]["agg"]["chosen_run_dir"])
+            selected = result["selections"]["agg"]
+            if selected.get("chosen_run_dir"):
+                output = Path(selected["chosen_run_dir"])
+            else:
+                # Score the failed final attempt as an outcome; it was never adopted.
+                run_id = f"jb-oc-agg1-s42-{arm}/{task_id}/agg1"
+                output = adapter._out_dir(task_id, run_id.replace("/", "__"))
         score_run(runtime, adapter, task_id, output, "adapt", 0)
     adapter.phase = "evaluate"
     frozen = runtime.state / "frozen" / arm / domain

@@ -92,3 +92,30 @@ def test_parallel_conditions_materialize_one_complete_input_mirror(tmp_path, mon
         "input.txt",
         "references/ref.txt",
     ]
+
+
+def test_resume_preserves_failed_task_and_continues_without_extra_paid_attempt(
+    tmp_path, monkeypatch
+):
+    from harness2.showcase.cli import _adapt_domain
+
+    failed = tmp_path / "arms/diagnostics/results/domain__task1.json"
+    failed.parent.mkdir(parents=True)
+    failure = {"status": "partial", "selections": {"agg": {"chosen_label": ""}}}
+    failed.write_text(json.dumps(failure))
+    runtime = SimpleNamespace(state=tmp_path, manifest={"adapt_tasks": ["task1", "task2"]})
+    run = Mock(
+        return_value=SimpleNamespace(
+            to_dict=lambda: {"status": "ok", "selections": {"agg": {"chosen_label": "agg1"}}}
+        )
+    )
+    freeze = Mock()
+    monkeypatch.setattr("harness2.showcase.cli.ExperimentAdapter", Mock())
+    monkeypatch.setattr("harness2.showcase.cli.ExperimentProposer", Mock())
+    monkeypatch.setattr("harness2.showcase.cli.Library", Mock())
+    monkeypatch.setattr("harness2.showcase.cli.run_task", run)
+    monkeypatch.setattr("harness2.showcase.cli.freeze", freeze)
+    _adapt_domain(runtime, "domain", "diagnostics")
+    assert [call.args[0] for call in run.call_args_list] == ["domain/task2"]
+    assert json.loads(failed.read_text()) == failure
+    freeze.assert_called_once()

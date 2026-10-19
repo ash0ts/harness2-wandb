@@ -1,8 +1,10 @@
 import copy
+import hashlib
+import json
 
 import pytest
 
-from harness2.showcase.report import reconcile
+from harness2.showcase.report import index_generated_files, reconcile
 
 
 def row(arm, rep, score):
@@ -27,9 +29,27 @@ def test_missing_judgment_is_not_zero_and_pairs_keep_repetitions():
     assert rows[2]["paired_change"] == pytest.approx(-0.1)
     assert rows[3]["paired_change"] is None
     assert rows[1]["fraction"] is None
+    assert rows[2]["earned_weight"] == 70
+    assert rows[2]["possible_weight"] == 100
+    assert rows[1]["earned_weight"] is None
 
 
 def test_duplicate_occurrence_is_rejected():
     original = row("baseline", 1, 80)
     with pytest.raises(ValueError, match="Duplicate"):
         reconcile([original, copy.deepcopy(original)])
+
+
+def test_generated_harness_diff_is_covered_by_integrity_manifest(tmp_path):
+    diff = tmp_path / "harnesses" / "abc" / "harness.diff"
+    diff.parent.mkdir(parents=True)
+    diff.write_text("+Verify every deliverable\n")
+    index_generated_files(tmp_path, [])
+    manifest = json.loads((tmp_path / "files.json").read_text())
+    assert manifest == [
+        {
+            "path": "harnesses/abc/harness.diff",
+            "sha256": hashlib.sha256(diff.read_bytes()).hexdigest(),
+            "generated": True,
+        }
+    ]

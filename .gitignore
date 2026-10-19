@@ -11,7 +11,4 @@ showcase/state/
 dependencies/job-bench-eval/
 dependencies/opencode/
 dependencies/tools/
-.context-build.log
-.context-install.log
-.context-judge-build.log
-.context-campaign.log
+.context-*.log
