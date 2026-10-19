@@ -72,6 +72,7 @@ def allowed_files(runtime):
         "setup-repair.json",
         "phase-provenance.json",
         "validation.json",
+        "cost-ledger.json",
     )
     for name in exact:
         if (state / name).is_file():
@@ -570,6 +571,10 @@ def report(runtime, publish=False):
         raise RuntimeError(
             "Finish or explicitly document the stopped campaign before public upload"
         )
+    if publish:
+        from .audit import audit
+
+        audit(runtime)
     output = runtime.state / "public"
     output.mkdir(parents=True, exist_ok=True)
     index = bundle(runtime, output / "evidence")
