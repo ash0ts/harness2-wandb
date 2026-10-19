@@ -1,0 +1,55 @@
+{
+  "format": "Edited walkthrough of recorded browser views; silent with captions. Captures are not a continuous screen recording.",
+  "campaign": "pilot-v1",
+  "scenes": [
+    {
+      "capture": "pilot-overview-final.png",
+      "seconds": 10,
+      "caption": "Three harness conditions. Two held-out tasks.\nThis pilot tests transfer, not a broad benchmark ranking.",
+      "source_url": "https://ash0ts.github.io/harness2-wandb/",
+      "capture_sha256": "860b1a92bbbd01efe6807033cbc8e0aac208fef1039fc6fbb7053d19adc70107"
+    },
+    {
+      "capture": "adaptation-gain-final.png",
+      "seconds": 11,
+      "caption": "Adaptation: Harness\u00b2 scored 20/80 versus baseline 18/80.\nFollow the score to its harness diff, trace, and generated files.",
+      "source_url": "https://ash0ts.github.io/harness2-wandb/#9135d64d8c134bbdbbcfe763b79e1378",
+      "capture_sha256": "2267ffc8e3fb034eaf0eb4962d4982d30c61494042a1097580ecc60f4915c087"
+    },
+    {
+      "capture": "agent-lens-gain-error.png",
+      "seconds": 10,
+      "caption": "Agent Lens records an actual tool failure with a supporting span ID.\nThe offline worker blocked a tool dependency download.",
+      "source_url": "https://forge.coreweave.com/agent-lens/wandb/harness2-agent-lens/conversations/9135d64d8c134bbdbbcfe763b79e1378/spans/c87de62d69d0b8f7",
+      "capture_sha256": "b611db667fd0933a21e3b51349db0e68eb5ac94350fe19e206a21b69df9d65b7"
+    },
+    {
+      "capture": "transfer-regression-final.png",
+      "seconds": 11,
+      "caption": "Transfer: the same frozen Harness\u00b2 harness scored 0/72, versus 14/72.\nThis first repetition produced no deliverables.",
+      "source_url": "https://ash0ts.github.io/harness2-wandb/#cc8f1673adc7426da1b8f627958a4284",
+      "capture_sha256": "190cd9c16edc0810b14a1a90a72e402f0e777920485f7173b88170576ded2371"
+    },
+    {
+      "capture": "agent-lens-heldout-limit.png",
+      "seconds": 10,
+      "caption": "Its final model response reached the 16,384 output-token limit.\nThe trace records 11,079 reasoning tokens and finish_reason=length.",
+      "source_url": "https://forge.coreweave.com/agent-lens/wandb/harness2-agent-lens/conversations/cc8f1673adc7426da1b8f627958a4284/spans/b95bb3ddb104d193",
+      "capture_sha256": "9c6f4ad4122f7b6829a4341777439b1f8034619dd00636e395b1a2a5180cca5c"
+    },
+    {
+      "capture": "pilot-overview-final.png",
+      "seconds": 11,
+      "caption": "Diagnostics froze the same executable harness as baseline.\nA higher score here cannot establish harness improvement.",
+      "source_url": "https://ash0ts.github.io/harness2-wandb/",
+      "capture_sha256": "860b1a92bbbd01efe6807033cbc8e0aac208fef1039fc6fbb7053d19adc70107"
+    },
+    {
+      "capture": "signed-out-wandb-report.png",
+      "seconds": 12,
+      "caption": "Public report verified while signed out. Cost: $9.94; scores: 7/12.\nDownload the code, requests, traces, harnesses, outputs, and judge evidence.",
+      "source_url": "https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==",
+      "capture_sha256": "4c1645d20ee28b76c35158396703d71f3c9ff237e4e6893dbb4c20351ea02aaf"
+    }
+  ]
+}

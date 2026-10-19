@@ -1,0 +1,29 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:10.000
+Three harness conditions. Two held-out tasks.
+This pilot tests transfer, not a broad benchmark ranking.
+
+00:00:10.000 --> 00:00:21.000
+Adaptation: Harness² scored 20/80 versus baseline 18/80.
+Follow the score to its harness diff, trace, and generated files.
+
+00:00:21.000 --> 00:00:31.000
+Agent Lens records an actual tool failure with a supporting span ID.
+The offline worker blocked a tool dependency download.
+
+00:00:31.000 --> 00:00:42.000
+Transfer: the same frozen Harness² harness scored 0/72, versus 14/72.
+This first repetition produced no deliverables.
+
+00:00:42.000 --> 00:00:52.000
+Its final model response reached the 16,384 output-token limit.
+The trace records 11,079 reasoning tokens and finish_reason=length.
+
+00:00:52.000 --> 00:01:03.000
+Diagnostics froze the same executable harness as baseline.
+A higher score here cannot establish harness improvement.
+
+00:01:03.000 --> 00:01:15.000
+Public report verified while signed out. Cost: $9.94; scores: 7/12.
+Download the code, requests, traces, harnesses, outputs, and judge evidence.

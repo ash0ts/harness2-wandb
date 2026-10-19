@@ -1,0 +1,355 @@
+{
+  "evaluated_model": "evaluate__rep2",
+  "judge_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+  "timestamp": "2026-10-19T15:54:22+00:00",
+  "total_score": 20,
+  "max_score": 72,
+  "pass_rate": "33%",
+  "passed_count": 3,
+  "total_count": 9,
+  "rubrics": [
+    {
+      "index": 0,
+      "rubric": "Does the response correctly map all five NYC-style agency codes in the 311 data to Greenfield department names (DPR → Parks & Recreation, DSNY → Sanitation, DOT → Transportation, DHS → Health Services, FDNY → Fire Department)?",
+      "weight": 8,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 2,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The response must explicitly establish the mapping between all five 311 agency codes and Greenfield departments: DPR = Parks & Recreation, DSNY = Sanitation, DOT = Transportation, DHS = Health Services, FDNY = Fire Department.",
+            "passed": false,
+            "reasoning": "The output does not explicitly establish the mapping DHS = Health Services. The Baseline Metrics Department Scorecard maps Health Services to DOHMH (Health & Mental Hygiene), not DHS, and no statement or table explicitly maps the 311 code DHS to Health Services. The other four codes are mapped explicitly, but DHS is not.",
+            "evidence": "Baseline Metrics sheet, Department Scorecard: 'Health Services, DOHMH (Health & Mental Hygiene)'. Appendix B uses DHS as a department code but never states DHS = Health Services."
+          },
+          {
+            "index": 1,
+            "criterion": "The response must correctly identify that DHS in this dataset refers to the Department of Health Services (not Homeland Security), as evidenced by DHS service categories including Rodent Sighting, Noise Complaint, Food Safety, and Restaurant Inspection.",
+            "passed": true,
+            "reasoning": "The response correctly treats DHS as health-related rather than homeland security. The DHS service categories listed include Rodent Sighting, Noise Complaint, Food Safety, and Restaurant Inspection, and the data is aggregated under Health Services in the analysis results.",
+            "evidence": "Appendix B lists DHS categories: Food Safety, Mold/Air Quality, Noise Complaint, Restaurant Inspection Request, Rodent Sighting, Unsanitary Conditions, Water Quality Concern. analysis_results.json aggregates DHS categories under 'Health Services' with n=75."
+          },
+          {
+            "index": 2,
+            "criterion": "The mapping must be applied consistently when cross-referencing 311 service data with staffing/overtime data throughout the analysis.",
+            "passed": true,
+            "reasoning": "The mapping is applied consistently when cross-referencing 311 service data with staffing/overtime data. The 311 category-level data uses agency codes, while department-level summaries use full Greenfield names, and the totals match across all five departments.",
+            "evidence": "analysis_results.json a311_categories sums: DHS 75, DOT 126, DPR 99, DSNY 148, FDNY 52, matching by_dept full names. Baseline Metrics 311 Service Requests by Department uses full names consistently."
+          }
+        ],
+        "overall_reasoning": "Criterion 0 fails because the required explicit DHS = Health Services mapping is missing; the output instead maps Health Services to DOHMH. Criteria 1 and 2 pass, but the rubric requires all criteria to pass."
+      }
+    },
+    {
+      "index": 1,
+      "rubric": "Does the response identify the Fire Department as having the highest overtime burden, with monthly OT-to-regular-hours ratios between 13.0% and 15.8% and annual OT costs of $2,085,312?",
+      "weight": 8,
+      "result": {
+        "passed": true,
+        "score": 8,
+        "criteria_count": 4,
+        "criteria_passed": 4,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The response must show that the Fire Department records OT-to-regular-hours ratios between 13.0% and 15.8% every month, never dropping below 10%.",
+            "passed": true,
+            "reasoning": "The response shows Fire Department monthly OT-to-regular-hours ratios ranging from 13.0% to 15.8% across all 12 months, never dropping below 10%.",
+            "evidence": "Baseline Metrics sheet, Monthly Overtime section: Fire Department values are 14.2, 13.5, 14.2, 14.9, 15.1, 15.8, 14.8, 14.1, 13.0, 14.8, 15.8, 14.5. The note states 'Fire Department exceeds the 10% threshold in all 12 months (FY avg 14.57%)'."
+          },
+          {
+            "index": 1,
+            "criterion": "The response must state that the Fire Department's annual overtime cost totals $2,085,312, representing approximately 48% of the city's total overtime spending (~$4.35 million).",
+            "passed": true,
+            "reasoning": "The response states the Fire Department's annual overtime cost is $2,085,312 and that it represents roughly 48% of citywide overtime spending of about $4.35 million.",
+            "evidence": "Baseline Metrics sheet lists Fire Department OT Cost $2,085,312 and citywide overtime cost $4,354,518.25. Memo section 2.2 states: 'the Fire Department alone accounts for $2,085,312 ... roughly 48% of citywide OT spend.' Slide 2 states 'Fire alone is 47.9% of citywide OT.'"
+          },
+          {
+            "index": 2,
+            "criterion": "The response must flag the Fire Department's structural overtime dependency.",
+            "passed": true,
+            "reasoning": "The response flags the Fire Department's structural overtime dependency by noting it exceeds the 10% threshold in all 12 months and that overtime is substituting for vacancies in the Fire Department pattern.",
+            "evidence": "Baseline Metrics note: 'Fire Department exceeds the 10% threshold in all 12 months (FY avg 14.57%) - only department triggering the Proposal B OT cap.' Memo section 3.3: 'Overtime substitutes for vacancies - precisely Greenfield's Fire Department pattern (14.57% OT, 3.5% vacancy).'"
+          },
+          {
+            "index": 3,
+            "criterion": "The response must discuss whether either proposal addresses Fire Department overtime — Proposal A keeps Fire standalone, while Proposal B's shared overtime budget would apply to Fire.",
+            "passed": true,
+            "reasoning": "The response discusses how each proposal addresses Fire Department overtime: Proposal A keeps Fire standalone and leaves its overtime unchanged, while Proposal B applies an overtime cap/shared overtime budget to Fire.",
+            "evidence": "Proposal A Model: 'Fire Department (standalone - unchanged), 2085312, 0, 0' and assumption A7: 'Fire Department excluded from merger; its OT cost is unchanged under Proposal A.' Proposal B Model: 'Fire Department, 14.57, 12, TRIGGERED - OT cap' and memo Table 4 lists 'Shared OT budgets / OT cap' triggered by Fire Department."
+          }
+        ],
+        "overall_reasoning": "All four criteria pass. The response clearly identifies the Fire Department as the highest overtime burden, provides monthly OT-to-regular-hours ratios between 13.0% and 15.8% for every month, states the annual overtime cost of $2,085,312 as approximately 48% of citywide overtime spending, flags the structural overtime dependency, and discusses how Proposal A and Proposal B address Fire Department overtime."
+      }
+    },
+    {
+      "index": 2,
+      "rubric": "Does the response correctly identify all 8 divisions that trigger Proposal B's centralized hiring intervention (vacancy rate above 12%)?",
+      "weight": 6,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 2,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The response must identify all 8 divisions exceeding 12% vacancy: Transportation — Road Maintenance (14.8%), Traffic Engineering (15.4%), Public Transit (15.8%), Planning & Design (12.5%); Health Services — Clinical Services (18.2%), Environmental Health (13.6%), Community Outreach (16.7%), Epidemiology & Data (16.7%).",
+            "passed": true,
+            "reasoning": "The output files identify all 8 divisions exceeding the 12% vacancy trigger with the correct vacancy rates.",
+            "evidence": "Proposal B Model sheet section 3 lists Transportation: Road Maintenance 14.8%, Traffic Engineering 15.4%, Public Transit 15.8%, Planning & Design 12.5%; Health Services: Clinical Services 18.2%, Environmental Health 13.6%, Community Outreach 16.7%, Epidemiology & Data 16.7%. analysis_results.json also contains the same 8 divisions."
+          },
+          {
+            "index": 1,
+            "criterion": "The response must note that these 8 divisions span exactly two departments (Transportation and Health Services).",
+            "passed": true,
+            "reasoning": "The output files note that the 8 triggered divisions span exactly two departments: Transportation and Health Services.",
+            "evidence": "Memo states: 'Eight divisions - all four Transportation divisions and all four Health Services divisions - exceed the 12% vacancy trigger...' Slide 4 states: '8 divisions exceed the 12% vacancy trigger — 36 vacancies, all in Transportation and Health.'"
+          },
+          {
+            "index": 2,
+            "criterion": "The response must discuss the practical challenge that centralized hiring for specialized roles (e.g., clinical services requiring medical credentials) differs fundamentally from hiring road maintenance workers.",
+            "passed": false,
+            "reasoning": "The output files do not discuss the practical challenge that centralized hiring for specialized roles such as clinical services requiring medical credentials differs fundamentally from hiring road maintenance workers.",
+            "evidence": "The memo only mentions generic 'hard-to-fill titles' and a dedicated hiring team, but does not compare clinical/medical credential hiring with road maintenance hiring. The workbook and slides also do not address this specialized hiring challenge."
+          }
+        ],
+        "overall_reasoning": "Criteria 0 and 1 pass because the 8 divisions and their two-department span are correctly identified. Criterion 2 fails because the required discussion of the practical challenge of centralized hiring for specialized clinical roles versus road maintenance workers is absent from the output files."
+      }
+    },
+    {
+      "index": 3,
+      "rubric": "Does the response provide a comparative benchmark analysis using NYC MMR data, referencing specific performance indicators for at least 3 of the 5 agency analogs?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 1,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The response must benchmark Greenfield departments against NYC analogs using specific MMR metrics for at least 3 of the 5 agency analogs.",
+            "passed": true,
+            "reasoning": "The response references specific NYC MMR performance indicators for at least 3 of the 5 agency analogs (DOT, FDNY, DOHMH, and DPR) and uses them to benchmark Greenfield's operational context. The MMR service-level context section and memo section 3.2 cite DOT pothole closure, FDNY structural fire/EMS response, DOHMH birth certificate response, and DPR recreation attendance, then compare Greenfield's underperforming processes against that peer context.",
+            "evidence": "Baseline Metrics sheet section 4 lists MMR indicators for DOT (potholes 100% vs 98%), FDNY (structural fire 4:22 vs 4:08; EMS 9:19 vs 6:33), DOHMH (birth certificate 2.6 vs 3.0), and DPR (recreation attendance 15,808). Memo section 3.2 explicitly uses these to contextualize Greenfield's 59.6% plan review and slow field processes."
+          },
+          {
+            "index": 1,
+            "criterion": "NYC benchmark data available includes: DPR — Root/Sewer/Sidewalk Condition at 5% vs 85% target, Overgrown Tree/Branches at 54% vs 95% target (contextualizing Greenfield Parks' Tree Removal Request at 62.4% on-time); DOT — Traffic Signal Condition at 67% vs 80% target (compared to Greenfield Transportation's Traffic Signal Maintenance at 76.5%); FDNY — average structural fire response time of 4:33 vs 4:14 target.",
+            "passed": false,
+            "reasoning": "The specific NYC benchmark data points required by this criterion are not present. The output does not include DPR Root/Sewer/Sidewalk Condition at 5% vs 85% target, Overgrown Tree/Branches at 54% vs 95% target, DOT Traffic Signal Condition at 67% vs 80% target, or the Greenfield Traffic Signal Maintenance at 76.5% comparison. The FDNY structural fire response time is cited as 4:22 vs 4:08 target, not 4:33 vs 4:14.",
+            "evidence": "The MMR data in the workbook and analysis_results.json contains DOT pothole 100% vs 98%, FDNY structural fire 4.37 vs 4.14, FDNY EMS 9.32 vs 6.55, DOHMH birth certificate 2.6 vs 3.0, and DPR recreation attendance 15,808. None of the required DPR condition/tree indicators or DOT traffic signal condition indicators appear."
+          },
+          {
+            "index": 2,
+            "criterion": "Specific numerical indicators from NYC MMR data must be cited alongside corresponding Greenfield metrics for meaningful comparison.",
+            "passed": false,
+            "reasoning": "Specific numerical NYC MMR indicators are cited, but they are not paired with corresponding Greenfield metrics for the same indicators. The response compares Greenfield's general process failures (e.g., 59.6% plan review) to NYC's MMR targets rather than providing Greenfield metrics for potholes, fire response, birth certificates, or recreation attendance alongside the NYC values.",
+            "evidence": "The MMR section lists NYC values such as DOT pothole 100% vs 98% and FDNY structural fire 4:22 vs 4:08, but no Greenfield pothole on-time percentage or Greenfield fire response time is provided. Greenfield metrics cited elsewhere (e.g., Tree Removal 62.4%, Plan Review 59.6%) do not correspond to the cited MMR indicators."
+          }
+        ],
+        "overall_reasoning": "The response does provide some NYC MMR-based benchmarking context and references specific MMR indicators for at least 3 agency analogs, so Criterion 0 passes. However, it fails Criterion 1 because the required specific benchmark data points (DPR Root/Sewer/Sidewalk Condition, Overgrown Tree/Branches, DOT Traffic Signal Condition, and the exact FDNY 4:33 vs 4:14 comparison) are absent. It also fails Criterion 2 because the cited NYC MMR numerical indicators are not paired with corresponding Greenfield metrics for meaningful same-indicator comparison. Therefore the rubric as a whole does not pass."
+      }
+    },
+    {
+      "index": 4,
+      "rubric": "Does the response incorporate at least 2 specific data points from the NYC Staffing Trends 2024 PDF to contextualize Greenfield's vacancy and attrition challenges?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 3,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The response must incorporate at least 2 specific data points from the NYC Staffing Trends 2024 PDF.",
+            "passed": true,
+            "reasoning": "The response incorporates multiple specific data points from the NYC Staffing Trends 2024 PDF, including citywide vacancy rate, Transportation Services vacancy, Health program vacancy, FDNY attrition, and overtime spending figures.",
+            "evidence": "Workbook 'Baseline Metrics' tab, Section 5 'NYS Comptroller Report 2-2025 - Staffing & Overtime Context' lists: citywide vacancy rate 5.1% (Jan-2024), Transportation Services program vacancy 6.7% -> 10.0%, Health program vacancy 8.6% -> 9.3%, FDNY attrition vs pre-pandemic +52%, and citywide overtime spend $1.81B FY24 vs $1.11B FY21."
+          },
+          {
+            "index": 1,
+            "criterion": "Key available NYC staffing data includes: overall vacancy rate was 5.1% as of January 2024 (down from 8.4% peak in December 2022), Transportation Services had 10.0% vacancy, Health and Mental Hygiene had 9.3%, Fire Department experienced 52% elevated attrition compared to pre-pandemic levels, and overtime spending citywide grew from $1.1 billion to $1.8 billion.",
+            "passed": true,
+            "reasoning": "The response includes all the key available NYC staffing data points identified in the criterion: 5.1% overall vacancy as of January 2024, 10.0% Transportation Services vacancy, 9.3% Health and Mental Hygiene vacancy, 52% elevated FDNY attrition, and overtime growth from $1.1 billion to $1.8 billion.",
+            "evidence": "Workbook Section 5 and memo Section 3.3 both state: citywide vacancy 5.1% in January 2024, down from 8.4% peak in December 2022; Transportation Services program vacancy 6.7% -> 10.0%; Health program vacancy 8.6% -> 9.3%; FDNY attrition runs 52% above pre-pandemic levels; overtime reached $1,812,800,000 in FY2024, up from $1,113,100,000 in FY2021."
+          },
+          {
+            "index": 2,
+            "criterion": "The data points must be used for contextualization of Greenfield's challenges (e.g., Greenfield Transportation's 14.9% vacancy exceeds NYC DOT's elevated 10.0%; or Greenfield Fire Department OT mirrors NYC's growing overtime dependence).",
+            "passed": true,
+            "reasoning": "The NYC data points are explicitly used to contextualize Greenfield's vacancy and attrition challenges, comparing Greenfield's elevated vacancy and overtime patterns to NYC's documented post-pandemic trends.",
+            "evidence": "Memo Section 3.3 states: 'Greenfield's 9.06% sits at the same stress level. Greenfield is not an outlier; it is living through the same post-2020 workforce shock.' It also states: 'Overtime is substituting for vacant positions - precisely Greenfield's Fire Department pattern (14.57% OT, 3.5% vacancy).' Slide 5 states: 'NYC citywide vacancy 5.1% (Jan-24) vs ~2% pre-pandemic; Transportation program 6.7%→10.0%, Health 8.6%→9.3% — the same sectors Greenfield struggles with.'"
+          }
+        ],
+        "overall_reasoning": "The response passes all criteria. It incorporates multiple specific data points from the NYC Staffing Trends 2024 PDF, includes the key available NYC staffing data, and uses those data points to contextualize Greenfield's vacancy and attrition challenges, particularly comparing Greenfield's Transportation and Health vacancy rates and Fire Department overtime patterns to NYC's documented trends."
+      }
+    },
+    {
+      "index": 5,
+      "rubric": "Does the response assess service delivery risk for all 9 processes below 70% on-time, identifying those at risk of further degradation under each proposal?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The response must identify all 9 processes below 70% on-time: Street Resurfacing Project (48.3%), Illegal Dumping Investigation (54.2%), Transit Route Change Request (55.1%), Bulk Pickup Request (58.1%), Plan Review – New Construction (59.6%), Sidewalk Repair Request (61.7%), Tree Removal Request (62.4%), Environmental Complaint Investigation (64.1%), and Seasonal Hiring Onboarding (68.5%).",
+            "passed": false,
+            "reasoning": "The response does not identify all 9 processes below 70% on-time. It lists only the 8 processes below 65% on-time and omits Seasonal Hiring Onboarding (68.5%).",
+            "evidence": "Baseline Metrics section 7 'Underperforming Processes (on-time < 65%)' lists 8 processes; memo states '8 of 25 business processes miss the 65% on-time standard'; no mention of Seasonal Hiring Onboarding in any file."
+          },
+          {
+            "index": 1,
+            "criterion": "The response must identify at least the 8 processes strictly below 65% on-time (all except Seasonal Hiring Onboarding) as high-risk SLAs.",
+            "passed": true,
+            "reasoning": "The response identifies all 8 processes strictly below 65% on-time as high-risk SLAs/underperforming processes.",
+            "evidence": "Baseline Metrics section 7 lists Street Resurfacing 48.3%, Illegal Dumping 54.2%, Transit Route Change 55.1%, Bulk Pickup 58.1%, Plan Review 59.6%, Sidewalk Repair 61.7%, Tree Removal 62.4%, Environmental Complaint 64.1%; memo and slides refer to these as the 8 failing processes below the 65% standard."
+          },
+          {
+            "index": 2,
+            "criterion": "For Proposal A, the response must explain whether the restructuring helps or creates transition risk that could worsen these metrics during implementation.",
+            "passed": true,
+            "reasoning": "For Proposal A, the response explains both potential service gains and transition risk that could worsen metrics during the 24-month implementation.",
+            "evidence": "Memo section 4.4: 'Modeled service gains average +6.2pp... But the model must be read against a 24-month implementation: dispatch consolidation, CBA renegotiation, and HRIS cutover all occur before savings appear... merger-scale labor agreements carry real delay risk.' Slide 6: 'merger-scale labor and systems risk during a 9.1%-vacancy hiring market.'"
+          },
+          {
+            "index": 3,
+            "criterion": "For Proposal B, the response must explain whether the restructuring helps or creates transition risk that could worsen these metrics during implementation.",
+            "passed": true,
+            "reasoning": "For Proposal B, the response explains that targeted interventions help the failing processes and that transition risk is low due to no mergers/CBA changes and a 12-month timeline.",
+            "evidence": "Memo section 5.3: 'Because the interventions land directly on the failing processes... Proposal B projects the largest service gain... Workforce feasibility is high: no mergers, no CBA renegotiation, 48 FTEs touched, 12-month timeline, complexity 2/5 and risk 2/5.' Slide 7: 'No mergers, no CBA renegotiation; 12-month timeline; complexity 2/5 · risk 2/5.'"
+          }
+        ],
+        "overall_reasoning": "The rubric fails because Criterion 0 is not met: the response identifies only the 8 processes below 65% on-time and omits Seasonal Hiring Onboarding (68.5%), which is below 70% and required by the criterion. The other three criteria pass."
+      }
+    },
+    {
+      "index": 6,
+      "rubric": "Does the response analyze workforce feasibility by examining whether Health Services turnover (19.4–26.1%) and Transportation turnover (15.2–24.6%) make either proposal's implementation realistic?",
+      "weight": 8,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 0,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The response must cite Health Services division-level turnover rates from 19.4% to 26.1% (Clinical Services at 26.1% is the highest citywide) and Transportation turnover from 15.2% to 24.6% (Public Transit at 24.6%).",
+            "passed": false,
+            "reasoning": "The output files do not cite Health Services division-level turnover rates of 19.4% to 26.1% or Transportation turnover rates of 15.2% to 24.6%. The files report vacancy rates, not turnover rates, and the division-level figures are vacancy percentages (e.g., Clinical Services 18.2%, Public Transit 15.8%), not the required turnover ranges.",
+            "evidence": "Baseline Metrics sheet lists Health Services vacancy 16.7% and Transportation vacancy 14.9%; Proposal B Model lists Clinical Services vacancy 18.2% and Public Transit vacancy 15.8%. No turnover rate of 19.4-26.1% or 15.2-24.6% appears anywhere."
+          },
+          {
+            "index": 1,
+            "criterion": "Under Proposal A, the response must discuss how merging departments with 20%+ turnover creates organizational instability during transition.",
+            "passed": false,
+            "reasoning": "The response does not discuss how merging departments with 20%+ turnover creates organizational instability during transition under Proposal A. It mentions workforce feasibility and merger risk, but only in terms of vacancy and labor agreements, not turnover-driven instability.",
+            "evidence": "Memo section 4.4 states 'Workforce feasibility is the binding constraint: 24 FTEs are reallocated... merger-scale labor agreements carry real delay risk.' Slide 6 says 'merger-scale labor and systems risk during a 9.1%-vacancy hiring market.' No mention of 20%+ turnover or turnover-driven instability."
+          },
+          {
+            "index": 2,
+            "criterion": "Under Proposal B, the response must discuss how cross-training pools are difficult to maintain when one in four employees leaves annually.",
+            "passed": false,
+            "reasoning": "The response does not discuss how cross-training pools are difficult to maintain when one in four employees leaves annually under Proposal B. Cross-training pools are described, but the retention/turnover challenge is not addressed.",
+            "evidence": "Proposal B Model and memo section 5 describe three cross-training pools totaling 45 members and training costs, but do not mention annual turnover of one in four employees or the difficulty of maintaining pools under high turnover."
+          },
+          {
+            "index": 3,
+            "criterion": "Any recommendation must account for the retention crisis, not just vacancy filling.",
+            "passed": false,
+            "reasoning": "The recommendation does not account for a retention crisis; it focuses on vacancy filling, hiring capacity, and attrition-only staffing changes, but does not address retention or turnover as a distinct workforce feasibility issue.",
+            "evidence": "Memo section 7 states 'no merger during a 9.06%-vacancy hiring market' and risk table lists 'Hiring market cannot deliver 22 fills in Year 1' with mitigation via hiring team, but there is no retention crisis analysis or turnover-based recommendation."
+          }
+        ],
+        "overall_reasoning": "The rubric requires analysis of workforce feasibility using specific Health Services and Transportation turnover rates and their implications for Proposal A, Proposal B, and the recommendation. The output files contain vacancy rates and some attrition/hiring-market discussion, but they do not cite the required turnover ranges, do not discuss turnover-driven instability under Proposal A, do not discuss cross-training pool maintenance under high turnover for Proposal B, and do not account for a retention crisis in the recommendation. Therefore all four criteria fail."
+      }
+    },
+    {
+      "index": 7,
+      "rubric": "Does the Proposal A Model tab correctly combine headcount and overtime costs for the two merged entities (Community Wellness: 212 authorized/190 filled/$979,350 OT; Public Works: 242 authorized/215 filled/$1,289,856 OT)?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 4,
+        "criteria_passed": 4,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The Proposal A Model tab must show Community Wellness (Parks & Recreation + Health Services) combined figures: authorized = 212 (116+96), filled = 190 (110+80), OT cost = $979,350 ($453,960+$525,390).",
+            "passed": true,
+            "reasoning": "The Proposal A Model tab shows Community Wellness (Health + Parks) with authorized 212 and filled 190, matching the required combined figures. The overtime cost base is listed as $979,350, which equals $453,960 + $525,390.",
+            "evidence": "Proposal A Model tab, section 1: 'Community Wellness (Health + Parks),212,190,22,10.4'; section 2: 'Community Wellness (Health + Parks),979350,10,97935'."
+          },
+          {
+            "index": 1,
+            "criterion": "The Proposal A Model tab must show Public Works (Transportation + Sanitation) combined figures: authorized = 242 (134+108), filled = 215 (114+101), OT cost = $1,289,856 ($642,979+$646,877).",
+            "passed": true,
+            "reasoning": "The Proposal A Model tab shows Public Works (Transportation + Sanitation) with authorized 242 and filled 215, matching the required combined figures. The overtime cost base is listed as $1,289,856.25, which equals $642,979.25 + $646,877.",
+            "evidence": "Proposal A Model tab, section 1: 'Public Works (Transportation + Sanitation),242,215,27,11.2'; section 2: 'Public Works (Transportation + Sanitation),1289856.25,20,257971.25'."
+          },
+          {
+            "index": 2,
+            "criterion": "In the Proposal A Model tab, Fire Department must remain standalone at 142 authorized/137 filled/$2,085,312 OT.",
+            "passed": true,
+            "reasoning": "The Proposal A Model tab keeps Fire Department standalone with authorized 142, filled 137, and unchanged overtime cost of $2,085,312.",
+            "evidence": "Proposal A Model tab, section 1: 'Fire (standalone),142,137,5,3.5'; section 2: 'Fire Department (standalone - unchanged),2085312,0,0'."
+          },
+          {
+            "index": 3,
+            "criterion": "The Proposal A Model tab must also document assumptions about shared-fleet savings and overlapping division consolidation.",
+            "passed": true,
+            "reasoning": "The Proposal A Model tab documents shared-fleet savings in section 4 and assumption A4, and documents overlapping division consolidation through the Administrative Consolidation section and assumption A2.",
+            "evidence": "Proposal A Model tab, section 4: 'Shared Fleet & Procurement (OTPS)' with $150,000 savings; Assumptions Register A4: 'Shared-fleet OTPS savings $150,000/yr...'; section 3: 'Administrative Consolidation (attrition only - no layoffs)' and A2: 'Admin elimination = 2.0% of merged authorized positions (9 FTE), realized through attrition only; no layoffs.'"
+          }
+        ],
+        "overall_reasoning": "All four criteria pass. The Proposal A Model tab correctly combines Community Wellness and Public Works headcount and overtime figures, keeps Fire Department standalone with the required values, and documents both shared-fleet savings and overlapping division consolidation assumptions."
+      }
+    },
+    {
+      "index": 8,
+      "rubric": "Does the response analyze Sanitation's seasonal overtime pattern (winter months Dec–Feb at 12.7–14.4% vs summer months Jun–Jul at 6.8–7.3%) and discuss implications for Proposal B's overtime threshold?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 1,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The response must identify Sanitation's seasonal overtime pattern: winter months at 13.5% (Dec-2023), 14.4% (Jan-2024), 12.7% (Feb-2024) versus summer months at 6.8% (Jun-2024) and 7.3% (Jul-2023), with annual average ~9.8%.",
+            "passed": true,
+            "reasoning": "The Baseline Metrics sheet provides the monthly Sanitation overtime percentages, including Dec-2023 13.5%, Jan-2024 14.4%, Feb-2024 12.7%, Jun-2024 6.8%, and Jul-2023 7.3%, and states the annual average of 9.79% with 5 months above 10%. This identifies the seasonal pattern and annual average.",
+            "evidence": "Baseline Metrics sheet, Monthly Overtime table: Sanitation Dec-2023 13.5, Jan-2024 14.4, Feb-2024 12.7, Jun-2024 6.8, Jul-2023 7.3; note: 'Sanitation averages 9.79% with 5 months above 10% - watch list.'"
+          },
+          {
+            "index": 1,
+            "criterion": "The response should discuss whether Proposal B's 10% OT threshold applies monthly or annually, and how seasonal demand complicates a blanket OT cap.",
+            "passed": false,
+            "reasoning": "The outputs note Sanitation's annual average and months above 10%, placing it on a watch list, but they do not explicitly discuss whether Proposal B's 10% OT threshold applies monthly or annually, nor do they explain how seasonal demand complicates a blanket OT cap.",
+            "evidence": "Proposal B Model sheet: 'Watch list: Sanitation at 9.79% (5 months >10%). Not capped; mid-year re-evaluation; monthly OT series on Baseline tab.' Assumption B8: 'Sanitation (9.79%) on watch list only; cap not applied; re-evaluate at mid-year.' No explicit monthly-vs-annual threshold discussion or seasonal complication analysis."
+          },
+          {
+            "index": 2,
+            "criterion": "The response should discuss how under Proposal A, combining Sanitation with Transportation into 'Public Works' could pool winter surge capacity.",
+            "passed": false,
+            "reasoning": "Proposal A merges Sanitation and Transportation into Public Works and references shared routing, joint crews, and combined bulk contracts, but it does not specifically discuss pooling winter surge capacity or seasonal demand.",
+            "evidence": "Proposal A Model sheet, Assumption A1: 'OT reduction: Public Works 20% (shared routing, joint crews, combined bulk contracts).' Memo section 4.1: 'could pool crews, routing, and dispatch.' No mention of winter surge capacity or seasonal pooling."
+          }
+        ],
+        "overall_reasoning": "Criterion 0 passes because the monthly Sanitation overtime data and annual average are present. Criteria 1 and 2 fail because the response does not explicitly analyze whether Proposal B's threshold is monthly or annual, does not discuss how seasonal demand complicates a blanket OT cap, and does not discuss pooling winter surge capacity under Proposal A."
+      }
+    }
+  ]
+}

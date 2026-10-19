@@ -1,0 +1,254 @@
+--- baseline/guardrails.md
++++ execution/guardrails.md
+@@ -1 +1,7 @@
+-<!-- c6 guardrails. EMPTY in v0. Evolution adds always-on rules here. -->
++- Produce files, not prose: every deliverable the request names must exist at its exact path before you report completion.
++- Write the first deliverable as soon as its inputs are read; do not exhaust the budget on analysis before an artifact is on disk.
++- Never state a count, total or derived figure from memory — compute it programmatically from the source and reconcile it before it enters a deliverable.
++- Treat sources marked internal or not-for-publication as input only: no internal identifiers, TODOs, jokes or internal tool references may appear in a public deliverable.
++- Never trust a write. Reopen every produced file with a fresh read and confirm it is complete before calling the task done.
++- If a tool call fails, retry it at most once, then switch to an equivalent tool or a Bash fallback and move on.
++- When all requested deliverables exist, load the `verify-deliverables` skill and complete its checks before your final message.
+--- baseline/harness.yaml
++++ execution/harness.yaml
+@@ -1,29 +0,0 @@
+-# Owned harness manifest for the JobBench OpenCode harness (v0 baseline).
+-# Lists the EVOLVABLE components as editable files. OpenCode itself (the CLI, its tool
+-# implementations, the provider) is FROZEN infrastructure and is NOT referenced here.
+-# An evolve loop edits files under this workspace only.
+-name: jobbench_oc_harness
+-
+-components:
+-  system_prompt: systemprompt.md            # c1 — the OpenCode agent body (REPLACES the stock prompt)
+-  guardrails: guardrails.md                 # c6 — always-on rules
+-  long_term_memory: LongTermMEMORY.md       # c3 — durable domain facts
+-  skills_dir: skills/                       # c6 — reusable workflows (.opencode/skills/<n>/SKILL.md)
+-  sub_agents_dir: sub_agents/               # c5 — delegated subagents (.opencode/agent/<n>.md, mode: subagent)
+-  scripts_dir: scripts/                     # c7 — deterministic helper scripts run via Bash
+-  tool_guidance: tool_descriptions/tool_guidance.md   # c4 — prose guidance about the OpenCode toolset
+-  plugins_dir: plugin/                      # c8 — OpenCode plugins (TS): custom tools + middleware
+-                                            #      hooks (tool.execute.after / chat.system.transform).
+-                                            #      Auto-discovered from .opencode/plugin/*.ts at runtime.
+-  # c2 context_policy: NOT injectable — OpenCode owns context assembly/compaction.
+-
+-# NOTE: the harness is injected in APPEND mode (composed prose -> AGENTS.md on top of OpenCode's
+-# stock provider prompt; no --agent). To stay faithful to the real run1/run2/high runs — which set
+-# NEITHER temperature NOR a step cap and use OpenCode/provider defaults — we intentionally do NOT set
+-# temperature/steps here. (Setting temperature=0 or a low step cap would diverge from the real runs
+-# and, in the case of a step cap, could truncate long office tasks before they write deliverables.)
+-agent_config_values: {}
+-
+-# Order in which prose components are concatenated for the offline validation/preview compose.
+-# (render_opencode.py places each component into its real OpenCode slot separately.)
+-compose_order: [system_prompt, guardrails, long_term_memory, skills]
+--- baseline/plugin/README.md
++++ execution/plugin/README.md
+@@ -1,26 +1 @@
+-<!-- c8 — OpenCode plugins (placeholder). The evolve loop may add a plugin here as
+-     plugin/<name>.ts. render_opencode.py copies it to .opencode/plugin/<name>.ts in the temp
+-     workspace, where OpenCode auto-discovers it (config/plugin.ts globs `{plugin,plugins}/*.{ts,js}`
+-     from each .opencode dir up the working-dir tree).
+-
+-     A plugin exports a server function returning Hooks; use it for what prose rules cannot do —
+-     a deterministic RECHECK in the tool loop rather than a static instruction:
+-       - "tool.execute.after"  — inspect/transform a tool's output (e.g. after a Write, verify the
+-                                 deliverable; may call the LLM via the plugin client for a semantic check)
+-       - "experimental.chat.system.transform" — inject dynamic, per-task guidance
+-       - "tool"               — register a brand-new deterministic tool (e.g. a workbook validator)
+-       - "chat.params"        — adjust model params
+-
+-     Example skeleton (TypeScript):
+-
+-       import type { Plugin } from "@opencode-ai/plugin"
+-       export const VerifyDeliverable: Plugin = async ({ client, $ }) => ({
+-         "tool.execute.after": async (input, output) => {
+-           if (input.tool !== "write") return
+-           // re-check output.* against the task's own requirements here; append a warning to
+-           // output.output if something is missing. Re-derive the check at runtime — never hardcode
+-           // a specific task's answer/value.
+-         },
+-       })
+-
+-     None defined in the v0 baseline (stays byte-identical to the stock run when empty). -->
++<!-- c8: OpenCode plugins. Acts INSIDE the tool loop -- the only lever that can enforce something the model cannot skip. Add one as plugin/<name>.ts. -->
+--- baseline/scripts/README.md
++++ execution/scripts/README.md
+@@ -1,7 +1 @@
+-<!-- c7 (helper-scripts-via-Bash) — deterministic Python helpers (placeholder).
+-     The evolve loop may add scripts here, e.g. scripts/validate_workbook.py. render_opencode.py
+-     copies this dir into the temp workspace as ./scripts/, and a skill/guardrail instructs the
+-     agent to run them via Bash (e.g. `python scripts/validate_workbook.py output/Foo.xlsx`).
+-     This is how we get c7's deterministic-fix value without an OpenCode TS plugin.
+-     Each script must be stdlib-or-pip importable and runnable as `python scripts/<name>.py`.
+-     None defined in the v0 baseline. -->
++<!-- c7: deterministic helpers, run as `python3 scripts/<name>.py`. Add one by emitting scripts/<name>.py. -->
+--- baseline/scripts/normalize_delimited.py
++++ execution/scripts/normalize_delimited.py
+@@ -0,0 +1,112 @@
++#!/usr/bin/env python3
++"""Normalize a delimited data file (CSV/TSV) whose cells may contain
++inner-delimited multi-value fields, and report the counts needed to
++reconcile a deliverable against its source.
++
++Usage:
++  python3 scripts/normalize_delimited.py <file.csv> [--delimiter ,] [--inner ;]
++      [--fields col1,col2] [--out out.json] [--markdown] [--max-col-width 40]
++
++Behavior:
++  * Parses with the csv module (quoted fields handled correctly).
++  * If --inner is given, every cell (or only --fields columns) that contains
++    the inner delimiter is split into a list; a cell without it stays as-is.
++  * Prints: row count, column list, per-column non-empty counts, per-column
++    count of cells containing the inner delimiter, and duplicate-key check on
++    the first column if --key is given.
++  * With --out, writes a JSON array of row objects (inner-split values as lists).
++  * With --markdown, prints a markdown table of the normalized rows.
++
++Exit code 0 on success; row/cell counts are printed on stdout for reuse.
++"""
++
++import argparse
++import csv
++import json
++import sys
++
++
++def main():
++    ap = argparse.ArgumentParser(description="Normalize delimited data with inner multi-value cells.")
++    ap.add_argument("path", nargs="?", default="-", help="input file, '-' for stdin")
++    ap.add_argument("--delimiter", default=",", help="field delimiter (default ',')")
++    ap.add_argument("--inner", default=None, help="inner delimiter for multi-value cells, e.g. ';'")
++    ap.add_argument("--fields", default=None, help="comma-separated column names to inner-split (default: any)")
++    ap.add_argument("--key", default=None, help="column to check for duplicate values")
++    ap.add_argument("--out", default=None, help="write normalized rows as JSON to this path")
++    ap.add_argument("--markdown", action="store_true", help="also print a markdown table")
++    ap.add_argument("--max-col-width", type=int, default=40, help="markdown cell truncation width")
++    args = ap.parse_args()
++
++    handle = sys.stdin if args.path == "-" else open(args.path, newline="", encoding="utf-8-sig")
++    try:
++        reader = csv.DictReader(handle, delimiter=args.delimiter)
++        rows = [dict(r) for r in reader]
++        columns = list(reader.fieldnames or [])
++    finally:
++        if handle is not sys.stdin:
++            handle.close()
++
++    if not rows:
++        print("ROW_COUNT 0")
++        print("WARNING: no data rows parsed - check the delimiter")
++        return 1
++
++    split_fields = set(args.fields.split(",")) if args.fields else None
++    inner_counts = {c: 0 for c in columns}
++    normalized = []
++    for row in rows:
++        out = {}
++        for col in columns:
++            val = (row.get(col) or "").strip()
++            if args.inner and val and args.inner in val and (split_fields is None or col in split_fields):
++                inner_counts[col] += 1
++                out[col] = [part.strip() for part in val.split(args.inner) if part.strip() != ""]
++            else:
++                out[col] = val
++        normalized.append(out)
++
++    print("ROW_COUNT", len(normalized))
++    print("COLUMNS", "|".join(columns))
++    for col in columns:
++        nonempty = sum(1 for r in normalized if r[col])
++        print("FILLED\t%s\t%d/%d" % (col, nonempty, len(normalized)))
++    if args.inner:
++        for col, n in inner_counts.items():
++            if n:
++                print("INNER_SPLIT\t%s\t%d" % (col, n))
++    if args.key:
++        if args.key not in columns:
++            print("WARNING: key column %r not found" % args.key)
++        else:
++            seen, dupes = set(), []
++            for r in normalized:
++                k = r[args.key]
++                ident = tuple(k) if isinstance(k, list) else (k,)
++                if ident in seen:
++                    dupes.append(str(ident))
++                seen.add(ident)
++            print("DUPLICATE_KEYS", len(dupes), "; ".join(dupes[:5]))
++
++    if args.out:
++        with open(args.out, "w", encoding="utf-8") as fh:
++            json.dump(normalized, fh, indent=2, ensure_ascii=False)
++        print("WROTE_JSON", args.out)
++
++    if args.markdown:
++        def cell(v):
++            text = "; ".join(v) if isinstance(v, list) else str(v)
++            text = text.replace("|", "\\|").replace("\n", " ")
++            if len(text) > args.max_col_width:
++                text = text[: args.max_col_width - 1] + "\u2026"
++            return text
++
++        print("| " + " | ".join(columns) + " |")
++        print("|" + "|".join(["---"] * len(columns)) + "|")
++        for r in normalized:
++            print("| " + " | ".join(cell(r[c]) for c in columns) + " |")
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+--- baseline/skills/README.md
++++ execution/skills/README.md
+@@ -0,0 +1 @@
++<!-- c6: reusable workflows loaded on demand via the `skill` tool. Add one as skills/<name>/SKILL.md with frontmatter `name:` matching the directory and a `description:`. -->
+--- baseline/skills/verify-deliverables/SKILL.md
++++ execution/skills/verify-deliverables/SKILL.md
+@@ -0,0 +1,15 @@
++---
++name: verify-deliverables
++description: Final quality pass before reporting completion - manifest check, reopen every produced file, count reconciliation against sources, prohibited-term sweep, cross-file consistency. Load once all requested output files exist.
++---
++
++# Verify deliverables
++
++Run these checks in order, using Bash and the read tool. Fix anything that fails, then re-check only the files you changed. Do not skip to the final message until every check passes or the failure is explained in your final message.
++
++1. Manifest. `ls -l <output dir>`. Every deliverable the request named must exist under its exact filename (spelling, version suffix, extension). A missing or misnamed file is a failure - produce it before continuing.
++2. Reopen. Read each produced file start to end with the read tool. Confirm: non-empty, section headings the request asked for are present, no truncation, no leftover placeholder or template text, tables and code blocks intact.
++3. Count reconciliation. For each structured source, compute its item count programmatically - for delimited files run `python3 scripts/normalize_delimited.py <source file>` (it prints ROW_COUNT and per-column fill counts; add `--inner ';'` if cells contain inner-delimited values) - and compare against the number of items the deliverables actually document and any counts stated in prose. Publish only numbers that reconcile; correct the prose if it disagrees.
++4. Prohibited-content sweep. From the request, collect the forbidden terms, internal-only markers and known-wrong names (things that must not be documented). `grep -rni` each across the output directory. Every hit must be an explicit negation or warning, otherwise remove or reword it.
++5. Cross-file consistency. For facts that appear in more than one deliverable (names, versions, limits, dates, paths, endpoint lists), grep all occurrences and confirm every occurrence agrees. Resolve conflicts against the authoritative source, then fix every file that repeated the wrong value.
++6. Self-report. One line per check: pass or fail. If any check failed and was fixed, say what changed.
+--- baseline/sub_agents/README.md
++++ execution/sub_agents/README.md
+@@ -1,4 +1 @@
+-<!-- c5 — delegated subagents (placeholder). The evolve loop may add a subagent here as
+-     sub_agents/<name>/AGENT.md (YAML frontmatter with `mode: subagent` + a description + a
+-     markdown body). render_opencode.py materializes each as .opencode/agent/<name>.md, which the
+-     primary agent can invoke through the `task` tool. None defined in the v0 baseline. -->
++<!-- c5: delegated subagents, invoked with the `task` tool in their OWN context. Add one as sub_agents/<name>/AGENT.md with frontmatter `mode: subagent` and `description:`. -->
+--- baseline/systemprompt.md
++++ execution/systemprompt.md
+@@ -1,4 +1,11 @@
+-<!-- c1 system prompt. EMPTY in v0 — v0 is the BARE stock OpenCode run (same as the real
+-     run1/run2/high). Evolution (later rounds) writes domain guidance here; render_opencode appends
+-     it on top of OpenCode's stock provider prompt via AGENTS.md. Template tokens available if used:
+-     {{env_description}} {{domain_focus}} {{date}} {{working_directory}}. -->
++# Role
++
++You are a professional analyst who turns a mixed workspace (data files, documents, databases, reference material, instructions) into finished workplace artifacts — reports, guides, references, spreadsheets, technical files. Prose in chat is not a deliverable: when the request names output files, those files must exist on disk at the requested paths.
++
++# Working procedure
++
++1. INVENTORY first. Read every source file in the workspace before writing anything — not just the first obvious one. For each, record: format, delimiter or schema quirks, authority (authoritative vs. draft vs. internal-only), and how identifiers, versions and tables relate across files. Files marked internal or not-for-publication inform your work but their internals must never appear in deliverables.
++2. MANIFEST. Convert the request into a checklist of exact output paths plus the sections/content each requires, before writing. Check items off as you produce them.
++3. EXTRACT programmatically. For structured sources (CSV/JSON/TSV), parse them with python3 — including helper scripts under scripts/ run via Bash — instead of transcribing by eye. Carry row and item counts forward; every count or total you publish must be computed from the source and reconciled, never recalled from memory.
++4. WRITE early. Produce each deliverable as soon as its inputs are understood, then improve incrementally. Never spend the whole budget analyzing before at least one artifact exists on disk.
++5. VERIFY before reporting done. Reopen every produced file with a fresh read; sweep deliverables for prohibited terms; reconcile counts and shared facts across files. When all requested deliverables exist, load the `verify-deliverables` skill and follow its checks before your final message.
+--- baseline/tool_descriptions/tool_guidance.md
++++ execution/tool_descriptions/tool_guidance.md
+@@ -1 +1,3 @@
+-<!-- c4 tool guidance. EMPTY in v0. Evolution adds prose tool-usage guidance here. -->
++- Multi-file content sweeps: run them with Bash (`grep -rni <pattern> <dir>`), not the `grep` tool. The `grep` tool has failed with a transport error in this environment; on its first failure switch to Bash grep — do not retry.
++- Structured sources (CSV/TSV, especially with quoted fields or multi-value cells): parse with `python3` (e.g. `python3 scripts/normalize_delimited.py <file>` if that helper is present) rather than reading raw and transcribing by hand; it also prints the item counts you need for reconciliation.
++- After each write, reopen the file with the read tool to confirm the content landed complete before moving on.

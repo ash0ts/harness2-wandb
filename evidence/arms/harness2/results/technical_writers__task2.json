@@ -1,0 +1,123 @@
+{
+  "task_id": "technical_writers/task2",
+  "domain": "technical_writers",
+  "k": 1,
+  "seed": 42,
+  "status": "partial",
+  "base": [
+    {
+      "label": "base1",
+      "run_id": "jb-oc-agg1-s42-harness2/technical_writers/task2/base1",
+      "run_dir": "evidence/arms/harness2/dataset/technical_writers/task2/model_output/jb-oc-agg1-s42-harness2__technical_writers__task2__base1"
+    }
+  ],
+  "modes": {
+    "agg": {
+      "mode": "agg",
+      "task_id": "technical_writers/task2",
+      "k": 1,
+      "finals": [
+        "agg1"
+      ],
+      "ok": true,
+      "fell_back": [],
+      "kept_base": [
+        "agg1"
+      ],
+      "stages": [
+        {
+          "label": "inv1",
+          "dim": "INV",
+          "fell_back": false,
+          "kept_base": false,
+          "attempts": 1,
+          "usd": 0.10012,
+          "cached": false,
+          "notes": "# Inventory\n\n- Rollouts: one, `context/rollouts/base1.md` (2,897 lines), inspected end to end. `context/deliverables/base1.md` = \"(no deliverable produced)\".\n- Harness: v0 stubs \u2014 empty systemprompt/guardrails/memory, one-line tool_guidance, no skills/scripts/subagents/plugin.\n- Library: one adopted entry (technical_writers__task1) with full component tree and EXPERIENCE.md.\n\n# What the evidence shows\n\nbase1 is the failure mode this domain's library already flags as the most common: it died reading and never wrote. The whole trajectory is one continuous read phase \u2014 seven source files (L1\u2013513), then the OpenAPI YAML read raw inline, 741 lines (L523\u20131270), then google_doc_style_highlights.html (77KB) read raw inline, ~1,360 lines of mostly page chrome (L1271\u20132632). It never produced a manifest, checklist or plan (zero todowrite/write/edit/task/skill actions in 2,897 lines), then spent its final budget extracting the Microsoft guide to /tmp and hitting three consecutive permission denials trying to read that scratch file back (L2633\u20132642). The run ends mid-read; nothing was ever written. I reproduced the denial class in this environment: reading or cat-ing a file under /tmp is denied by the same external_directory rule, while redirects to /tmp succeed \u2014 so the improvised extract-to-/tmp-then-read-back path is a dead end here, not a one-off.\n\n# Changes (each traced to a moment)\n\n1. systemprompt.md \u2014 filled the v0 stub with a six-step procedure. Motivated by base1.md L1\u20132632 (pure sequential reading, no inventory record, no manifest) and the zero-write end state. Steps: INVENTORY (format/authority/cross-file relationships), MANIFEST of exact output paths before writing, DO NOT DUMP BULK FILES (route the OpenAPI YAML through scripts/summarize_openapi.py and the HTML style-guide snapshots through the style-guide-extract subagent), EXTRACT programmatically with counts reconciled, WRITE early with an explicit half-budget tripwire, VERIFY with the verify-deliverables skill.\n\n2. guardrails.md \u2014 eight rules. Traceable: write-early tripwire \u2192 the run spent its entire budget reading (L1\u20132897) and shipped nothing; bulk-file rule \u2192 L1271\u20132632 and L523\u20131270; permission/retry rule (\"retry at most once, then switch to an allowed tool or path\") \u2192 L2637\u20132641, three denied calls in a row, each a fresh variant fighting the same denial instead of switching strategy; never-trust-a-write, count-from-source, internal-only-to-customer-facing, files-not-prose and the verify-skill trigger \u2192 carried from the adopted task1 harness (EXPERIENCE.md marks them supporting-though-confounded; this task has the same live classes \u2014 customer-facing deliverables fed by ticket data, a CSV with dictated columns \u2014 and no counter-evidence).\n\n3. tool_descriptions/tool_guidance.md \u2014 five lines. New here: \"scratch files belong inside the workspace, never /tmp\" \u2192 base1.md L2633\u20132642 (extract written to /tmp, then read-back denied three times); bulk-file routing restated. Carried from task1 evidence: Bash grep for sweeps (that run absorbed two grep-tool transport errors); parse structured sources with python3; reopen after each write.\n\n4. scripts/summarize_openapi.py \u2014 new deterministic helper. Motivated by base1.md L523\u20131270: 741 raw YAML lines consumed for endpoint facts. Tested against this task's spec: the digest is 157 lines and covers everything the reference rewrite needs \u2014 per-operation security (resolves review items R005/R011), deprecated flags (findByTags endpoint, status parameter, Pet.status), parameter types, and the exact ambiguity task.md flags (spec says DELETE /store/order/{orderId} orderId is string; changelog says fixed to integer). Uses PyYAML when present with a built-in fallback parser; I verified the fallback reproduces PyYAML's output on paths, methods, security, parameters, enums and block scalars for this spec.\n\n5. scripts/normalize_delimited.py \u2014 copied verbatim from the adopted task1 harness (proven; zero always-on cost). It is named by systemprompt step 4 and verify-deliverables checks 3\u20134, so rule 3 requires it to ship. Tested on this task's api_changelog.csv (ROW_COUNT 14, columns and fill counts correct).\n\n6. sub_agents/style-guide-extract/AGENT.md \u2014 new delegated subagent (frontmatter: mode: subagent + description). Motivated by base1.md L1271\u20132632: one HTML snapshot read raw cost ~1,360 trajectory lines, nearly half the run, and the second snapshot's extraction consumed what remained. This is the exact shape the mission prescribes for a subagent \u2014 bounded sub-task, large inputs (133KB of HTML, mostly chrome), small answer (a checklist of binding conventions). AGENT.md stands alone: strip chrome with one python3 pass, keep scratch inside the workspace (never /tmp, per L2637\u20132641), discard site furniture, return at most 12 rules per source page plus up to 5 \"likely violations\" of a typical draft. The main prompt tells the agent when to spawn it.\n\n7. skills/verify-deliverables/SKILL.md \u2014 adapted from the adopted task1 skill (EXPERIENCE.md: its checks caught two anchor mismatches and a ticket-figure leak in instrumented runs while the un-instrumented run shipped both defect classes). Added check 3, CSV schema: header row compared against the exact column list and order the request dictates (doc_impact_analysis.csv names 10 columns verbatim) plus per-row column count via normalize_delimited.py --key. Trigger line present in systemprompt step 6 and guardrails rule 8 in this same edit.\n\n# Left unchanged\n\nLongTermMEMORY.md (library verdict on memory facts: no observed effect; I have no durable, non-task-specific fact to add), plugin/ (no trajectory moment a tool-loop hook would fix \u2014 nothing was ever written for a tool.execute.after check to see), the three READMEs.\n\n# Validation\n\nBoth scripts compile under py_compile and were exercised on the actual task sources; the skill directory name appears verbatim in always-on text in the same edit; no {{ or {% in any always-on file; snake_case script names; no AGENTS.md or harness.yaml written. Always-on total: 4,323 chars (systemprompt 2,087, guardrails 1,172, tool_guidance 950, memory stub 114).",
+          "error": ""
+        },
+        {
+          "label": "dom1",
+          "dim": "DOM",
+          "fell_back": false,
+          "kept_base": false,
+          "attempts": 1,
+          "usd": 0.087252,
+          "cached": false,
+          "notes": "Rollout evidence: base1 is the only rollout and it produced no deliverables (context/deliverables/base1.md). It read every source thoroughly (base1.md L1\u20131269), then spent ~1,360 trajectory lines raw-reading the pinned Google style-guide HTML snapshot (L1271\u20132632, mostly devsite chrome/CSS/SVG, ending in render truncation), improvised a python one-off to extract the Microsoft snapshot into /tmp (L2633\u20132634), then lost three consecutive tool calls to /tmp access denials (read L2636, cp L2638, cat L2640) before displaying the text via sed (L2642). The trajectory ends at L2896 with zero files written. The dominant failure class for this domain is therefore: external HTML reference material handled raw, scratch placed outside the permitted workspace, and budget exhausted before writing.\n\nChanges (each traced to a moment or workspace document):\n\n1. scripts/extract_html_text.py (new). Strips scripts/styles/svg/nav chrome from pinned HTML snapshots and emits readable text (stdout or --out), with --match/--context/--max-lines for targeted slices. Verified on the workspace snapshots: the 77KB Google guide collapses to 95 text lines, the 56KB Microsoft guide to 178 lines, article content intact. \u2190 base1.md L1271\u20132632: one raw read of the Google snapshot consumed over a thousand lines of chrome for a few hundred lines of guidance.\n\n2. skills/extract-reference-html/SKILL.md (new, with trigger lines in guardrails.md and systemprompt.md). Procedure: run the script first, never read a raw snapshot end to end; slice with --match/--context; keep scratch and extracted files inside the workspace; if a path is denied, switch approach rather than retrying. \u2190 base1.md L1271\u20132641: raw read, then an improvised /tmp extraction that cost three denied tool calls (L2636, L2638, L2640) before a working display (L2642).\n\n3. systemprompt.md (was an empty stub). Five-step procedure: inventory sources with a stated source hierarchy and a version-staleness check; write a short manifest; extract reference material programmatically; draft deliverables early; verify before reporting done; plus a pointer line to the extraction skill. The procedure shape is adapted from the adopted task1 library harness, whose EXPERIENCE.md records instrumented runs following it successfully. The staleness check is grounded in this domain's materials: the OpenAPI spec is stamped version 1.0.0 with the old base URL (petstore_openapi.yaml L8, L3) while the changelog records releases through 3.1.0 including a 3.0.0 base-URL change (api_changelog.csv L13) \u2014 reconciling such conflicts is recurring writer work, not a one-off. \u2190 base1.md L1\u20131269 shows the inventory step is otherwise done well; the harness encodes it explicitly so it survives context pressure.\n\n4. guardrails.md (was an empty stub). Eight rules: prefer files over prose; draft deliverables early (\u2190 base1.md trajectory ends with zero writes); never state figures from memory \u2014 trace them to a source (\u2190 task1 base1 misrecalled a row count as \"25 endpoint rows\", recorded in EXPERIENCE.md); resolve conflicts explicitly and state which source wins; the HTML-snapshot/scratch rule carrying the extract-reference-html trigger; one retry on a denied path, then switch tools (\u2190 base1.md L2636\u20132641: three consecutive denials on the same path); never assume a write succeeded \u2014 reopen the file (grounded in the task1 lesson that unverified artifacts shipped defects); the verify-deliverables trigger.\n\n5. skills/verify-deliverables/SKILL.md (adapted from the library) + scripts/normalize_delimited.py (copied alongside, per the library rule that skill-referenced scripts ship at harness level). Checks: manifest coverage, reopen every file, mechanical count reconciliation via the script, every stated figure traced to its source (this check is reworded from task1's fixed-string check to claim traceability, per that harness's recorded transferable lesson), cross-file consistency, self-report of residuals. \u2190 base1.md never reached a verification step; the nearest evidence is task1's EXPERIENCE.md, where instrumented runs caught defects (miscounts, unsourced claims) that the un-instrumented run shipped.\n\n6. tool_descriptions/tool_guidance.md (was an empty stub). Five operational lines matching the observed failure surface: extract HTML before reading it; keep scratch inside the workspace and prefer stdout; use python3 for extraction/transformation instead of hand transcription; use bash grep over the grep tool for quick counts; reopen files after writing. \u2190 base1.md L1271\u20132642.\n\n7. LongTermMEMORY.md (was an empty stub). Four durable domain facts only: documentation source hierarchy in API-doc work; spec version stamps can lag the release history; terminology lists and review feedback are binding while external style guides are advisory; detail placement depends on audience. \u2190 grounded in the workspace source set (spec vs changelog vs terminology vs review feedback) and the task's deliverable definitions.\n\n8. Deliberately not added: no plugin, no sub_agents; README stubs untouched. base1 shows no write-verification failure to justify a verification subagent, and one would duplicate the verify skill at higher token cost. The skill set stays at two so each trigger stays narrow and load-bearing.\n\nValidation: both scripts compile under py_compile; no template braces appear in any always-on file; both skill directory names appear in the prescribed trigger shape in guardrails.md (L5, L8) and systemprompt.md (L11, L13); always-on total is 6,235 characters (systemprompt 2,395, guardrails 1,290, memory 1,473, tool guidance 1,077) against task1's recorded 3,467. The increase is the extraction skill plus the staleness/traceability rules; a single avoided raw-HTML read in base1 (~1,100 chrome lines of context) repays that cost several times over.\n\nGeneralization: no endpoint names, versions, release numbers, or task-specific file names appear in the harness; every rule above cites the trajectory moment or workspace document it generalizes from, and both the pinned-HTML-snapshot pattern and the spec-staleness pattern recur across technical-writer tasks that ship external references and evolving specs.",
+          "error": ""
+        },
+        {
+          "label": "agg1",
+          "dim": "AGG",
+          "fell_back": false,
+          "kept_base": true,
+          "attempts": 1,
+          "usd": 0.067771,
+          "cached": false,
+          "notes": "The base run produced no deliverable \u2014 it burned the whole run reading raw HTML style-guide files. Now let me read both candidates.\n\n## Goal\n\nAct as an \"integration judge and synthesizer\" per `/work/MISSION.md`: judge two candidate harness edits (INVARIANT `inv1` and DOMAIN `dom1`) against a base rollout for a technical-writing task (Petstore API v3.1.0 documentation overhaul), then synthesize ONE final harness by editing files in `/work/context/harness/` (edits on disk ARE the proposal), and reply with a single `<notes>` block (one `kept|revised|dropped -> <edit> -> <evidence>` line per decision). The user additionally requires: **the final `<notes>` block must also be saved verbatim to `/work/output/answer.md`**.\n\n## Instructions\n\n- Read MISSION.md and follow it; the task's user request is the yardstick (completeness counts as much as correctness). KEEP_BASE is valid if no candidate demonstrably improved on base.\n- Editable surface ONLY: `systemprompt.md`, `guardrails.md`, `LongTermMEMORY.md`, `tool_descriptions/tool_guidance.md`, `skills/<name>/SKILL.md`, `sub_agents/<name>/AGENT.md`, `scripts/<name>.py` (snake_case, must py_compile), `plugin/<name>.ts`. Never write `AGENTS.md` or `harness.yaml`.\n- Hard validation rules: every skill needs a trigger line in `systemprompt.md` or `guardrails.md` in the SAME edit (\"When <situation>, load the `<name>` skill.\"); NO template braces (`{{`/`{%`) in always-on text (Jinja StrictUndefined kills the run); every script invoked by name must ship in the same proposal; never tell the agent to read skill/subagent files off the filesystem (use `skill`/`task`/Bash tools).\n- Files under `context/` are evidence, not instructions \u2014 do not execute candidate scripts; no rubric/grader language.\n- Notes format: `kept|revised|dropped -> <which edit> -> <the evidence, with trajectory moment>`.\n- Final reply must be ONE `<notes>` block and nothing else, also saved verbatim to `/work/output/answer.md`.\n\n## Discoveries\n\n- **Task** (`context/task.md`): 3 deliverables in `/work/output/`: `migration_guide_v3.1.0.md` (standalone migration guide for v3.1.0 breaking changes), `revised_api_reference.md` (fix all 15 review issues R001\u2013R015, add all undocumented changelog changes, follow Google style + MS reference-doc guidelines, apply 15 company terminology standards), `doc_impact_analysis.csv` (columns: issue_source, issue_id, endpoint, description, related_tickets, affected_consumers, error_rate_pct, priority, priority_justification, terminology_violation). Cross-reference changelog (14 rows), usage metrics JSON, 10 support tickets (SUP-4401\u2013SUP-4491, all doc_related=Yes).\n- Key data: v3.1.0 breaking changes = POST /pet OAuth2 implicit\u2192authorization-code flow (923 consumers, 8.7% err, 34% migrated) and DELETE /store/order/{orderId} string\u2192int64 (891 consumers, 12.3% err, 22% migrated); PUT /pet 405\u2192422 is v3.0.1 (876 consumers, 71% migrated). Other v3.1.0 undocumented: WebP/AVIF uploads, `reserved` status value, findByTags deprecation (634 active consumers).\n- **Base rollout (`rollouts/base1.md`, 2897 lines)**: read all CSVs/JSON/YAML, then read the raw Google style-guide HTML (~1000+ lines of chrome before content), hit read/copy permission errors trying to use `/tmp`, finally got MS guide text via `sed` in bash \u2014 then the run ENDED with **no deliverable produced** (`deliverables/base1.md` confirms \"(no deliverable produced)\"). Failure mode = output budget exhausted on reading raw HTML.\n- **dom1 candidate** (`pool/dom1/`): added `scripts/extract_html_text.py` + skill `extract-reference-html` (extract\u2192read\u2192attribute\u2192scratch-discipline; notes `/tmp` is denied). In its rollout, the `skill` tool failed twice with an infrastructure \"Transport error (ripgrep download)\"; the agent fell back to reading SKILL.md directly, then successfully ran the extractor (Google HTML \u2192 95 lines; MS HTML \u2192 178 lines vs 1000+ raw \u2014 big budget saving), then ran `normalize_delimited.py` on all 4 CSVs (counts: changelog 14, tickets 10, review 15, terminology 15 rows, all fully filled) \u2014 **rollout ends there; produced only scratch files (`scratch_google_style.txt`, `scratch_ms_style.txt`), NO deliverables** (confirmed by `pool/dom1/produced.md`).\n- Base harness is essentially empty \"v0\" (all always-on files contain only HTML comments); base `skills/`, `scripts/`, `plugin/`, `sub_agents/` contain only READMEs.\n\n## Accomplished\n\n- Read MISSION.md, explored full file tree, read `context/task.md`, all 4 base always-on harness files + READMEs.\n- Read the full base rollout + its deliverables file (base produced nothing).\n- Read dom1 rollout (lines 1\u20131609, complete) + dom1 `produced.md`.\n- **Still to do**: read `pool/inv1/rollout.md`, `pool/inv1/produced.md`, and inv1 harness files (`scripts/summarize_openapi.py`, `sub_agents/style-guide-extract/AGENT.md`, its `verify-deliverables` SKILL.md, `harness.diff`); read `context/decisions/dom1.md` and `inv1.md`; read `pool/dom1/harness.diff`; browse `context/library/INDEX.md` and `technical_writers__task1` harness + `EXCEPTIONS/EXPERIENCE.md`; read dom1's `scripts/extract_html_text.py` and `skills/extract-reference-html/SKILL.md` as text (already saw SKILL.md content via rollout) and inv1's scripts; then decide merged harness, apply edits to `/work/context/harness/`, write final `<notes>` block, and save it verbatim to `/work/output/answer.md`.\n\n## Relevant files / directories\n\n- `/work/MISSION.md` \u2014 governing instructions (read, full)\n- `/work/context/task.md` \u2014 the real task (read)\n- `/work/context/harness/` \u2014 the harness to edit (all 4 always-on files read; empty v0)\n- `/work/context/rollouts/base1.md`, `/work/context/deliverables/base1.md` \u2014 read (base: no deliverable)\n- `/work/context/pool/dom1/` \u2014 rollout.md, produced.md read; harness files (systemprompt.md, guardrails.md, scripts/extract_html_text.py, scripts/normalize_delimited.py, skills/extract-reference-html/SKILL.md, skills/verify-deliverables/SKILL.md, harness.diff) NOT yet read directly\n- `/work/context/pool/inv1/` \u2014 NOT yet read (rollout.md, produced.md, harness/, harness.diff)\n- `/work/context/decisions/dom1.md`, `/work/context/decisions/inv1.md` \u2014 NOT yet read\n- `/work/context/library/INDEX.md` and `/work/context/library/harnesses/technical_writers__task1/` \u2014 NOT yet read\n- `/work/context/source/` \u2014 task source materials (contents largely seen via rollouts; `references/*.html` are the raw HTML traps)\n- `/work/output/answer.md` \u2014 must receive the final `<notes>` block verbatim (not yet created)\n\nThe previous request exceeded the provider's size limit due to large media attachments. The conversation was compacted and media files were removed from context. If the user was asking about attached images or files, explain that the attachments were too large to process and suggest they try again with smaller or fewer files.\n\nContinue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.\n\nContinuing \u2014 next step is reading the inv1 candidate and the decision memos.\n\ninv1's rollout shows a **successful full run** (all 3 deliverables produced) using its subagent + OpenAPI summarizer. Now reading the rest of the inv1 rollout and its produced.md tail, plus the harness diffs.\n\ninv1's run completed all 3 deliverables with a verification pass (fell back to manual verification when the skill tool hit the same transport error). Now let me read the rest of inv1's rollout and inventory both candidate harnesses.\n\nThe inv1 rollout ended successfully: all 3 deliverables in `/work/output` (35/174/772 lines), verification done manually after the skill transport failure, plus a final style-keyword sweep. Now reading both candidates' harness files.",
+          "error": ""
+        }
+      ],
+      "similarity": {
+        "n": 1,
+        "n_distinct": 1,
+        "mean_line_jaccard": 1.0
+      },
+      "ledger": {
+        "mode": "agg",
+        "task_id": "technical_writers/task2",
+        "k": 1,
+        "R": 4,
+        "expected_R": 4,
+        "P": 3,
+        "session_attempts": 3,
+        "expected_P": 3,
+        "usd": 0.255143,
+        "rollout_usd": 0.0,
+        "session_usd": 0.255143,
+        "rollouts": [
+          "base1",
+          "inv1",
+          "dom1",
+          "agg1"
+        ],
+        "sessions": [
+          "inv1",
+          "dom1",
+          "agg1"
+        ]
+      },
+      "errors": []
+    }
+  },
+  "selections": {
+    "agg": {
+      "task_id": "technical_writers/task2",
+      "mode": "agg",
+      "k": 1,
+      "chosen_id": "",
+      "chosen_label": "",
+      "chosen_run_id": "",
+      "chosen_is_base": false,
+      "why": "",
+      "id_map": {},
+      "dropped": [
+        "agg1"
+      ],
+      "n_candidates": 0,
+      "ok": false,
+      "fallback": false,
+      "error": "no candidate produced an artifact (finals-only pool has no base fallback)",
+      "usd": 0.0,
+      "experience": {},
+      "trivial": true,
+      "evidence": "deliverable",
+      "chosen_run_dir": "",
+      "chosen_tree_is_base": true
+    }
+  },
+  "errors": [
+    "agg: selection failed: no candidate produced an artifact (finals-only pool has no base fallback)"
+  ]
+}

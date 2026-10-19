@@ -1,0 +1,123 @@
+{
+  "task_id": "technical_writers/task2",
+  "domain": "technical_writers",
+  "k": 1,
+  "seed": 42,
+  "status": "partial",
+  "base": [
+    {
+      "label": "base1",
+      "run_id": "jb-oc-agg1-s42-diagnostics/technical_writers/task2/base1",
+      "run_dir": "evidence/arms/diagnostics/dataset/technical_writers/task2/model_output/jb-oc-agg1-s42-diagnostics__technical_writers__task2__base1"
+    }
+  ],
+  "modes": {
+    "agg": {
+      "mode": "agg",
+      "task_id": "technical_writers/task2",
+      "k": 1,
+      "finals": [
+        "agg1"
+      ],
+      "ok": true,
+      "fell_back": [],
+      "kept_base": [
+        "agg1"
+      ],
+      "stages": [
+        {
+          "label": "inv1",
+          "dim": "INV",
+          "fell_back": false,
+          "kept_base": false,
+          "attempts": 1,
+          "usd": 0.089388,
+          "cached": false,
+          "notes": "Evidence base: one rollout (context/rollouts/base1.md) under an empty v0 harness. Its shape: a thorough input inventory (11 sequential reads + 1 bash call, lines 1-1272), then two long generation turns (74.4s invoke_agent span, final chat 64.9s in the stored diagnostics) with zero write calls -- deliverable_present: false, and context/deliverables/base1.md records \"(no deliverable produced)\". The failure to fix is not discovery or analysis; it is that the run ended with every requested artifact unwritten. All changes below target that invariant failure mode; none encode task-specific Petstore facts.\n\n1. systemprompt.md (new c1) -- motivated by the base1 ending: full inventory done, then ~139s of generation and no file. Adds a compact always-on procedure (inventory -> manifest -> programmatic reconciliation -> write-early -> reopen-verify) so the ordering the rollout lacked is stated once, cheaply, plus the two skill trigger lines required by validation (deliverables, pinned-references). Kept to ~20 lines because budget exhaustion is the failure being fixed.\n\n2. guardrails.md (new c6) -- same moment (base1: no write call ever made, deliverable_present: false). Five imperative rules that make the skipped step explicit and non-ignorable: an unwritten requested deliverable is a failed turn; compose inside files, never as chat text; reopen after every write; reconcile every figure to its source; do not end with unverified writes.\n\n3. tool_descriptions/tool_guidance.md (new c4) -- motivated by base1's context handling: the 741-line OpenAPI spec read whole (line 515) and the improvised HTML extraction whose output carried full site chrome into context (lines 1273-1853). Three lines: slice or script large reads; prefer one deterministic saved script over repeated improvised one-liners; read back after writes.\n\n4. skills/pinned-references/ + scripts/html_to_text.py -- motivated by the bash moment at base1 line 1272: the agent improvised a bespoke python one-liner to mine the two pinned HTML style-guide snapshots, and the result dumped navigation menus, language switchers and cookie-banner text into context (visible at lines 1276-1348, 1551-1637). A deterministic extractor (verified: 77KB HTML -> 98 lines of main text) plus a rule-mining checklist makes this recurring mechanical operation reproducible and cheap. Generalizes to any task that ships pinned reference snapshots.\n\n5. skills/deliverables/ + scripts/write_csv.py -- motivated by the same fatal ending, plus the workspace's demand for exact CSV schemas (task.md deliverable 3: named columns, exact order). The skill holds the detailed write-early/verify mechanics off the always-on budget and loads only when drafting starts; write_csv.py makes the recurring \"emit a CSV with exactly the requested columns\" operation deterministic (schema-checked: refuses rows with missing/extra columns and prints the final row count -- behavior verified by test). Both scripts py_compile clean.\n\n6. plugin/output_tracker.ts -- the unskippable backstop for the one moment prose could not fix: base1 reached its final composition turn with zero files in the output directory. The plugin injects the live output-directory state into the system prompt each turn (hook signature verified against @opencode-ai/plugin: output.system is string[]; type-checked with strict tsc, zero errors in the plugin file): when empty, one line says to write the first deliverable before composing long prose; once files exist, it lists them as the manifest state. Runs in the tool loop, so unlike prompt rules it cannot be skipped; fully guarded so a snapshot failure no-ops instead of breaking the run.\n\n7. Left untouched, deliberately: LongTermMEMORY.md (durable domain facts are the other proposer's dimension; nothing in my evidence is a generalizable domain fact), sub_agents/ (no rollout showed a bounded sub-task drowning context and returning a small answer -- base1's failure was missing output, not context overflow, and a subagent would have added an extra episode to a budget-starved run), top-level scripts/ (helpers ship with the skills that invoke them, per validation rule 3).",
+          "error": ""
+        },
+        {
+          "label": "dom1",
+          "dim": "DOM",
+          "fell_back": false,
+          "kept_base": false,
+          "attempts": 1,
+          "usd": 0.03894,
+          "cached": false,
+          "notes": "Domain-editor proposal for the API/developer-documentation occupational domain. Evidence base: task.md, the nine source files in context/source/, and the single full rollout rollouts/base1.md (deliverables/base1.md records \"no deliverable produced\"). No context/library/ exists \u2014 this is the domain's first task, so there are no earlier components to reuse.\n\nDiagnosis of base1: the rollout read every source file in full, in sequence, ending with a bash HTML extraction of the two pinned style-guide snapshots whose output was capped at 50 KB, followed by one long final generation \u2014 and then the run ended with deliverable_present: false and zero files written. The failure is the mission's stated worst case (budget exhausted on ingestion and reasoning before any deliverable existed), and nothing in the v0 harness gave the writer a deliverable structure, a source hierarchy, or an economic way to consume the snapshots. Every change below traces to that trajectory.\n\n1. systemprompt.md (was empty) \u2014 added a four-step discipline: define the deliverable set and skeletons before ingesting sources; read each source at the depth its role demands; write skeleton files early and deepen in place; keep every statement traceable. Motivating moments: (a) the rollout ingested all nine sources before producing anything and never wrote a file (rollout end, deliverable_present: false); (b) task.md names three exact deliverable filenames that were never opened for writing. The source-depth rule is the domain-specific form of context economy: it tells the writer what a technical writer reads closely (the spec) versus scans (metrics, tickets) versus never ingests whole (style snapshots). Carries the four required trigger lines verbatim, same edit as the skills.\n\n2. guardrails.md (was empty) \u2014 added always-on quality-control rules for this occupation: deliverables are files at exact requested names; reopen-and-verify before finishing; no priority judgment without a cited number; terminology list as final pass with spec identifier spellings preserved; documentation-caused ticket failures surfaced in the endpoint section, not an appendix; no transcribing snapshots. Motivating moments: task.md's exact-filename deliverables and its demands to apply terminology standards and surface ticket failures \"directly in the relevant endpoint sections\"; the mission's reopen-the-final-files quality check, which the rollout never reached.\n\n3. LongTermMEMORY.md (was empty) \u2014 added the durable source hierarchy of API documentation work (spec authoritative for shapes; changelog for change facts and doc status; metrics for quantitative impact; tickets for evidence; terminology list binding; pinned snapshots as the only style authority), the ticket-symptom vs changelog-cause reconciliation rule, and the files-not-prose deliverable fact. Grounded entirely in the workspace's own file set and task.md line 9 (\"resolving ambiguity where ticket descriptions do not perfectly align with changelog entries\"); no formula, rate or format asserted from memory.\n\n4. skills/migration-guide/SKILL.md \u2014 new. Trigger line added in systemprompt.md. Encodes the standalone-document structure (auth/base-URL changes first, per-change sections with affected consumers, observed failure mode, numbered steps, before/after examples, verification section) and the changelog-to-metrics-to-tickets join with the ambiguity rule. Motivating moment: task.md's standalone-guide requirement and cross-reference mandate; the rollout never reached any structuring, so the structure would otherwise be improvised or skipped.\n\n5. skills/api-reference-revision/SKILL.md \u2014 new. Trigger line added in systemprompt.md. Encodes the revision procedure: review-item inventory with visible per-ID resolution, spec-over-draft authority, changelog undocumented-row sweep into endpoint or shared sections, style pass from extracted snapshot rules, the reference-article section shape taken from the pinned Microsoft guideline snapshot, ticket failures surfaced in-section, expanded troubleshooting for elevated-error endpoints, terminology pass last, completeness checks. Motivating moments: the rollout read doc_review_feedback.csv (15 items) and petstore_openapi.yaml (741 lines) but had no procedure to turn them into the revised reference; task.md's requirements on review feedback, undocumented changes, style guides and elevated error rates.\n\n6. skills/doc-impact-prioritization/SKILL.md \u2014 new. Trigger line added in systemprompt.md. Encodes gap de-duplication across the three issue sources, native ID preservation, metrics-copied-never-estimated quantification, an explicitly stated P0-P3 mapping before scoring (the task does not define the levels, so the mapping must be declared, not recalled), number-citing justifications, deprecated-terms boolean verdicts, and CSV mechanics (exact headers, quoting, consistent machine-readable values, reopen-and-verify). Motivating moment: task.md's third deliverable with its exact column list; the rollout produced no CSV and had no mechanics for one.\n\n7. skills/style-snapshot-rules/SKILL.md \u2014 new. Trigger line added in systemprompt.md. Encodes extracting only the operative rules (summary/highlights section plus rules tables) from pinned snapshots, recording each rule with its source, applying snapshot-only rules with the terminology list winning word-choice conflicts. Motivating moment: the rollout's final bash action \u2014 a full-text extraction of both HTML snapshots whose output was capped at 50 KB \u2014 was the last tool call before the run died without writing anything; the two snapshots (~77 KB and ~56 KB of HTML) are the single largest context sink in the trajectory.\n\nDeliberately untouched, per dimension boundaries: tool_descriptions/tool_guidance.md (tool prose is the other proposer's), and no scripts/, sub_agents/, or plugin/ components (explicitly outside my dimension). No script is named anywhere, so the every-script-exists rule holds trivially. Validation performed: no template braces in any always-on file; all four trigger lines present verbatim in systemprompt.md in the same edit as the skills; skill directory names match frontmatter names.",
+          "error": ""
+        },
+        {
+          "label": "agg1",
+          "dim": "AGG",
+          "fell_back": false,
+          "kept_base": true,
+          "attempts": 1,
+          "usd": 0.030483,
+          "cached": false,
+          "notes": "Both base and inv1 produced no deliverable; dom1 did. Let me read the rest of the base rollout to see why.\n\nBase read all sources then produced nothing (`deliverable_present: false`). Now the two candidates.\n\nNow the candidate rollouts. First inv1 \u2014 it produced nothing, so I need to see what happened.\n\ninv1 also died in ingestion with 0 deliverables. Now the dom1 rollout \u2014 the one that produced output.",
+          "error": ""
+        }
+      ],
+      "similarity": {
+        "n": 1,
+        "n_distinct": 1,
+        "mean_line_jaccard": 1.0
+      },
+      "ledger": {
+        "mode": "agg",
+        "task_id": "technical_writers/task2",
+        "k": 1,
+        "R": 4,
+        "expected_R": 4,
+        "P": 3,
+        "session_attempts": 3,
+        "expected_P": 3,
+        "usd": 0.158811,
+        "rollout_usd": 0.0,
+        "session_usd": 0.158811,
+        "rollouts": [
+          "base1",
+          "inv1",
+          "dom1",
+          "agg1"
+        ],
+        "sessions": [
+          "inv1",
+          "dom1",
+          "agg1"
+        ]
+      },
+      "errors": []
+    }
+  },
+  "selections": {
+    "agg": {
+      "task_id": "technical_writers/task2",
+      "mode": "agg",
+      "k": 1,
+      "chosen_id": "",
+      "chosen_label": "",
+      "chosen_run_id": "",
+      "chosen_is_base": false,
+      "why": "",
+      "id_map": {},
+      "dropped": [
+        "agg1"
+      ],
+      "n_candidates": 0,
+      "ok": false,
+      "fallback": false,
+      "error": "no candidate produced an artifact (finals-only pool has no base fallback)",
+      "usd": 0.0,
+      "experience": {},
+      "trivial": true,
+      "evidence": "deliverable",
+      "chosen_run_dir": "",
+      "chosen_tree_is_base": true
+    }
+  },
+  "errors": [
+    "agg: selection failed: no candidate produced an artifact (finals-only pool has no base fallback)"
+  ]
+}

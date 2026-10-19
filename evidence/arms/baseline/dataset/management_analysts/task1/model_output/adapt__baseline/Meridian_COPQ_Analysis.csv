@@ -1,0 +1,6 @@
+Plant,Scrap_Units,Avg_Raw_Material_Cost_per_Unit_USD,Scrap_Cost_USD,Reworked_Units,Avg_Labor_Cost_per_Unit_USD,Rework_Cost_USD,Customer_Returns_Units,Return_Cost_USD,Complaints_Critical_Count,Complaints_High_Count,Complaints_Medium_Count,Complaints_Low_Count,Complaint_Cost_USD_SevWeighted,Unplanned_Downtime_Hours,Avg_Hourly_Labor_Cost_USD,Downtime_Cost_USD,Total_COPQ_USD,Total_Production_Cost_USD,COPQ_Pct_of_Total_Production_Cost
+Nashville TN,89.0,36.85,3279.85,472.0,18.94,3575.82,288.0,10613.45,0.0,0.0,6.0,2.0,6500.0,314.8,53.9,16967.16,40936.28,2825693.22,1.45
+Columbus OH,331.0,39.05,12925.06,762.0,23.3,7101.08,576.0,22491.95,1.0,10.0,2.0,2.0,32500.0,757.0,60.23,45595.38,120613.47,3341719.05,3.61
+Portland OR,273.0,38.82,10597.29,789.0,23.75,7494.37,690.0,26784.36,5.0,6.0,6.0,3.0,46750.0,580.2,68.34,39653.4,131279.42,3078126.46,4.26
+Phoenix AZ,318.0,42.58,13540.31,1213.0,25.35,12301.72,558.0,23759.42,7.0,3.0,7.0,1.0,49750.0,512.6,71.7,36754.66,136106.11,2960424.21,4.6
+ALL PLANTS (TOTAL),1011.0,39.19,40342.52,3236.0,22.68,30472.99,2112.0,83649.18,13.0,19.0,21.0,8.0,135500.0,2164.6,63.01,138970.61,428935.29,12205962.94,3.51

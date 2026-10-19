@@ -1,0 +1,1337 @@
+{
+ "hire_trigger_divisions": [
+  {
+   "Department": "Transportation",
+   "Division": "Road Maintenance",
+   "Authorized_Positions": 54,
+   "Filled_Positions": 46,
+   "Vacancy_Rate_Pct": 14.8,
+   "vacant": 8
+  },
+  {
+   "Department": "Transportation",
+   "Division": "Traffic Engineering",
+   "Authorized_Positions": 26,
+   "Filled_Positions": 22,
+   "Vacancy_Rate_Pct": 15.4,
+   "vacant": 4
+  },
+  {
+   "Department": "Transportation",
+   "Division": "Public Transit",
+   "Authorized_Positions": 38,
+   "Filled_Positions": 32,
+   "Vacancy_Rate_Pct": 15.8,
+   "vacant": 6
+  },
+  {
+   "Department": "Transportation",
+   "Division": "Planning & Design",
+   "Authorized_Positions": 16,
+   "Filled_Positions": 14,
+   "Vacancy_Rate_Pct": 12.5,
+   "vacant": 2
+  },
+  {
+   "Department": "Health Services",
+   "Division": "Clinical Services",
+   "Authorized_Positions": 44,
+   "Filled_Positions": 36,
+   "Vacancy_Rate_Pct": 18.2,
+   "vacant": 8
+  },
+  {
+   "Department": "Health Services",
+   "Division": "Environmental Health",
+   "Authorized_Positions": 22,
+   "Filled_Positions": 19,
+   "Vacancy_Rate_Pct": 13.6,
+   "vacant": 3
+  },
+  {
+   "Department": "Health Services",
+   "Division": "Community Outreach",
+   "Authorized_Positions": 18,
+   "Filled_Positions": 15,
+   "Vacancy_Rate_Pct": 16.7,
+   "vacant": 3
+  },
+  {
+   "Department": "Health Services",
+   "Division": "Epidemiology & Data",
+   "Authorized_Positions": 12,
+   "Filled_Positions": 10,
+   "Vacancy_Rate_Pct": 16.7,
+   "vacant": 2
+  }
+ ],
+ "hire_trigger_counts": {
+  "n_divisions": 8,
+  "vacant": 36,
+  "by_dept": {
+   "Health Services": 16,
+   "Transportation": 20
+  }
+ },
+ "ot_trigger": {
+  "Parks & Recreation": {
+   "ot_pct": 6.05,
+   "months_over10": 0
+  },
+  "Sanitation": {
+   "ot_pct": 9.79,
+   "months_over10": 5
+  },
+  "Transportation": {
+   "ot_pct": 8.36,
+   "months_over10": 2
+  },
+  "Health Services": {
+   "ot_pct": 7.13,
+   "months_over10": 0
+  },
+  "Fire Department": {
+   "ot_pct": 14.57,
+   "months_over10": 12
+  }
+ },
+ "a311": {
+  "total": 500,
+  "closed": 437,
+  "open_prog": 63,
+  "avg_res": 10.79,
+  "med_res": 7.0,
+  "p90_res": 30.4,
+  "sat": 3.63,
+  "backlog_over30": 58,
+  "backlog_over90": 47,
+  "oldest_open": 365,
+  "by_dept": {
+   "Health Services": {
+    "n": 75,
+    "res": 12.0,
+    "sat": 3.72,
+    "open": 9
+   },
+   "Transportation": {
+    "n": 126,
+    "res": 13.6,
+    "sat": 3.36,
+    "open": 14
+   },
+   "Parks & Recreation": {
+    "n": 99,
+    "res": 12.5,
+    "sat": 3.55,
+    "open": 15
+   },
+   "Sanitation": {
+    "n": 148,
+    "res": 9.0,
+    "sat": 3.64,
+    "open": 18
+   },
+   "Fire Department": {
+    "n": 52,
+    "res": 3.8,
+    "sat": 4.23,
+    "open": 7
+   }
+  },
+  "vac_res_corr": 0.67,
+  "vac_sat_corr": -0.52
+ },
+ "bad_processes": [
+  {
+   "Department": "Transportation",
+   "Process_Name": "Street Resurfacing Project",
+   "Avg_Cycle_Time_Days": 45.2,
+   "Target_Cycle_Time_Days": 30.0,
+   "On_Time_Pct": 48.3,
+   "Volume_Per_Month": 6,
+   "Error_Rate_Pct": 7.3,
+   "Automation_Level": "Manual"
+  },
+  {
+   "Department": "Sanitation",
+   "Process_Name": "Illegal Dumping Investigation",
+   "Avg_Cycle_Time_Days": 14.7,
+   "Target_Cycle_Time_Days": 10.0,
+   "On_Time_Pct": 54.2,
+   "Volume_Per_Month": 38,
+   "Error_Rate_Pct": 11.6,
+   "Automation_Level": "Manual"
+  },
+  {
+   "Department": "Transportation",
+   "Process_Name": "Transit Route Change Request",
+   "Avg_Cycle_Time_Days": 22.5,
+   "Target_Cycle_Time_Days": 15.0,
+   "On_Time_Pct": 55.1,
+   "Volume_Per_Month": 12,
+   "Error_Rate_Pct": 5.6,
+   "Automation_Level": "Manual"
+  },
+  {
+   "Department": "Sanitation",
+   "Process_Name": "Bulk Pickup Request",
+   "Avg_Cycle_Time_Days": 5.8,
+   "Target_Cycle_Time_Days": 3.0,
+   "On_Time_Pct": 58.1,
+   "Volume_Per_Month": 310,
+   "Error_Rate_Pct": 9.4,
+   "Automation_Level": "Manual"
+  },
+  {
+   "Department": "Fire Department",
+   "Process_Name": "Plan Review (New Construction)",
+   "Avg_Cycle_Time_Days": 14.8,
+   "Target_Cycle_Time_Days": 10.0,
+   "On_Time_Pct": 59.6,
+   "Volume_Per_Month": 24,
+   "Error_Rate_Pct": 6.4,
+   "Automation_Level": "Manual"
+  },
+  {
+   "Department": "Transportation",
+   "Process_Name": "Sidewalk Repair Request",
+   "Avg_Cycle_Time_Days": 28.4,
+   "Target_Cycle_Time_Days": 21.0,
+   "On_Time_Pct": 61.7,
+   "Volume_Per_Month": 34,
+   "Error_Rate_Pct": 3.9,
+   "Automation_Level": "Manual"
+  },
+  {
+   "Department": "Parks & Recreation",
+   "Process_Name": "Tree Removal Request",
+   "Avg_Cycle_Time_Days": 18.6,
+   "Target_Cycle_Time_Days": 14.0,
+   "On_Time_Pct": 62.4,
+   "Volume_Per_Month": 28,
+   "Error_Rate_Pct": 2.5,
+   "Automation_Level": "Manual"
+  },
+  {
+   "Department": "Health Services",
+   "Process_Name": "Environmental Complaint Investigation",
+   "Avg_Cycle_Time_Days": 9.8,
+   "Target_Cycle_Time_Days": 7.0,
+   "On_Time_Pct": 64.1,
+   "Volume_Per_Month": 52,
+   "Error_Rate_Pct": 7.9,
+   "Automation_Level": "Manual"
+  }
+ ],
+ "mmr": {
+  "dot_pothole_on_time": {
+   "indicator": "Street Condition - Pothole - % Meeting Time to Close (30 days)",
+   "fy": 2026,
+   "value": 100.0,
+   "ytd": 100.0,
+   "target": 98.0
+  },
+  "dot_pothole_wo": {
+   "indicator": "Pothole work orders",
+   "fy": 2026,
+   "value": 1932.0,
+   "ytd": 8050.0,
+   "target": NaN
+  },
+  "fdny_fire_resp": {
+   "indicator": "Average response time to structural fires (FDNY dispatch and travel time only) (minutes:seconds)",
+   "fy": 2026,
+   "value": 4.37,
+   "ytd": 4.35,
+   "target": 4.14
+  },
+  "fdny_ems_resp": {
+   "indicator": "Average response time to life-threatening medical emergencies by ambulances (FDNY dispatch and travel time only) (minutes:seconds)",
+   "fy": 2026,
+   "value": 9.32,
+   "ytd": 9.3,
+   "target": 6.55
+  },
+  "fdny_amb_turn": {
+   "indicator": "Average turnaround time for ambulances at hospitals (minutes:seconds)",
+   "fy": 2026,
+   "value": 40.03,
+   "ytd": 40.06,
+   "target": NaN
+  },
+  "dohmh_birth_cert": {
+   "indicator": "Average response time for birth certificates by mail/online/in person (days)",
+   "fy": 2026,
+   "value": 2.6,
+   "ytd": 2.6,
+   "target": 3.0
+  },
+  "dpr_rec_att": {
+   "indicator": "Recreation center attendance \u2014 Visitors",
+   "fy": 2026,
+   "value": 15808.0,
+   "ytd": 63034.0,
+   "target": NaN
+  }
+ },
+ "osc": {
+  "citywide_vac_jan24": 5.1,
+  "citywide_vac_peak": 8.4,
+  "citywide_vac_prepandemic": 2.0,
+  "vac_excl_doe_cuny": 4.6,
+  "program_vac": {
+   "Environmental Protection": [
+    7.3,
+    11.5
+   ],
+   "Transportation Services": [
+    6.7,
+    10.0
+   ],
+   "Health": [
+    8.6,
+    9.3
+   ],
+   "Parks & Cultural Activities": [
+    1.3,
+    1.8
+   ],
+   "Uniformed Agencies": [
+    1.7,
+    2.5
+   ],
+   "Social Services Agencies": [
+    9.9,
+    8.9
+   ]
+  },
+  "agency_vac": {
+   "DOT": 10.0,
+   "DOHMH": 9.3,
+   "DPR": 1.7,
+   "DSNY_uniform": 0.0,
+   "DSNY_civilian": 0.0,
+   "FDNY_uniform": 1.4,
+   "FDNY_civilian": 0.0
+  },
+  "ot_total_fy24": 1.8128,
+  "ot_total_fy21": 1.1131,
+  "ot_share_payroll_21": 7.0,
+  "ot_share_payroll_24": 10.8,
+  "fdny_fire_ext_ot_m": 323.4,
+  "fdny_fire_ext_ot_share": 40.3,
+  "fdny_fire_ext_ot_share21": 28.9,
+  "dsny_bldg_ot_share": 33.6,
+  "dsny_bldg_ot_share21": 18.8,
+  "fdny_attrition_pct_vs_prepandemic": 52.0,
+  "dcas_exam_days_21": 318,
+  "dcas_exam_days_23": 219,
+  "dcas_exam_days_24": 169,
+  "staffing_jan24": 284330,
+  "attrition_peak_fy22": 48864
+ },
+ "nyc_bench": {
+  "Parks & Recreation": {
+   "analog": "DPR (Parks & Recreation)",
+   "headcount": 4384,
+   "ps_budget": 1399694699.0,
+   "total_budget": 1910111056.0,
+   "ps_per_fte": 319273.0,
+   "total_per_fte": 435701.0,
+   "gf_per_fte": 46977.0,
+   "ratio_ps": 0.147,
+   "ratio_total": 0.1078
+  },
+  "Sanitation": {
+   "analog": "DSNY (Sanitation)",
+   "headcount": 10137,
+   "ps_budget": 3382983037.0,
+   "total_budget": 5733247869.0,
+   "ps_per_fte": 333726.0,
+   "total_per_fte": 565576.0,
+   "gf_per_fte": 48881.0,
+   "ratio_ps": 0.146,
+   "ratio_total": 0.0864
+  },
+  "Transportation": {
+   "analog": "DOT (Transportation)",
+   "headcount": 5117,
+   "ps_budget": 1820960028.0,
+   "total_budget": 4370084205.0,
+   "ps_per_fte": 355865.0,
+   "total_per_fte": 854032.0,
+   "gf_per_fte": 54288.0,
+   "ratio_ps": 0.153,
+   "ratio_total": 0.0636
+  },
+  "Health Services": {
+   "analog": "DOHMH (Health & Mental Hygiene)",
+   "headcount": 5355,
+   "ps_budget": 1854192630.0,
+   "total_budget": 8838855712.0,
+   "ps_per_fte": 346254.0,
+   "total_per_fte": 1650580.0,
+   "gf_per_fte": 67006.0,
+   "ratio_ps": 0.194,
+   "ratio_total": 0.0406
+  },
+  "Fire Department": {
+   "analog": "FDNY (Fire)",
+   "headcount": 17016,
+   "ps_budget": 6462239915.0,
+   "total_budget": 7481345274.0,
+   "ps_per_fte": 379774.0,
+   "total_per_fte": 439665.0,
+   "gf_per_fte": 80954.0,
+   "ratio_ps": 0.213,
+   "ratio_total": 0.1841
+  }
+ },
+ "A": {
+  "merged": {
+   "Community Wellness (Health + Parks)": {
+    "auth": 212,
+    "filled": 190,
+    "vac_rate": 10.4
+   },
+   "Public Works (Transportation + Sanitation)": {
+    "auth": 242,
+    "filled": 215,
+    "vac_rate": 11.2
+   },
+   "Fire (standalone)": {
+    "auth": 142,
+    "filled": 137,
+    "vac_rate": 3.5
+   }
+  },
+  "cw_ot_base": 979350.0,
+  "pw_ot_base": 1289856.25,
+  "cw_ot_cut_pct": 10,
+  "pw_ot_cut_pct": 20,
+  "cw_ot_savings": 97935.0,
+  "pw_ot_savings": 257971.25,
+  "fire_ot_unchanged": 2085312.0,
+  "ot_savings_total": 355906.25,
+  "admin_elim": 9,
+  "admin_avg_salary": 48002.0,
+  "admin_loaded_cost": 64803.0,
+  "admin_savings": 583225.28,
+  "fleet_otps_savings": 150000.0,
+  "one_time_cost": 750000.0,
+  "realization": {
+   "y1": 0.5,
+   "y2": 1.0,
+   "y3": 1.0
+  },
+  "steady_savings": 1089131.53,
+  "y1_net": -205434.24,
+  "y2_net": 1089131.53,
+  "y3_net": 1089131.53,
+  "cum3yr": 1972828.82,
+  "fte_reallocated": 24,
+  "fte_eliminated": 9,
+  "timeline_months": 24,
+  "complexity": 4,
+  "risk": 4,
+  "proc_proj": {
+   "Street Resurfacing Project": [
+    48.3,
+    56.0,
+    45.2,
+    39.0
+   ],
+   "Sidewalk Repair Request": [
+    61.7,
+    68.0,
+    28.4,
+    24.0
+   ],
+   "Transit Route Change Request": [
+    55.1,
+    63.0,
+    22.5,
+    19.0
+   ],
+   "Bulk Pickup Request": [
+    58.1,
+    66.0,
+    5.8,
+    4.7
+   ],
+   "Illegal Dumping Investigation": [
+    54.2,
+    60.0,
+    14.7,
+    12.0
+   ],
+   "Tree Removal Request": [
+    62.4,
+    69.0,
+    18.6,
+    15.5
+   ],
+   "Environmental Complaint Investigation": [
+    64.1,
+    70.0,
+    9.8,
+    8.4
+   ],
+   "Playground Equipment Inspection": [
+    78.2,
+    80.0,
+    8.5,
+    7.8
+   ]
+  },
+  "sla_gain_pp": 6.2,
+  "proc_fixed": 5,
+  "avg3yr_net": 657609.61
+ },
+ "B": {
+  "ot_cap_trigger": [
+   "Fire Department"
+  ],
+  "watch_list": [
+   "Sanitation"
+  ],
+  "ot_cap_pct": 13.0,
+  "fire_cap_h": 38773,
+  "fire_excess_h": 4670,
+  "fire_ot_cut_pct": 10.7,
+  "ot_cap_savings": 224160.0,
+  "hire_divs": 8,
+  "hire_vacancies": 36,
+  "fills_y1": 22,
+  "fills_y2": 36,
+  "vac_backfill_share": 0.25,
+  "t_fill_y1": 12,
+  "h_fill_y1": 10,
+  "t_ot_vac_savings": 96446.89,
+  "h_ot_vac_savings": 82092.19,
+  "ot_vac_savings": 178539.08,
+  "ot_vac_savings_y2": 292092.31,
+  "pools": [
+   {
+    "name": "Field Operations Pool",
+    "members": 24,
+    "from_": "Sanitation / Transportation / Parks field divisions",
+    "targets": "Illegal Dumping, Bulk Pickup, Pothole, Tree Removal surge capacity"
+   },
+   {
+    "name": "Inspection & Public Health Pool",
+    "members": 12,
+    "from_": "Health Services / Parks & Recreation",
+    "targets": "Environmental Complaint, Playground Inspection, Food Safety surge"
+   },
+   {
+    "name": "Fleet & Facilities Pool",
+    "members": 9,
+    "from_": "Sanitation / Transportation / Parks",
+    "targets": "Fleet Repair, Facility Reservation, equipment upkeep"
+   }
+  ],
+  "pool_total": 45,
+  "train_hours": 40,
+  "train_rate": 31.5,
+  "train_cost": 56700.0,
+  "train_refresh": 15000.0,
+  "hiring_team_cost": 234900.0,
+  "dashboard_cost": 40000.0,
+  "one_time_cost": 96700.0,
+  "realization": {
+   "y1": 1.0,
+   "y2": 1.0
+  },
+  "steady_costs": 249900.0,
+  "steady_savings": 516252.31,
+  "y1_savings": 346659.08,
+  "y1_net": 59.08,
+  "y2_net": 266352.31,
+  "y3_net": 266352.31,
+  "cum3yr": 532763.7,
+  "fte_reallocated": 48,
+  "timeline_months": 12,
+  "complexity": 2,
+  "risk": 2,
+  "proc_proj": {
+   "Street Resurfacing Project": [
+    48.3,
+    55.0,
+    45.2,
+    38.0
+   ],
+   "Sidewalk Repair Request": [
+    61.7,
+    68.0,
+    28.4,
+    23.0
+   ],
+   "Transit Route Change Request": [
+    55.1,
+    63.0,
+    22.5,
+    18.0
+   ],
+   "Bulk Pickup Request": [
+    58.1,
+    68.0,
+    5.8,
+    4.8
+   ],
+   "Illegal Dumping Investigation": [
+    54.2,
+    67.0,
+    14.7,
+    11.0
+   ],
+   "Tree Removal Request": [
+    62.4,
+    71.0,
+    18.6,
+    15.0
+   ],
+   "Environmental Complaint Investigation": [
+    64.1,
+    72.0,
+    9.8,
+    8.0
+   ],
+   "Plan Review (New Construction)": [
+    59.6,
+    66.0,
+    14.8,
+    12.5
+   ]
+  },
+  "sla_gain_pp": 8.3,
+  "proc_fixed": 6
+ },
+ "H": {
+  "name": "Proposal B + Public Works Fleet-Sharing Pilot (no governance merger)",
+  "elements": [
+   "All Proposal B interventions (OT cap, centralized hiring for the 8 triggering divisions, 3 cross-training pools)",
+   "Joint Fleet & Equipment Operations across Sanitation, Transportation and Parks maintenance divisions (shared maintenance bays, bulk parts/fuel contracting, pooled spare vehicles) - no merger of departments"
+  ],
+  "captures": {
+   "fleet_otps": 150000.0,
+   "pw_ot_half": 128985.62
+  },
+  "pilot_cost": 50000.0,
+  "steady_savings": 745237.93,
+  "y1_net": 89551.89,
+  "y2_net": 745237.93,
+  "y3_net": 745237.93,
+  "cum3yr": 1580027.75,
+  "complexity": 3,
+  "risk": 3,
+  "sla_gain_pp": 8.3,
+  "proc_fixed": 6,
+  "fte_reallocated": 60,
+  "avg3yr_net": 526675.92
+ },
+ "scores": {
+  "A": 3.2,
+  "B": 3.4,
+  "H": 3.6,
+  "detail": {
+   "A": {
+    "sav_pts": 4,
+    "sla_pts": 4
+   },
+   "B": {
+    "sav_pts": 1,
+    "sla_pts": 5
+   },
+   "H": {
+    "sav_pts": 3,
+    "sla_pts": 5
+   }
+  },
+  "weights": {
+   "savings": 0.3,
+   "sla": 0.3,
+   "complexity": 0.2,
+   "risk": 0.2
+  },
+  "savings_rubric": ">=900K=5, >=600K=4, >=400K=3, >=200K=2, >0=1 (3-yr avg annual net $)",
+  "sla_rubric": ">=8pp=5, >=6pp=4, >=4pp=3, >=2pp=2, >0=1 (avg on-time pp gain)",
+  "note": "Complexity/risk inverted 1(best)..5(worst); savings basis = 3-yr average annual net (captures Y1 investment drag)"
+ },
+ "monthly_ot": {
+  "months": [
+   "Jul-2023",
+   "Aug-2023",
+   "Sep-2023",
+   "Oct-2023",
+   "Nov-2023",
+   "Dec-2023",
+   "Jan-2024",
+   "Feb-2024",
+   "Mar-2024",
+   "Apr-2024",
+   "May-2024",
+   "Jun-2024"
+  ],
+  "ot_pct": {
+   "Parks & Recreation": [
+    8.0,
+    9.0,
+    7.1,
+    5.6,
+    4.2,
+    4.0,
+    4.0,
+    4.5,
+    4.6,
+    6.1,
+    7.5,
+    8.1
+   ],
+   "Sanitation": [
+    7.3,
+    7.3,
+    7.7,
+    9.2,
+    10.0,
+    13.5,
+    14.4,
+    12.7,
+    11.5,
+    8.9,
+    8.1,
+    6.8
+   ],
+   "Transportation": [
+    7.4,
+    7.3,
+    7.4,
+    8.1,
+    8.4,
+    10.2,
+    10.9,
+    9.4,
+    8.4,
+    7.8,
+    7.8,
+    7.2
+   ],
+   "Health Services": [
+    6.2,
+    6.7,
+    6.5,
+    7.5,
+    7.4,
+    8.3,
+    7.8,
+    7.6,
+    7.4,
+    7.0,
+    6.6,
+    6.4
+   ],
+   "Fire Department": [
+    14.2,
+    13.5,
+    14.2,
+    14.9,
+    15.1,
+    15.8,
+    14.8,
+    14.1,
+    13.0,
+    14.8,
+    15.8,
+    14.5
+   ]
+  },
+  "ot_cost": {
+   "Parks & Recreation": [
+    50570.0,
+    55250.0,
+    45240.0,
+    35588.0,
+    26358.0,
+    24798.0,
+    25610.0,
+    27592.0,
+    28925.0,
+    37310.0,
+    45142.0,
+    51578.0
+   ],
+   "Sanitation": [
+    39804.0,
+    39029.0,
+    41819.0,
+    50871.0,
+    54281.0,
+    73346.0,
+    79515.0,
+    71455.0,
+    63705.0,
+    49910.0,
+    45446.0,
+    37696.0
+   ],
+   "Transportation": [
+    48024.0,
+    46774.0,
+    48615.0,
+    51187.0,
+    52507.0,
+    65643.0,
+    70855.0,
+    60917.0,
+    53411.0,
+    48858.0,
+    48998.0,
+    47190.0
+   ],
+   "Health Services": [
+    39052.0,
+    40753.0,
+    39218.0,
+    46895.0,
+    44530.0,
+    50256.0,
+    46936.0,
+    48140.0,
+    46563.0,
+    44488.0,
+    39466.0,
+    39093.0
+   ],
+   "Fire Department": [
+    168720.0,
+    164160.0,
+    172944.0,
+    181008.0,
+    180816.0,
+    184176.0,
+    174528.0,
+    165504.0,
+    150768.0,
+    181248.0,
+    187152.0,
+    174288.0
+   ]
+  },
+  "ot_h": {
+   "Parks & Recreation": [
+    1556,
+    1700,
+    1392,
+    1095,
+    811,
+    763,
+    788,
+    849,
+    890,
+    1148,
+    1389,
+    1587
+   ],
+   "Sanitation": [
+    1284,
+    1259,
+    1349,
+    1641,
+    1751,
+    2366,
+    2565,
+    2305,
+    2055,
+    1610,
+    1466,
+    1216
+   ],
+   "Transportation": [
+    1382,
+    1346,
+    1399,
+    1473,
+    1511,
+    1889,
+    2039,
+    1753,
+    1537,
+    1406,
+    1410,
+    1358
+   ],
+   "Health Services": [
+    941,
+    982,
+    945,
+    1130,
+    1073,
+    1211,
+    1131,
+    1160,
+    1122,
+    1072,
+    951,
+    942
+   ],
+   "Fire Department": [
+    3515,
+    3420,
+    3603,
+    3771,
+    3767,
+    3837,
+    3636,
+    3448,
+    3141,
+    3776,
+    3899,
+    3631
+   ]
+  }
+ },
+ "a311_categories": [
+  {
+   "Department": "DHS",
+   "Category": "Food Safety",
+   "n": 15,
+   "res": 10.6,
+   "sat": 3.88,
+   "open_n": 1
+  },
+  {
+   "Department": "DHS",
+   "Category": "Mold/Air Quality",
+   "n": 6,
+   "res": 15.4,
+   "sat": 3.33,
+   "open_n": 1
+  },
+  {
+   "Department": "DHS",
+   "Category": "Noise Complaint",
+   "n": 19,
+   "res": 11.1,
+   "sat": 3.73,
+   "open_n": 4
+  },
+  {
+   "Department": "DHS",
+   "Category": "Restaurant Inspection Request",
+   "n": 13,
+   "res": 18.7,
+   "sat": 2.57,
+   "open_n": 2
+  },
+  {
+   "Department": "DHS",
+   "Category": "Rodent Sighting",
+   "n": 15,
+   "res": 10.7,
+   "sat": 4.25,
+   "open_n": 0
+  },
+  {
+   "Department": "DHS",
+   "Category": "Unsanitary Conditions",
+   "n": 2,
+   "res": 4.0,
+   "sat": 3.5,
+   "open_n": 0
+  },
+  {
+   "Department": "DHS",
+   "Category": "Water Quality Concern",
+   "n": 5,
+   "res": 6.2,
+   "sat": 4.33,
+   "open_n": 1
+  },
+  {
+   "Department": "DOT",
+   "Category": "Crosswalk Faded",
+   "n": 6,
+   "res": 23.8,
+   "sat": 2.0,
+   "open_n": 2
+  },
+  {
+   "Department": "DOT",
+   "Category": "Pothole",
+   "n": 36,
+   "res": 14.9,
+   "sat": 3.33,
+   "open_n": 4
+  },
+  {
+   "Department": "DOT",
+   "Category": "Road Debris",
+   "n": 9,
+   "res": 10.7,
+   "sat": 3.5,
+   "open_n": 0
+  },
+  {
+   "Department": "DOT",
+   "Category": "Sidewalk Damage",
+   "n": 20,
+   "res": 11.5,
+   "sat": 3.23,
+   "open_n": 3
+  },
+  {
+   "Department": "DOT",
+   "Category": "Street Sign Missing",
+   "n": 7,
+   "res": 13.1,
+   "sat": 3.43,
+   "open_n": 0
+  },
+  {
+   "Department": "DOT",
+   "Category": "Streetlight Outage",
+   "n": 31,
+   "res": 13.3,
+   "sat": 3.62,
+   "open_n": 3
+  },
+  {
+   "Department": "DOT",
+   "Category": "Traffic Signal Malfunction",
+   "n": 17,
+   "res": 13.1,
+   "sat": 3.3,
+   "open_n": 2
+  },
+  {
+   "Department": "DPR",
+   "Category": "Bench/Fountain Repair",
+   "n": 8,
+   "res": 15.8,
+   "sat": 2.8,
+   "open_n": 2
+  },
+  {
+   "Department": "DPR",
+   "Category": "Fallen Tree",
+   "n": 17,
+   "res": 10.1,
+   "sat": 4.0,
+   "open_n": 1
+  },
+  {
+   "Department": "DPR",
+   "Category": "Graffiti Removal",
+   "n": 16,
+   "res": 12.7,
+   "sat": 3.12,
+   "open_n": 5
+  },
+  {
+   "Department": "DPR",
+   "Category": "Overgrown Vegetation",
+   "n": 9,
+   "res": 10.8,
+   "sat": 3.4,
+   "open_n": 1
+  },
+  {
+   "Department": "DPR",
+   "Category": "Park Maintenance",
+   "n": 26,
+   "res": 16.0,
+   "sat": 3.54,
+   "open_n": 4
+  },
+  {
+   "Department": "DPR",
+   "Category": "Playground Equipment Damage",
+   "n": 19,
+   "res": 11.3,
+   "sat": 3.77,
+   "open_n": 1
+  },
+  {
+   "Department": "DPR",
+   "Category": "Trail Obstruction",
+   "n": 4,
+   "res": 4.0,
+   "sat": 3.67,
+   "open_n": 1
+  },
+  {
+   "Department": "DSNY",
+   "Category": "Bulk Item Pickup",
+   "n": 22,
+   "res": 9.7,
+   "sat": 3.91,
+   "open_n": 4
+  },
+  {
+   "Department": "DSNY",
+   "Category": "Illegal Dumping",
+   "n": 23,
+   "res": 9.4,
+   "sat": 3.8,
+   "open_n": 1
+  },
+  {
+   "Department": "DSNY",
+   "Category": "Litter on Street",
+   "n": 11,
+   "res": 6.6,
+   "sat": 3.5,
+   "open_n": 2
+  },
+  {
+   "Department": "DSNY",
+   "Category": "Missed Pickup",
+   "n": 43,
+   "res": 11.0,
+   "sat": 3.36,
+   "open_n": 3
+  },
+  {
+   "Department": "DSNY",
+   "Category": "Overflowing Bin",
+   "n": 17,
+   "res": 10.7,
+   "sat": 4.0,
+   "open_n": 2
+  },
+  {
+   "Department": "DSNY",
+   "Category": "Recycling Violation",
+   "n": 21,
+   "res": 6.0,
+   "sat": 3.75,
+   "open_n": 4
+  },
+  {
+   "Department": "DSNY",
+   "Category": "Street Sweeping Complaint",
+   "n": 11,
+   "res": 3.6,
+   "sat": 3.62,
+   "open_n": 2
+  },
+  {
+   "Department": "FDNY",
+   "Category": "Blocked Fire Exit",
+   "n": 2,
+   "res": 2.5,
+   "sat": 5.0,
+   "open_n": 0
+  },
+  {
+   "Department": "FDNY",
+   "Category": "Building Fire Safety Concern",
+   "n": 11,
+   "res": 7.1,
+   "sat": 3.83,
+   "open_n": 1
+  },
+  {
+   "Department": "FDNY",
+   "Category": "Carbon Monoxide Concern",
+   "n": 8,
+   "res": 2.2,
+   "sat": 4.33,
+   "open_n": 3
+  },
+  {
+   "Department": "FDNY",
+   "Category": "False Alarm Report",
+   "n": 3,
+   "res": 1.0,
+   "sat": 4.0,
+   "open_n": 1
+  },
+  {
+   "Department": "FDNY",
+   "Category": "Fire Hydrant",
+   "n": 18,
+   "res": 1.6,
+   "sat": 4.18,
+   "open_n": 2
+  },
+  {
+   "Department": "FDNY",
+   "Category": "Smoke Detector Request",
+   "n": 10,
+   "res": 5.8,
+   "sat": 4.5,
+   "open_n": 0
+  }
+ ],
+ "dept_metrics": {
+  "Parks & Recreation": {
+   "auth": 116,
+   "filled": 110,
+   "vac_rate": 5.2,
+   "avg_salary": 42850.0,
+   "payroll": 4713500,
+   "ot_cost": 453960.0,
+   "ot_pct": 6.05,
+   "ot_rate": 32.5,
+   "ot_per_filled": 4127.0,
+   "reg_h": 230751,
+   "ot_h": 13968,
+   "res_days": 12.5,
+   "sat": 3.55,
+   "sat_n": 58,
+   "sr_total": 99,
+   "sr_open": 5,
+   "sr_prog": 10,
+   "backlog_aged30": 14,
+   "backlog_aged90": 12,
+   "worst_proc": "Tree Removal Request",
+   "worst_on_time": 62.4,
+   "worst_cycle": 18.6,
+   "worst_target": 14.0,
+   "n_proc_below65": 1,
+   "avg_on_time": 74.6,
+   "per_emp_cost": 46977.0
+  },
+  "Sanitation": {
+   "auth": 108,
+   "filled": 101,
+   "vac_rate": 6.5,
+   "avg_salary": 42476.0,
+   "payroll": 4290100,
+   "ot_cost": 646877.0,
+   "ot_pct": 9.79,
+   "ot_rate": 31.0,
+   "ot_per_filled": 6405.0,
+   "reg_h": 213242,
+   "ot_h": 20867,
+   "res_days": 9.0,
+   "sat": 3.64,
+   "sat_n": 88,
+   "sr_total": 148,
+   "sr_open": 7,
+   "sr_prog": 11,
+   "backlog_aged30": 17,
+   "backlog_aged90": 14,
+   "worst_proc": "Illegal Dumping Investigation",
+   "worst_on_time": 54.2,
+   "worst_cycle": 14.7,
+   "worst_target": 10.0,
+   "n_proc_below65": 2,
+   "avg_on_time": 72.4,
+   "per_emp_cost": 48881.0
+  },
+  "Transportation": {
+   "auth": 134,
+   "filled": 114,
+   "vac_rate": 14.9,
+   "avg_salary": 48647.0,
+   "payroll": 5545800,
+   "ot_cost": 642979.25,
+   "ot_pct": 8.36,
+   "ot_rate": 34.75,
+   "ot_per_filled": 5640.0,
+   "reg_h": 221453,
+   "ot_h": 18503,
+   "res_days": 13.6,
+   "sat": 3.36,
+   "sat_n": 72,
+   "sr_total": 126,
+   "sr_open": 2,
+   "sr_prog": 12,
+   "backlog_aged30": 13,
+   "backlog_aged90": 11,
+   "worst_proc": "Street Resurfacing Project",
+   "worst_on_time": 48.3,
+   "worst_cycle": 45.2,
+   "worst_target": 30.0,
+   "n_proc_below65": 3,
+   "avg_on_time": 62.9,
+   "per_emp_cost": 54288.0
+  },
+  "Health Services": {
+   "auth": 96,
+   "filled": 80,
+   "vac_rate": 16.7,
+   "avg_salary": 60439.0,
+   "payroll": 4835100,
+   "ot_cost": 525390.0,
+   "ot_pct": 7.13,
+   "ot_rate": 41.5,
+   "ot_per_filled": 6567.0,
+   "reg_h": 177471,
+   "ot_h": 12660,
+   "res_days": 12.0,
+   "sat": 3.72,
+   "sat_n": 46,
+   "sr_total": 75,
+   "sr_open": 3,
+   "sr_prog": 6,
+   "backlog_aged30": 8,
+   "backlog_aged90": 6,
+   "worst_proc": "Environmental Complaint Investigation",
+   "worst_on_time": 64.1,
+   "worst_cycle": 9.8,
+   "worst_target": 7.0,
+   "n_proc_below65": 1,
+   "avg_on_time": 85.3,
+   "per_emp_cost": 67006.0
+  },
+  "Fire Department": {
+   "auth": 142,
+   "filled": 137,
+   "vac_rate": 3.5,
+   "avg_salary": 65733.0,
+   "payroll": 9005400,
+   "ot_cost": 2085312.0,
+   "ot_pct": 14.57,
+   "ot_rate": 48.0,
+   "ot_per_filled": 15221.0,
+   "reg_h": 298260,
+   "ot_h": 43444,
+   "res_days": 3.8,
+   "sat": 4.23,
+   "sat_n": 30,
+   "sr_total": 52,
+   "sr_open": 4,
+   "sr_prog": 3,
+   "backlog_aged30": 6,
+   "backlog_aged90": 4,
+   "worst_proc": "Plan Review (New Construction)",
+   "worst_on_time": 59.6,
+   "worst_cycle": 14.8,
+   "worst_target": 10.0,
+   "n_proc_below65": 1,
+   "avg_on_time": 79.3,
+   "per_emp_cost": 80954.0
+  }
+ },
+ "city": {
+  "auth": 596,
+  "filled": 542,
+  "vac_rate": 9.06,
+  "payroll": 28389900,
+  "ot_cost": 4354518.25,
+  "ot_pct": 9.59,
+  "res_days": 10.79,
+  "sat": 3.63,
+  "per_emp_cost": 60414.0
+ },
+ "mergedA": {
+  "Community Wellness (Health + Parks)": {
+   "auth": 212,
+   "filled": 190,
+   "vac_rate": 10.4
+  },
+  "Public Works (Transportation + Sanitation)": {
+   "auth": 242,
+   "filled": 215,
+   "vac_rate": 11.2
+  },
+  "Fire (standalone)": {
+   "auth": 142,
+   "filled": 137,
+   "vac_rate": 3.5
+  }
+ }
+}

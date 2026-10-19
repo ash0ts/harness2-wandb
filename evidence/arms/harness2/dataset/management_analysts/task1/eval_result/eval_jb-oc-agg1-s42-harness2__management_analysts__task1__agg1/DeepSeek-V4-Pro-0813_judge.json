@@ -1,0 +1,425 @@
+{
+  "evaluated_model": "jb-oc-agg1-s42-harness2__management_analysts__task1__agg1",
+  "judge_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+  "timestamp": "2026-10-19T15:29:52+00:00",
+  "total_score": 0,
+  "max_score": 88,
+  "pass_rate": "0%",
+  "passed_count": 0,
+  "total_count": 10,
+  "rubrics": [
+    {
+      "index": 0,
+      "rubric": "Does the Industry Benchmark tab correctly compute the FRED national capacity utilization average for Jan-Jun 2024 and compare each plant's utilization against it?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The FRED manufacturing capacity utilization (MCUMFN series) average for January–June 2024 must be approximately 75.8% (from values: 75.18, 76.08, 76.14, 75.68, 76.06, 75.87).",
+            "passed": true,
+            "reasoning": "The Industry Benchmark tab lists MCUMFN values for Jan-Jun 2024 and computes the average as 0.7583483333333334, which is approximately 75.8%. The monthly values match the expected values within rounding.",
+            "evidence": "Sheet 'Industry Benchmark' section A: Jan 0.751799, Feb 0.760838, Mar 0.761421, Apr 0.756821, May 0.760561, Jun 0.75865; average 0.7583483333333334; notes state 75.18, 76.08, 76.14, 75.68, 76.06, 75.86 avg 75.83%."
+          },
+          {
+            "index": 1,
+            "criterion": "Plant utilization must be computed as actual output hours divided by planned output hours: Nashville ~99.6%, Columbus ~94.5%, Portland ~94.6%, Phoenix ~91.2%.",
+            "passed": true,
+            "reasoning": "The tab defines capacity utilization as Actual Output Hours ÷ Planned Output Hours and reports plant values matching the expected percentages.",
+            "evidence": "Sheet 'Industry Benchmark' section B: Columbus OH 0.9445687929272945 (~94.5%), Nashville TN 0.9963545651517002 (~99.6%), Phoenix AZ 0.9119379561273251 (~91.2%), Portland OR 0.9464233718334465 (~94.6%)."
+          },
+          {
+            "index": 2,
+            "criterion": "The Industry Benchmark tab must present a comparison showing all four plants operate above the national average.",
+            "passed": true,
+            "reasoning": "The comparison table shows all four plants with a positive gap versus the FRED national average and labels each as above the national average.",
+            "evidence": "Sheet 'Industry Benchmark' section B: Columbus +18.6 pp, Nashville +23.8 pp, Phoenix +15.4 pp, Portland +18.8 pp; all rows say 'Above national average by ...'."
+          },
+          {
+            "index": 3,
+            "criterion": "The Industry Benchmark tab should note that Phoenix, despite being lowest among Meridian plants at ~91%, still exceeds the national benchmark, contextualizing its underperformance as relative to internal targets rather than absolute industry failure.",
+            "passed": false,
+            "reasoning": "Although the table shows Phoenix above the national average, the tab does not explicitly note that Phoenix is the lowest among Meridian plants or contextualize its underperformance as relative to internal targets rather than absolute industry failure.",
+            "evidence": "Sheet 'Industry Benchmark' section B lists Phoenix at 91.2% and above national average by 15.4 pp, but no note or text states that Phoenix is the lowest Meridian plant or frames its underperformance as relative to internal targets."
+          }
+        ],
+        "overall_reasoning": "Criteria 0-2 pass because the FRED average is correctly computed as approximately 75.8%, plant utilization values are correctly computed and match the expected percentages, and the tab shows all four plants above the national average. Criterion 3 fails because the required contextual note about Phoenix being the lowest Meridian plant but still above the national benchmark is not present."
+      }
+    },
+    {
+      "index": 1,
+      "rubric": "Does the analysis correctly position Meridian plants within the manufacturing defect dataset's 25th/50th/75th percentile distributions for DefectRate and DowntimePercentage?",
+      "weight": 6,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "From the 3,240-record benchmark dataset, the percentiles must be approximately: DefectRate — 25th: ~1.60%, 50th: ~2.71%, 75th: ~3.90%; DowntimePercentage — 25th: ~1.26%, 50th: ~2.47%, 75th: ~3.78%.",
+            "passed": true,
+            "reasoning": "The Industry Benchmark sheet lists the required percentile values for both DefectRate and DowntimePercentage.",
+            "evidence": "Industry 25th/50th/75th for DefectRate: 1.598, 2.7088, 3.9045; for DowntimePercentage: 1.2646, 2.4652, 3.7749."
+          },
+          {
+            "index": 1,
+            "criterion": "Meridian's plant-level defect rates (as percentage of production) must be reported: Nashville ~1.88%, Columbus ~4.05%, Portland ~4.22%, Phoenix ~5.47%.",
+            "passed": false,
+            "reasoning": "The plant-level defect rates are not correctly reported as percentages. The 'Defect rate % (H1)' column shows values like 0.040459 for Columbus, which is 0.040459%, not ~4.05%. The correct per-1,000 values are present but not the required percentage values.",
+            "evidence": "Industry Benchmark C: Columbus OH Defect rate % (H1) = 0.04045949214026602, Nashville = 0.01875240924242081, Phoenix = 0.05468536811657479, Portland = 0.042148129294986. These are off by 100x from the required ~4.05%, ~1.88%, ~5.47%, ~4.22%."
+          },
+          {
+            "index": 2,
+            "criterion": "Nashville must be positioned between the 25th and 50th industry percentiles (good), while Columbus, Portland, and Phoenix must be shown as exceeding the 75th percentile (worst quartile).",
+            "passed": true,
+            "reasoning": "For defect-rate positioning, Nashville is placed in the 2nd quartile (between 25th and 50th percentiles), while Columbus, Portland, and Phoenix are placed in the top quartile (worse than 75th percentile).",
+            "evidence": "Industry Benchmark C: Nashville percentile rank 0.3083, quartile position '2nd quartile'; Columbus 0.7806, Phoenix 1, Portland 0.8139, all 'Top quartile (worse than 75% of industry)'."
+          },
+          {
+            "index": 3,
+            "criterion": "The quartile positioning must be made explicit in the analysis — merely reporting raw numbers without percentile context does not satisfy this requirement.",
+            "passed": true,
+            "reasoning": "The analysis explicitly states quartile positions for each plant for both defect rate and downtime.",
+            "evidence": "Industry Benchmark C and D include 'Quartile position' columns with entries such as '2nd quartile', 'Top quartile (worse than 75% of industry)', and '3rd quartile'."
+          }
+        ],
+        "overall_reasoning": "The percentile distributions and explicit quartile positioning are present, but the plant-level defect rates are not correctly reported as percentages; the 'Defect rate %' column is off by 100x, so the rubric fails."
+      }
+    },
+    {
+      "index": 2,
+      "rubric": "Does the Complaint-Production Crossref correctly identify Portland OR as having the highest complaint rate per 1,000 units produced?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "Complaint rates per 1,000 units must be calculated as total complaints divided by total production volume multiplied by 1,000: Portland OR ~0.51/1,000 (20 complaints, ~39,290 units), Phoenix AZ ~0.49/1,000 (18 complaints, ~36,646 units), Columbus OH ~0.36/1,000 (15 complaints, ~41,350 units), Nashville TN ~0.18/1,000 (8 complaints, ~44,101 units).",
+            "passed": true,
+            "reasoning": "The complaint rates per 1,000 units are calculated correctly as total complaints divided by total production volume multiplied by 1,000. The summary table shows Portland OR 0.509, Phoenix AZ 0.491, Columbus OH 0.363, and Nashville TN 0.181, matching the expected values.",
+            "evidence": "Complaint-Production Crossref plant summary: Portland OR 20 complaints / 39,290 units = 0.5090353779587682; Phoenix AZ 18 / 36,646 = 0.4911859411668394; Columbus OH 15 / 41,350 = 0.3627569528415961; Nashville TN 8 / 44,101 = 0.1814017822725108."
+          },
+          {
+            "index": 1,
+            "criterion": "Portland must be identified as having the highest complaint rate, narrowly exceeding Phoenix.",
+            "passed": true,
+            "reasoning": "Portland OR is shown with the highest complaint rate per 1,000 units, narrowly exceeding Phoenix AZ. Although the sheet does not include an explicit sentence stating 'Portland has the highest rate,' the summary table clearly identifies Portland's rate as the highest.",
+            "evidence": "Portland OR rate = 0.5090353779587682 vs Phoenix AZ rate = 0.4911859411668394, a narrow difference of about 0.018 complaints per 1,000 units."
+          },
+          {
+            "index": 2,
+            "criterion": "The Complaint-Production Crossref should note Portland's 20 complaints include 5 Critical and 6 High severity.",
+            "passed": true,
+            "reasoning": "The Complaint-Production Crossref summary row for Portland OR includes severity counts showing 5 Critical and 6 High severity complaints out of 20 total complaints.",
+            "evidence": "Portland OR row: Low 3, Medium 6, High 6, Critical 5, Total complaints 20."
+          },
+          {
+            "index": 3,
+            "criterion": "Dimensional Tolerance must be identified as the most prevalent complaint category across the company (15 of 61 total), followed by Late Delivery (13 of 61 total), with Portland alone accounting for 9 of 13 Late Delivery complaints (69%).",
+            "passed": false,
+            "reasoning": "The output files do not contain any complaint category analysis identifying Dimensional Tolerance or Late Delivery. The Complaint-Production Crossref sheet only includes severity counts, complaint rates, downtime, and severity-weighted exposure, with no category-level breakdown.",
+            "evidence": "No occurrence of 'Dimensional Tolerance' or 'Late Delivery' appears in any provided output file, and no data supports the required finding that Dimensional Tolerance is the most prevalent category (15 of 61) or that Portland accounts for 9 of 13 Late Delivery complaints."
+          }
+        ],
+        "overall_reasoning": "Criteria 0, 1, and 2 pass because the Complaint-Production Crossref correctly calculates complaint rates, shows Portland OR with the highest rate narrowly above Phoenix AZ, and reports Portland's 20 complaints as including 5 Critical and 6 High severity. However, criterion 3 fails because the provided outputs do not include complaint category data for Dimensional Tolerance or Late Delivery, so the required category-level prevalence and Portland-specific Late Delivery contribution cannot be verified."
+      }
+    },
+    {
+      "index": 3,
+      "rubric": "Does the Trend Diagnostics tab identify Portland OR's deteriorating on-time delivery performance as a watch item, showing a clear negative month-over-month trend?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "Portland OR's monthly average OTD decline from ~92.7% in January to ~86.4% in June 2024 (a drop of over 6 percentage points) must be shown with the monthly progression: Jan ~92.7%, Feb ~92.5%, Mar ~90.8%, Apr ~89.8%, May ~88.0%, Jun ~86.4%.",
+            "passed": true,
+            "reasoning": "The Trend Diagnostics sheet shows Portland OR monthly OTD values for its three product lines. Averaging the three product-line OTDs yields Jan 92.7%, Feb 92.5%, Mar 90.8%, Apr 89.8%, May 88.0%, Jun 86.4%, a decline of over 6 percentage points.",
+            "evidence": "Portland OR Assembly Modules OTD: 92.3, 92.8, 91.1, 88.6, 85.7, 87.0; Custom Fabrication: 91.9, 93.2, 89.1, 89.5, 88.2, 87.9; Precision Components: 93.9, 91.6, 92.3, 91.3, 90.1, 84.3. Average = 92.7, 92.5, 90.8, 89.8, 88.0, 86.4."
+          },
+          {
+            "index": 1,
+            "criterion": "This consistent downward slope must be explicitly flagged as a watch item.",
+            "passed": true,
+            "reasoning": "All three Portland OR product lines are explicitly flagged as WATCH ITEM in the Trend Diagnostics sheet, and the plant-level trend slope shows OTD declining at 1.44 pp per month.",
+            "evidence": "Portland OR Assembly Modules, Custom Fabrication, and Precision Components rows all end with 'WATCH ITEM'; plant-level slope row: 'Portland OR, On-time delivery %, -1.4375, R² 0.9402, OTD declining at 1.44 pp per month'."
+          },
+          {
+            "index": 2,
+            "criterion": "The Trend Diagnostics tab should note this aligns with the VP memo's concern that Portland's OTD fell from 94.1% in Q3/Q4 2023 to an estimated 87.3% in Q1/Q2 2024, breaching the 92% SLA threshold.",
+            "passed": false,
+            "reasoning": "The Trend Diagnostics sheet does not mention the VP memo, the Q3/Q4 2023 OTD of 94.1%, the estimated Q1/Q2 2024 OTD of 87.3%, or the 92% SLA threshold. Therefore it does not note alignment with the VP memo's concern.",
+            "evidence": "No text in the Trend Diagnostics sheet references 'VP memo', '94.1%', '87.3%', or '92% SLA'."
+          },
+          {
+            "index": 3,
+            "criterion": "The trend must be characterized as indicating a systemic issue, not a one-time event.",
+            "passed": true,
+            "reasoning": "The watch-item rule requires deterioration across multiple month-over-month transitions and a worse Apr-Jun mean than Jan-Mar mean, which characterizes a persistent trend rather than a one-time event. The plant-level OTD slope has high R² (0.94), indicating a consistent downward trend.",
+            "evidence": "Trend Diagnostics rule: 'a metric is deteriorating when (a) the Apr–Jun mean is worse than the Jan–Mar mean by >0.5% relative AND (b) at least 3 of the 5 month-over-month transitions move in the deteriorating direction.' Portland OR OTD slope: -1.44 pp/month, R² = 0.94."
+          }
+        ],
+        "overall_reasoning": "The Trend Diagnostics tab does identify Portland OR's OTD decline as a watch item and shows a clear negative trend, but it fails to note the alignment with the VP memo's specific concern about Portland's OTD falling from 94.1% in Q3/Q4 2023 to 87.3% in Q1/Q2 2024 and breaching the 92% SLA threshold. Since criterion 2 fails, the rubric does not pass."
+      }
+    },
+    {
+      "index": 4,
+      "rubric": "Does the strategic memo address the plant consolidation question with a data-driven recommendation, weighing quantitative cost structure against qualitative factors like Phoenix's additive manufacturing capability?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 0,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The strategic memo must directly address the board's question about whether consolidating production across fewer plants might improve margins, with supporting evidence.",
+            "passed": false,
+            "reasoning": "The provided output files contain only data tables and diagnostic analyses, not a strategic memo. There is no memo text directly addressing the board's consolidation question or making a recommendation.",
+            "evidence": "Files present are Meridian_COPQ_Analysis.csv and Meridian_Diagnostic_Analysis_Q1Q2_2024.xlsx; no strategic memo file or narrative recommendation is included."
+          },
+          {
+            "index": 1,
+            "criterion": "The strategic memo must acknowledge that Phoenix has the highest cost per unit (~$81) and lowest OEE (~83%), but represents a strategic investment in additive manufacturing and advanced composites — capabilities not available at other plants.",
+            "passed": false,
+            "reasoning": "While the data show Phoenix AZ has the highest cost per unit and lowest OEE, there is no memo acknowledging Phoenix as a strategic investment in additive manufacturing and advanced composites.",
+            "evidence": "Plant Scorecard shows Phoenix AZ cost per unit 81.35843707362332 and OEE 0.8620682932970255, but no memo text discusses additive manufacturing or advanced composites."
+          },
+          {
+            "index": 2,
+            "criterion": "The memo must consider that Phoenix's workforce challenges (23.2% average turnover, 2.4-year average tenure) are ramp-up related, not structural, and that Columbus's equipment replacement needs (~$2.66M) would be required regardless of consolidation.",
+            "passed": false,
+            "reasoning": "The equipment data show Columbus replacement capital need, but no memo discusses Phoenix workforce challenges as ramp-up related or Columbus equipment replacement being required regardless of consolidation.",
+            "evidence": "Equipment Risk Matrix lists Columbus estimated capital need $2,664,924; no workforce turnover/tenure data or memo discussion is present."
+          },
+          {
+            "index": 3,
+            "criterion": "The memo should recommend against consolidation and instead advocate for targeted investment, explicitly citing both quantitative metrics and strategic rationale.",
+            "passed": false,
+            "reasoning": "There is no strategic memo recommending against consolidation or advocating targeted investment with quantitative and strategic rationale.",
+            "evidence": "No recommendation text exists in the provided output files; only data tables and diagnostic sheets are present."
+          }
+        ],
+        "overall_reasoning": "The rubric requires a strategic memo addressing the plant consolidation question with specific quantitative and qualitative reasoning. The provided output files contain only data analyses and no strategic memo, so none of the memo-content criteria can be satisfied."
+      }
+    },
+    {
+      "index": 5,
+      "rubric": "Does the analysis verify and correct any inaccuracies in David Chen's memo figures rather than uncritically repeating them?",
+      "weight": 8,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 0,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The response must flag that the VP memo claims Phoenix utilization is ~58%, but actual data shows Phoenix's utilization (actual vs. planned hours) is approximately 91.2% — and must not parrot the memo's 58% figure.",
+            "passed": false,
+            "reasoning": "The output files do not flag or correct the VP memo's Phoenix utilization claim. While the Plant Scorecard sheet shows Phoenix capacity utilization as 0.9119379561273251 (about 91.2%), there is no mention of the memo's ~58% figure or any explicit correction of it.",
+            "evidence": "Plant Scorecard sheet lists Phoenix AZ Capacity Utilization % (Actual ÷ Planned hrs) as 0.9119379561273251, but no text references the memo's 58% claim or states that it is inaccurate."
+          },
+          {
+            "index": 1,
+            "criterion": "The response should note that the memo states Portland OTD is ~87.3%, while the data shows Portland's average OTD is ~90.0% overall (with June at 86.4% as the low point).",
+            "passed": false,
+            "reasoning": "The output files do not note that the memo states Portland OTD is ~87.3% or compare it to the actual data. The data does show Portland average OTD around 90.0%, but the response does not identify or correct the memo figure.",
+            "evidence": "Plant Scorecard sheet lists Portland OR Avg On-Time Delivery % as 0.9016943497073047 (about 90.2%), and Trend Diagnostics monthly aggregates show Portland OTD values, but no memo comparison or correction is present."
+          },
+          {
+            "index": 2,
+            "criterion": "The response should acknowledge that the memo's claim of Columbus downtime increasing ~18% YoY cannot be verified from the provided data (only H1 2024 is available).",
+            "passed": false,
+            "reasoning": "The output files do not acknowledge that the memo's claim about Columbus downtime increasing ~18% YoY cannot be verified. The provided data covers only H1 2024, but the analysis does not state this limitation or address the memo claim.",
+            "evidence": "Trend Diagnostics and other sheets contain only Jan-Jun 2024 monthly data for Columbus OH; no prior-year data is included, and no statement says the YoY downtime claim is unverifiable."
+          },
+          {
+            "index": 3,
+            "criterion": "The analysis must explicitly distinguish which memo claims can and cannot be verified against the provided data, per the task instructions to 'verify these against actual data before citing them.'",
+            "passed": false,
+            "reasoning": "The analysis does not explicitly distinguish which memo claims can and cannot be verified against the provided data. The output files are data tables and calculations without any narrative verification or correction of memo figures.",
+            "evidence": "No sheet contains language such as 'memo', 'David Chen', '58%', '87.3%', '18% YoY', or 'cannot be verified'; the files simply present computed metrics without comparing them to the memo."
+          }
+        ],
+        "overall_reasoning": "The rubric fails because the output files do not perform the required verification and correction of David Chen's memo figures. Although the files contain actual data that could support corrections (e.g., Phoenix utilization 91.2%, Portland OTD ~90.2%), they never flag the memo's inaccurate claims, never address the unverifiable Columbus YoY downtime claim, and never explicitly distinguish verifiable from unverifiable memo statements."
+      }
+    },
+    {
+      "index": 6,
+      "rubric": "Does the analysis correctly identify Phoenix AZ's workforce instability — with an average turnover rate of ~23% and average tenure of only ~2.4 years — as a key contributing factor to its quality and productivity problems?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 0,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "Phoenix AZ's workforce metrics must be reported: average departmental turnover rate of ~23.2% (vs. ~9.2% Nashville, ~9.8% Columbus, ~16.4% Portland), average tenure of only ~2.4 years (vs. 6.0–12.5 years at other plants), and 18 part-time workers out of 171 total headcount.",
+            "passed": false,
+            "reasoning": "The output files do not report Phoenix AZ workforce metrics such as average departmental turnover rate, average tenure, or part-time vs total headcount. No turnover, tenure, headcount, or part-time worker data appears in any provided sheet.",
+            "evidence": "The provided files include COPQ data, Plant Scorecard, Trend Diagnostics, Industry Benchmark, Complaint-Production Crossref, and Equipment Risk Matrix. None contain fields for turnover rate (~23.2%), tenure (~2.4 years), or 18 part-time workers out of 171 total headcount."
+          },
+          {
+            "index": 1,
+            "criterion": "Despite having the highest average training hours per employee (~43.9 hrs), the analysis must note that high turnover means this training investment is being lost.",
+            "passed": false,
+            "reasoning": "The analysis does not mention training hours per employee, nor does it note that high turnover causes training investment to be lost. There is no training data in the output files.",
+            "evidence": "No sheet contains 'training hours' or any related metric. The claimed highest average training hours per employee (~43.9 hrs) is absent from all provided output files."
+          },
+          {
+            "index": 2,
+            "criterion": "The analysis must connect Phoenix's workforce metrics to its operational underperformance — particularly its worst defect rate (~54.7 per 1,000 units) and lowest OEE (~83%) — rather than treating quality and workforce as separate issues.",
+            "passed": false,
+            "reasoning": "The analysis does not connect Phoenix's workforce metrics to its operational underperformance because no workforce metrics are present. Phoenix's defect rate and OEE are shown, but they are not linked to turnover or tenure.",
+            "evidence": "Phoenix AZ appears in the Plant Scorecard with a defect rate of 54.685 per 1,000 units and OEE of 0.862, but no workforce instability analysis ties these operational results to turnover or tenure."
+          }
+        ],
+        "overall_reasoning": "The rubric requires the analysis to identify Phoenix AZ's workforce instability using specific turnover, tenure, headcount, and training metrics, and to connect those metrics to quality and productivity problems. The provided output files contain no workforce-related data at all, so none of the three criteria can be satisfied."
+      }
+    },
+    {
+      "index": 7,
+      "rubric": "Does the Trend Diagnostics analysis identify specific plant-product line combinations that are deteriorating on at least two metrics (defect rate, OTD%, target attainment) month-over-month?",
+      "weight": 8,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The Trend Diagnostics analysis must examine product-line-level combinations (not just plant-level aggregates) and calculate month-over-month trends for each combination.",
+            "passed": true,
+            "reasoning": "The Trend Diagnostics sheet contains product-line-level rows for each plant and product line, with monthly Jan-Jun values for defect rate, OTD%, and target attainment, plus deterioration flags. This goes beyond plant-level aggregates.",
+            "evidence": "Rows include Columbus OH Assembly Modules/Custom Fabrication/Precision Components, Nashville TN Assembly Modules/Custom Fabrication/Precision Components, Phoenix AZ Assembly Modules/Custom Fabrication/Precision Components, and Portland OR Assembly Modules/Custom Fabrication/Precision Components with monthly columns."
+          },
+          {
+            "index": 1,
+            "criterion": "Key deteriorating combinations must be identified, including: Portland OR-Precision Components (OTD declining from 93.9% in Jan to 84.3% in Jun, defect rate increasing from ~26.6 to ~55.5 per 1,000).",
+            "passed": true,
+            "reasoning": "Portland OR-Precision Components is explicitly identified as deteriorating and flagged as a watch item, with the required OTD decline and defect increase.",
+            "evidence": "Portland OR Precision Components row: Defect Jan 26.55 to Jun 55.51; OTD Jan 93.9 to Jun 84.3; Defect deteriorating? YES; OTD deteriorating? YES; Flags 2; WATCH ITEM."
+          },
+          {
+            "index": 2,
+            "criterion": "Additional deteriorating combinations should include: Columbus OH-Precision Components (defect rate volatile/worsening and OTD fluctuating) and Phoenix AZ-Custom Fabrication (target attainment declining and quality volatile).",
+            "passed": false,
+            "reasoning": "The analysis does not identify Columbus OH-Precision Components or Phoenix AZ-Custom Fabrication as additional deteriorating combinations. Columbus OH Precision Components is flagged only for OTD deterioration, not defect, and Phoenix AZ Custom Fabrication has no deterioration flags.",
+            "evidence": "Columbus OH Precision Components: Defect deteriorating? no, OTD deteriorating? YES, Attainment no, Flags 1, WATCH ITEM —. Phoenix AZ Custom Fabrication: Defect no, OTD no, Attainment no, Flags 0, WATCH ITEM —."
+          },
+          {
+            "index": 3,
+            "criterion": "Combinations meeting the dual-deterioration criterion (worsening on at least two of three metrics) must be explicitly flagged as 'watch items.'",
+            "passed": true,
+            "reasoning": "The output explicitly flags combinations meeting its dual-deterioration rule as WATCH ITEM, including Portland OR Precision Components, Assembly Modules, and Custom Fabrication.",
+            "evidence": "WATCH ITEM column present; Portland OR Assembly Modules, Custom Fabrication, and Precision Components all show Flags 2 and WATCH ITEM."
+          }
+        ],
+        "overall_reasoning": "The Trend Diagnostics analysis does examine product-line-level monthly trends and flags Portland OR watch items, but it fails to include the required additional deteriorating combinations (Columbus OH-Precision Components and Phoenix AZ-Custom Fabrication) as watch items or dual-deterioration findings. Therefore the rubric fails."
+      }
+    },
+    {
+      "index": 8,
+      "rubric": "Does the analysis identify Dimensional Tolerance and Late Delivery as the two most prevalent complaint categories, and correctly distinguish between plant-specific and systemic issues?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 0,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The complaint breakdown must be reported: Dimensional Tolerance (15), Late Delivery (13), Material Defect (10), Wrong Specification (8), Documentation Error (6), Surface Finish (5), Packaging Damage (4), with Dimensional Tolerance and Late Delivery together accounting for 28 of 61 complaints (46%).",
+            "passed": false,
+            "reasoning": "The required complaint category breakdown is not reported in any provided output file. The files contain complaint severity counts and plant totals, but no category-level counts such as Dimensional Tolerance, Late Delivery, Material Defect, etc.",
+            "evidence": "Complaint-Production Crossref sheet reports only Low/Medium/High/Critical totals: All plants 8 Low, 21 Medium, 19 High, 13 Critical, 61 total. No Dimensional Tolerance (15), Late Delivery (13), Material Defect (10), Wrong Specification (8), Documentation Error (6), Surface Finish (5), or Packaging Damage (4) breakdown appears."
+          },
+          {
+            "index": 1,
+            "criterion": "Systemic issues (appearing at all 4 plants) such as Dimensional Tolerance and Late Delivery must be distinguished from plant-specific patterns.",
+            "passed": false,
+            "reasoning": "The analysis does not distinguish systemic issues appearing at all four plants from plant-specific patterns. There is no mention of Dimensional Tolerance or Late Delivery as systemic categories, nor any cross-plant category comparison.",
+            "evidence": "No output file contains language identifying Dimensional Tolerance and Late Delivery as appearing at all 4 plants or as systemic issues. The Complaint-Production Crossref sheet only cross-references complaint volume/severity with production and downtime, not complaint categories."
+          },
+          {
+            "index": 2,
+            "criterion": "Plant-specific patterns must be identified: Columbus has a concentration of Material Defect (5); Phoenix has a disproportionate share of Wrong Specification (5 of 8) and the most Dimensional Tolerance complaints (6 of 15); Portland has the highest concentration of Late Delivery complaints (9 of 13).",
+            "passed": false,
+            "reasoning": "The required plant-specific complaint patterns are not identified. There is no statement that Columbus has a concentration of Material Defect, Phoenix has disproportionate Wrong Specification and most Dimensional Tolerance complaints, or Portland has the highest concentration of Late Delivery complaints.",
+            "evidence": "No sheet or file includes category-level plant detail such as Columbus Material Defect (5), Phoenix Wrong Specification (5 of 8) and Dimensional Tolerance (6 of 15), or Portland Late Delivery (9 of 13)."
+          },
+          {
+            "index": 3,
+            "criterion": "The analysis must distinguish between issues requiring company-wide process changes versus plant-targeted interventions.",
+            "passed": false,
+            "reasoning": "The analysis does not distinguish between company-wide process changes and plant-targeted interventions for complaint categories. No recommendations of this type are present.",
+            "evidence": "The provided outputs include operational diagnostics, trend flags, benchmarks, and equipment risk, but no section or statement separates company-wide process changes from plant-targeted interventions based on complaint categories."
+          }
+        ],
+        "overall_reasoning": "The rubric fails because none of the required complaint-category analysis is present in the output files. The files provide severity-based complaint summaries and operational/equipment diagnostics, but they do not report the required category breakdown, identify Dimensional Tolerance and Late Delivery as the most prevalent systemic categories, identify the specified plant-specific patterns, or distinguish company-wide versus plant-targeted interventions."
+      }
+    },
+    {
+      "index": 9,
+      "rubric": "Does the COPQ CSV include a summary row aggregating totals across all four plants?",
+      "weight": 6,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The COPQ CSV must include a clearly labeled summary row aggregating totals across all four plants, as explicitly required by the task.",
+            "passed": true,
+            "reasoning": "The CSV includes a clearly labeled summary row with Plant_ID 'ALL' and Plant_Name 'All Plants (Summary)', aggregating the four plant rows.",
+            "evidence": "Row: ALL,All Plants (Summary),1011,40342.51,3236,30472.99,2112,83649.18,13,19,21,8,135500.0,2164.6,63.01,136384.6,12273710.88,428935.28,3.49,2.66,161387"
+          },
+          {
+            "index": 1,
+            "criterion": "The summary row must aggregate total units produced (~161,387), total defects (~6,160), total rework count (~3,236), and all cost categories summed.",
+            "passed": false,
+            "reasoning": "The summary row does not include a total defects value of approximately 6,160. The CSV has no total defects column; summing available defect-related counts gives 6,359 (scrap 1,011 + rework 3,236 + returns 2,112) or 6,420 if complaints are included, not ~6,160. Also, the summary downtime cost is not the sum of the plant downtime costs: 45,595.38 + 16,967.16 + 36,754.66 + 39,653.40 = 138,970.60, but the summary row shows 136,384.60.",
+            "evidence": "Summary row has Production_Volume_Units=161387 and Reworked_Units=3236, but no total defects column. Plant downtime costs sum to 138970.60, while summary Downtime_Cost_USD=136384.6."
+          },
+          {
+            "index": 2,
+            "criterion": "The total COPQ across all plants must be approximately $429K, representing roughly 3.5% of total production costs (material + labor + maintenance).",
+            "passed": true,
+            "reasoning": "The summary row reports Total_COPQ_USD of 428,935.28, approximately $429K, and COPQ_Pct_of_Production_Cost of 3.49, approximately 3.5% of total production cost.",
+            "evidence": "Summary row: Total_COPQ_USD=428935.28, Total_Production_Cost_USD=12273710.88, COPQ_Pct_of_Production_Cost=3.49"
+          },
+          {
+            "index": 3,
+            "criterion": "The summary row must include all columns specified in the task: scrap cost, rework cost, return cost, complaint cost, downtime cost, total COPQ, and COPQ as % of total production cost.",
+            "passed": true,
+            "reasoning": "The summary row includes all required cost and percentage columns: scrap cost, rework cost, return cost, complaint cost, downtime cost, total COPQ, and COPQ as % of total production cost.",
+            "evidence": "Summary row columns: Scrap_Cost_USD=40342.51, Rework_Cost_USD=30472.99, Return_Cost_USD=83649.18, Complaint_Cost_USD=135500.0, Downtime_Cost_USD=136384.6, Total_COPQ_USD=428935.28, COPQ_Pct_of_Production_Cost=3.49"
+          }
+        ],
+        "overall_reasoning": "The rubric fails because Criterion 1 is not met: the summary row lacks the required total defects aggregate (~6,160) and does not correctly sum all cost categories, as the downtime cost is inconsistent with the plant-level totals."
+      }
+    }
+  ]
+}

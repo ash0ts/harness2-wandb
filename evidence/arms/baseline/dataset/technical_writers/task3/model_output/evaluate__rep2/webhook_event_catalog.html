@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TaskFlow API — Webhook Event Catalog</title>
+<style>
+  :root {
+    --ink: #1f2430;
+    --muted: #5b6472;
+    --line: #d9dee7;
+    --bg: #f7f8fb;
+    --card: #ffffff;
+    --accent: #2f5fe0;
+    --both-bg: #e5f4ea;
+    --both-ink: #1c6b38;
+    --logonly-bg: #fdf0dd;
+    --logonly-ink: #92580a;
+    --warn-bg: #fdeaea;
+    --warn-ink: #a12626;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+  }
+  header.page {
+    background: var(--accent);
+    color: #fff;
+    padding: 2rem 1.5rem 1.5rem;
+  }
+  header.page h1 { margin: 0 0 .35rem; font-size: 1.7rem; }
+  header.page p { margin: .2rem 0; max-width: 60rem; }
+  header.page .meta { font-size: .9rem; opacity: .92; }
+  main { max-width: 62rem; margin: 0 auto; padding: 1.5rem 1.5rem 3rem; }
+  h2 { font-size: 1.25rem; margin-top: 2.2rem; border-bottom: 2px solid var(--line); padding-bottom: .3rem; }
+  h3.group { font-size: 1.05rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 1.8rem 0 .6rem; }
+  table { border-collapse: collapse; width: 100%; background: var(--card); font-size: .93rem; }
+  th, td { border: 1px solid var(--line); padding: .5rem .7rem; text-align: left; vertical-align: top; }
+  th { background: #eef1f7; }
+  code, pre { font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace; }
+  code { background: #eceff5; padding: .08rem .3rem; border-radius: 3px; font-size: .88em; }
+  pre {
+    background: #10151f; color: #dbe4f3; padding: .85rem 1rem; border-radius: 6px;
+    overflow-x: auto; font-size: .84rem; line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 1rem 1.2rem; margin: 1rem 0 1.4rem;
+    box-shadow: 0 1px 2px rgba(20,30,50,.05);
+  }
+  .card h4 { margin: 0 0 .4rem; font-size: 1.05rem; }
+  .event-name { font-family: SFMono-Regular, Consolas, Menlo, monospace; font-weight: 600; color: var(--accent); }
+  .badge {
+    display: inline-block; font-size: .74rem; font-weight: 600; letter-spacing: .02em;
+    padding: .12rem .55rem; border-radius: 999px; margin-left: .5rem; vertical-align: middle;
+  }
+  .badge.both { background: var(--both-bg); color: var(--both-ink); }
+  .badge.logonly { background: var(--logonly-bg); color: var(--logonly-ink); }
+  .badge.spec { background: #e7ecfb; color: #26418f; }
+  dl { margin: .5rem 0 0; }
+  dt { font-weight: 600; font-size: .85rem; color: var(--muted); margin-top: .55rem; }
+  dd { margin: .15rem 0 0; }
+  .warn {
+    background: var(--warn-bg); color: var(--warn-ink); border-left: 4px solid var(--warn-ink);
+    padding: .6rem .9rem; border-radius: 0 6px 6px 0; margin: 1rem 0; font-size: .92rem;
+  }
+  .legend { font-size: .9rem; }
+  .legend span.badge { margin: 0 .35rem 0 0; }
+  footer { color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); margin-top: 3rem; padding-top: 1rem; }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <h1>TaskFlow API — Webhook Event Catalog</h1>
+  <p class="meta">API version 2.0.1 &nbsp;|&nbsp; Catalog compiled 2026-10-19</p>
+  <p class="meta">
+    This catalog synthesizes two sources: the event types <strong>declared</strong> in the OpenAPI 3.0 specification
+    (<code>taskflow_openapi_v2_extract.yaml</code>, <code>POST /webhooks</code> events enum) and the event types
+    <strong>observed</strong> in the production webhook delivery log (webhook <code>301</code> →
+    <code>https://integrations.acme.corp/taskflow/events</code>, export 2024-03-10, 12 deliveries).
+  </p>
+</header>
+
+<main>
+
+<h2>Reconciliation summary</h2>
+<table>
+  <tr><th>Metric</th><th>Value</th><th>Detail</th></tr>
+  <tr><td>Event types declared in OpenAPI spec</td><td>10</td><td>Subscribable via <code>POST /webhooks</code></td></tr>
+  <tr><td>Event types observed in production log</td><td>12</td><td>All 10 declared types were observed in production</td></tr>
+  <tr><td>Declared <em>and</em> observed</td><td>10</td><td>Full contract coverage: every declared event type has production evidence</td></tr>
+  <tr><td>Observed only (not declared)</td><td>2</td><td><code>task.due_date_approaching</code>, <code>task.overdue</code> — the platform emits them, but they are not yet subscribable via the <code>POST /webhooks</code> enum</td></tr>
+  <tr><td>Declared but never observed</td><td>0</td><td>—</td></tr>
+</table>
+
+<div class="warn">
+  <strong>Gap for engineering:</strong> <code>task.due_date_approaching</code> and <code>task.overdue</code> are live in
+  production but absent from the OpenAPI <code>events</code> enum. Integrators cannot subscribe to them through
+  <code>POST /webhooks</code> as specified. Either add them to the enum or stop emitting them; this catalog will be
+  updated either way.
+</div>
+
+<h2>Provenance legend</h2>
+<p class="legend">
+  <span class="badge both">Declared + observed</span> Event is in the OpenAPI <code>events</code> enum and was seen in the production delivery log.<br>
+  <span class="badge logonly">Observed only</span> Event was seen in production but is not declared in the OpenAPI spec.
+</p>
+
+<h2>Delivery guarantees</h2>
+<p>
+  Failed deliveries are retried up to <strong>3 times</strong>; if every attempt fails, the delivery is marked
+  <code>failed</code>. Evidence: delivery <code>d-90008</code> (<code>project.deleted</code>) returned HTTP
+  <code>502</code> with <code>retry_attempts: 3</code> and <code>final_status: "failed"</code> in the March 2024 export.
+  The exact backoff interval is not specified in either source and is pending engineering confirmation.
+</p>
+<p>
+  Payload authenticity: supply a <code>secret</code> when creating a webhook and verify the HMAC signature computed
+  over the raw request body on each delivery.
+</p>
+
+<h2>Event catalog</h2>
+
+<h3 class="group">Task events</h3>
+
+<div class="card">
+  <h4><span class="event-name">task.created</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when a new task is created in any project your webhook can access.</dd>
+    <dt>Trigger condition</dt>
+    <dd>A <code>POST /tasks</code> request succeeds (201 Created), or a task is created through the TaskFlow UI or a project template.</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "task.created",
+  "timestamp": "2024-03-01T14:22:00Z",
+  "webhook_id": 301,
+  "data": {
+    "task_id": 1042,
+    "project_id": 12,
+    "actor_id": 57
+  }
+}</code></pre>
+    <span class="badge spec">Reconstructed from delivery d-90001 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h4><span class="event-name">task.updated</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when one or more fields of an existing task change.</dd>
+    <dt>Trigger condition</dt>
+    <dd>A <code>PUT /tasks/{taskId}</code> request succeeds, or an equivalent change is made in the UI. The payload lists exactly which fields changed via <code>changed_fields</code>.</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "task.updated",
+  "timestamp": "2024-03-01T15:05:33Z",
+  "webhook_id": 301,
+  "data": {
+    "task_id": 1042,
+    "changed_fields": ["status", "assignee_id"],
+    "actor_id": 57
+  }
+}</code></pre>
+    <span class="badge spec">Reconstructed from delivery d-90002 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h4><span class="event-name">task.assigned</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when a task is assigned to an assignee, including reassignment to a different assignee.</dd>
+    <dt>Trigger condition</dt>
+    <dd>A <code>POST /tasks/{taskId}/assign</code> request succeeds, or <code>assignee_id</code> is set via task update. Fires on the new assignment regardless of the <code>notify</code> flag (which controls email notification only).</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "task.assigned",
+  "timestamp": "2024-03-05T10:02:00Z",
+  "webhook_id": 301,
+  "data": {
+    "task_id": 1050,
+    "assignee_id": 93,
+    "actor_id": 57
+  }
+}</code></pre>
+    <span class="badge spec">Reconstructed from delivery d-90006 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h4><span class="event-name">task.commented</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when a comment is added to a task.</dd>
+    <dt>Trigger condition</dt>
+    <dd>A comment is successfully attached to a task (UI or API).</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "task.commented",
+  "timestamp": "2024-03-02T09:17:44Z",
+  "webhook_id": 301,
+  "data": {
+    "task_id": 1042,
+    "comment_id": 5567,
+    "actor_id": 82
+  }
+}</code></pre>
+    <span class="badge spec">Reconstructed from delivery d-90003 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h4><span class="event-name">task.deleted</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when a task is permanently deleted. Delivered after the deletion, so the referenced task no longer exists.</dd>
+    <dt>Trigger condition</dt>
+    <dd>A <code>DELETE /tasks/{taskId}</code> request succeeds (204), or the containing project is deleted with <code>cascade=true</code>.</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "task.deleted",
+  "timestamp": "2024-03-08T09:00:00Z",
+  "webhook_id": 301,
+  "data": {
+    "task_id": 999,
+    "project_id": 3,
+    "actor_id": 57
+  }
+}</code></pre>
+    <span class="badge spec">Reconstructed from delivery d-90010 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h4><span class="event-name">task.due_date_approaching</span><span class="badge logonly">Observed only</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Scheduled reminder that a task's due date is approaching. Not declared in the OpenAPI spec; not subscribable via <code>POST /webhooks</code> as specified.</dd>
+    <dt>Trigger condition</dt>
+    <dd>Daily scheduled check. Production evidence: fired at exactly <code>00:00:00Z</code> with <code>days_remaining: 9</code>, indicating a nightly job that fires when the task is within a fixed window of its due date.</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "task.due_date_approaching",
+  "timestamp": "2024-03-06T00:00:00Z",
+  "webhook_id": 301,
+  "data": {
+    "task_id": 1042,
+    "due_date": "2024-03-15T00:00:00Z",
+    "days_remaining": 9
+  }
+}</code></pre>
+    <span class="badge logonly">Delivery d-90007 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h4><span class="event-name">task.overdue</span><span class="badge logonly">Observed only</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Scheduled notification that a task is past its due date. Not declared in the OpenAPI spec; not subscribable via <code>POST /webhooks</code> as specified.</dd>
+    <dt>Trigger condition</dt>
+    <dd>Daily scheduled check after midnight UTC once the due date has passed. Production evidence: fired at <code>00:00:00Z</code> with <code>days_overdue: 1</code>.</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "task.overdue",
+  "timestamp": "2024-03-16T00:00:00Z",
+  "webhook_id": 301,
+  "data": {
+    "task_id": 1042,
+    "due_date": "2024-03-15T00:00:00Z",
+    "days_overdue": 1
+  }
+}</code></pre>
+    <span class="badge logonly">Delivery d-90011 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<h3 class="group">Project events</h3>
+
+<div class="card">
+  <h4><span class="event-name">project.created</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when a new project is created.</dd>
+    <dt>Trigger condition</dt>
+    <dd>A <code>POST /projects</code> request succeeds (201), optionally from a <code>template_id</code>.</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "project.created",
+  "timestamp": "2024-03-09T13:55:00Z",
+  "webhook_id": 301,
+  "data": {
+    "project_id": 15,
+    "actor_id": 82
+  }
+}</code></pre>
+    <span class="badge spec">Reconstructed from delivery d-90012 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h4><span class="event-name">project.archived</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when a project is archived. Archived projects remain readable but leave active workflows.</dd>
+    <dt>Trigger condition</dt>
+    <dd>A <code>PUT /projects/{projectId}</code> request sets <code>archived</code> to <code>true</code>.</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "project.archived",
+  "timestamp": "2024-03-03T11:30:00Z",
+  "webhook_id": 301,
+  "data": {
+    "project_id": 8,
+    "actor_id": 57
+  }
+}</code></pre>
+    <span class="badge spec">Reconstructed from delivery d-90004 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h4><span class="event-name">project.deleted</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when a project is permanently deleted. With the default <code>cascade=true</code>, every task in the project is also deleted (each generating its own <code>task.deleted</code> event).</dd>
+    <dt>Trigger condition</dt>
+    <dd>A <code>DELETE /projects/{projectId}</code> request succeeds (204).</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "project.deleted",
+  "timestamp": "2024-03-07T08:20:00Z",
+  "webhook_id": 301,
+  "data": {
+    "project_id": 3,
+    "actor_id": 57
+  }
+}</code></pre>
+    <span class="badge logonly">Delivery d-90008 — failed after 3 retries (HTTP 502, final_status: failed)</span></dd>
+  </dl>
+</div>
+
+<h3 class="group">Membership events</h3>
+
+<div class="card">
+  <h4><span class="event-name">member.added</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when a user is added to a project with a role.</dd>
+    <dt>Trigger condition</dt>
+    <dd>A membership is granted on a project (UI invite or API). The payload includes the granted role.</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "member.added",
+  "timestamp": "2024-03-04T16:45:12Z",
+  "webhook_id": 301,
+  "data": {
+    "project_id": 12,
+    "user_id": 93,
+    "role": "member",
+    "actor_id": 57
+  }
+}</code></pre>
+    <span class="badge spec">Reconstructed from delivery d-90005 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<div class="card">
+  <h4><span class="event-name">member.removed</span><span class="badge both">Declared + observed</span></h4>
+  <dl>
+    <dt>Description</dt>
+    <dd>Fires when a user's membership on a project is removed.</dd>
+    <dt>Trigger condition</dt>
+    <dd>A membership is revoked on a project (UI or API). Task assignments held by the removed member are not automatically reassigned.</dd>
+    <dt>Example payload</dt>
+    <dd><pre><code>{
+  "event": "member.removed",
+  "timestamp": "2024-03-07T14:10:00Z",
+  "webhook_id": 301,
+  "data": {
+    "project_id": 12,
+    "user_id": 45,
+    "actor_id": 57
+  }
+}</code></pre>
+    <span class="badge spec">Reconstructed from delivery d-90009 (HTTP 200)</span></dd>
+  </dl>
+</div>
+
+<h2>Observations from the delivery log</h2>
+<ul>
+  <li><strong>12 deliveries, 11 successful, 1 failed</strong> (<code>project.deleted</code>, HTTP 502, exhausted 3 retries).</li>
+  <li>All payload excerpts carry <code>actor_id</code> — the user who caused the event — except the two scheduled events (<code>task.due_date_approaching</code>, <code>task.overdue</code>), which are system-generated and have no actor.</li>
+  <li>Scheduled events fire at exactly <code>00:00:00Z</code>, consistent with a nightly batch job.</li>
+</ul>
+
+<footer>
+  TaskFlow Technical Writing · Sources: <code>taskflow_openapi_v2_extract.yaml</code> (declared events),
+  <code>webhook_delivery_log.json</code> (observed events), <code>doc_audit_tracker.csv</code> (retry-policy gap).
+  Payloads are reconstructed from production delivery excerpts; field order and envelope keys are illustrative.
+</footer>
+
+</main>
+</body>
+</html>

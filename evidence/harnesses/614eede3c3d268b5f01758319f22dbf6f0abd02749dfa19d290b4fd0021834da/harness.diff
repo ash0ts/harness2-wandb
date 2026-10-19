@@ -1,0 +1,520 @@
+--- baseline/LongTermMEMORY.md
++++ execution/LongTermMEMORY.md
+@@ -1 +1,7 @@
+-<!-- c3 memory. EMPTY in v0. Evolution adds durable, GENERAL domain facts here (never task-specific answers). -->
++<!-- c3 durable domain facts. -->
++
++- Engagement briefs and client memos assert operational figures (volumes, late percentages, facility throughputs); in this domain those are claims to verify against transactional data, and that verification is itself a deliverable component.
++- Transactional extracts commonly cover a narrower slice of the network or period than master or reference files; coverage gaps are findings to report, not gaps to impute.
++- Customer identifiers in survey or complaint logs frequently use a different format from transactional identifiers and may not join at all; test the join before building on it.
++- Composite scoring models carry their weighting rationale and factor definitions inside the deliverable file; that documentation is part of the work product.
++- Multi-part Excel deliverables use one tab per requested component, named verbatim as requested, with a methodology note on each analytical tab.
+--- baseline/guardrails.md
++++ execution/guardrails.md
+@@ -1 +1,6 @@
+-<!-- c6 guardrails. EMPTY in v0. Evolution adds always-on rules here. -->
++- Time-box discovery. If more than half your budget is spent and no deliverable file exists on disk yet, write the skeleton of every requested artifact now, then keep improving it.
++- Never end a run with a requested artifact missing from the output folder. Deliverables are files, not prose.
++- Compute every number with code, never by mental arithmetic; carry row counts and totals through as reconciliation checks.
++- Write computed values into xlsx cells, not formulas: nothing in this environment recalculates formulas, so readers see no number.
++- Before writing any deliverable file, load the `deliverables` skill.
++- Before finishing, run `python3 scripts/verify_artifacts.py` over every file you produced and fix everything it flags.
+--- baseline/harness.yaml
++++ execution/harness.yaml
+@@ -1,29 +0,0 @@
+-# Owned harness manifest for the JobBench OpenCode harness (v0 baseline).
+-# Lists the EVOLVABLE components as editable files. OpenCode itself (the CLI, its tool
+-# implementations, the provider) is FROZEN infrastructure and is NOT referenced here.
+-# An evolve loop edits files under this workspace only.
+-name: jobbench_oc_harness
+-
+-components:
+-  system_prompt: systemprompt.md            # c1 — the OpenCode agent body (REPLACES the stock prompt)
+-  guardrails: guardrails.md                 # c6 — always-on rules
+-  long_term_memory: LongTermMEMORY.md       # c3 — durable domain facts
+-  skills_dir: skills/                       # c6 — reusable workflows (.opencode/skills/<n>/SKILL.md)
+-  sub_agents_dir: sub_agents/               # c5 — delegated subagents (.opencode/agent/<n>.md, mode: subagent)
+-  scripts_dir: scripts/                     # c7 — deterministic helper scripts run via Bash
+-  tool_guidance: tool_descriptions/tool_guidance.md   # c4 — prose guidance about the OpenCode toolset
+-  plugins_dir: plugin/                      # c8 — OpenCode plugins (TS): custom tools + middleware
+-                                            #      hooks (tool.execute.after / chat.system.transform).
+-                                            #      Auto-discovered from .opencode/plugin/*.ts at runtime.
+-  # c2 context_policy: NOT injectable — OpenCode owns context assembly/compaction.
+-
+-# NOTE: the harness is injected in APPEND mode (composed prose -> AGENTS.md on top of OpenCode's
+-# stock provider prompt; no --agent). To stay faithful to the real run1/run2/high runs — which set
+-# NEITHER temperature NOR a step cap and use OpenCode/provider defaults — we intentionally do NOT set
+-# temperature/steps here. (Setting temperature=0 or a low step cap would diverge from the real runs
+-# and, in the case of a step cap, could truncate long office tasks before they write deliverables.)
+-agent_config_values: {}
+-
+-# Order in which prose components are concatenated for the offline validation/preview compose.
+-# (render_opencode.py places each component into its real OpenCode slot separately.)
+-compose_order: [system_prompt, guardrails, long_term_memory, skills]
+--- baseline/plugin/README.md
++++ execution/plugin/README.md
+@@ -1,26 +1 @@
+-<!-- c8 — OpenCode plugins (placeholder). The evolve loop may add a plugin here as
+-     plugin/<name>.ts. render_opencode.py copies it to .opencode/plugin/<name>.ts in the temp
+-     workspace, where OpenCode auto-discovers it (config/plugin.ts globs `{plugin,plugins}/*.{ts,js}`
+-     from each .opencode dir up the working-dir tree).
+-
+-     A plugin exports a server function returning Hooks; use it for what prose rules cannot do —
+-     a deterministic RECHECK in the tool loop rather than a static instruction:
+-       - "tool.execute.after"  — inspect/transform a tool's output (e.g. after a Write, verify the
+-                                 deliverable; may call the LLM via the plugin client for a semantic check)
+-       - "experimental.chat.system.transform" — inject dynamic, per-task guidance
+-       - "tool"               — register a brand-new deterministic tool (e.g. a workbook validator)
+-       - "chat.params"        — adjust model params
+-
+-     Example skeleton (TypeScript):
+-
+-       import type { Plugin } from "@opencode-ai/plugin"
+-       export const VerifyDeliverable: Plugin = async ({ client, $ }) => ({
+-         "tool.execute.after": async (input, output) => {
+-           if (input.tool !== "write") return
+-           // re-check output.* against the task's own requirements here; append a warning to
+-           // output.output if something is missing. Re-derive the check at runtime — never hardcode
+-           // a specific task's answer/value.
+-         },
+-       })
+-
+-     None defined in the v0 baseline (stays byte-identical to the stock run when empty). -->
++<!-- c8: OpenCode plugins. Acts INSIDE the tool loop -- the only lever that can enforce something the model cannot skip. Add one as plugin/<name>.ts. -->
+--- baseline/scripts/README.md
++++ execution/scripts/README.md
+@@ -1,7 +1 @@
+-<!-- c7 (helper-scripts-via-Bash) — deterministic Python helpers (placeholder).
+-     The evolve loop may add scripts here, e.g. scripts/validate_workbook.py. render_opencode.py
+-     copies this dir into the temp workspace as ./scripts/, and a skill/guardrail instructs the
+-     agent to run them via Bash (e.g. `python scripts/validate_workbook.py output/Foo.xlsx`).
+-     This is how we get c7's deterministic-fix value without an OpenCode TS plugin.
+-     Each script must be stdlib-or-pip importable and runnable as `python scripts/<name>.py`.
+-     None defined in the v0 baseline. -->
++<!-- c7: deterministic helpers, run as `python3 scripts/<name>.py`. Add one by emitting scripts/<name>.py. -->
+--- baseline/scripts/inventory_workspace.py
++++ execution/scripts/inventory_workspace.py
+@@ -0,0 +1,102 @@
++"""Inventory a task workspace: structure of every data/document file, compactly.
++
++Usage: python3 scripts/inventory_workspace.py [root]
++Prints one bounded block per file (row/column counts, sheets, headers,
++sample rows, headings) so the whole input landscape is visible in a single
++tool call. Output is deliberately capped per file.
++"""
++import csv
++import os
++import sys
++
++SKIP_DIRS = {"output", ".git", ".opencode", "node_modules", "__pycache__"}
++
++
++def brief(value, limit=160):
++    text = str(value).replace("\n", " | ").replace("\r", " ")
++    if len(text) > limit:
++        text = text[:limit] + "..."
++    return text
++
++
++def inventory_csv(path):
++    with open(path, newline="", encoding="utf-8", errors="replace") as handle:
++        rows = list(csv.reader(handle))
++    if not rows:
++        return "csv, EMPTY FILE"
++    header, body = rows[0], rows[1:]
++    lines = [
++        "csv, %d data rows, %d cols: %s" % (len(body), len(header), brief(", ".join(header)))
++    ]
++    for row in body[:2]:
++        lines.append("  sample: " + brief(", ".join(row)))
++    return "\n".join(lines)
++
++
++def inventory_xlsx(path):
++    import openpyxl
++
++    workbook = openpyxl.load_workbook(path, read_only=True, data_only=True)
++    lines = ["xlsx, sheets: %s" % workbook.sheetnames]
++    for name in workbook.sheetnames:
++        sheet = workbook[name]
++        sample = []
++        for index, row in enumerate(sheet.iter_rows(values_only=True)):
++            if index > 1:
++                break
++            sample.append(row)
++        lines.append("  %s: dims=%dx%d" % (name, sheet.max_row, sheet.max_column))
++        for row in sample:
++            lines.append("    " + brief(row))
++    workbook.close()
++    return "\n".join(lines)
++
++
++def inventory_docx(path):
++    from docx import Document
++
++    document = Document(path)
++    headings = [p.text.strip() for p in document.paragraphs if p.text.strip()][:12]
++    return "docx, paragraphs=%d, tables=%d (rows each: %s)\n  first lines: %s" % (
++        len(document.paragraphs),
++        len(document.tables),
++        [len(t.rows) for t in document.tables],
++        brief(" || ".join(headings), 280),
++    )
++
++
++def inventory_text(path):
++    with open(path, encoding="utf-8", errors="replace") as handle:
++        lines = handle.readlines()
++    return "text, %d lines\n  first: %s" % (len(lines), brief("".join(lines[:2])))
++
++
++def inventory(root):
++    for dirpath, dirnames, filenames in os.walk(root):
++        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")]
++        for filename in sorted(filenames):
++            if filename.startswith("."):
++                continue
++            path = os.path.join(dirpath, filename)
++            rel = os.path.relpath(path, root)
++            print("== %s (%d bytes)" % (rel, os.path.getsize(path)))
++            ext = os.path.splitext(filename)[1].lower()
++            try:
++                if ext == ".csv":
++                    print(inventory_csv(path))
++                elif ext in (".xlsx", ".xlsm"):
++                    print(inventory_xlsx(path))
++                elif ext == ".docx":
++                    print(inventory_docx(path))
++                elif ext in (".txt", ".md"):
++                    print(inventory_text(path))
++                else:
++                    print("  (binary/unhandled format)")
++            except Exception as error:  # report, never crash the inventory
++                print("  ERROR reading: %s: %s" % (type(error).__name__, error))
++
++
++if __name__ == "__main__":
++    root = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
++    print("WORKSPACE INVENTORY: %s" % os.path.abspath(root))
++    inventory(root)
+--- baseline/scripts/recon_audit.py
++++ execution/scripts/recon_audit.py
+@@ -0,0 +1,124 @@
++#!/usr/bin/env python3
++"""Coverage audit for cross-source reconciliation.
++
++Usage: python3 scripts/recon_audit.py FILE [FILE ...]
++
++For each CSV/XLSX file (one unit per sheet for workbooks) prints:
++  - shape, columns with dtypes, non-null counts and cardinalities,
++  - a sample of distinct values for low-cardinality columns,
++  - min/max for columns that parse as dates,
++then, across all units, for every pair of same-named columns (case/space
++insensitive match) reports the value-set overlap with samples of one-side-only
++values. Output is capped so it stays readable in a terminal.
++"""
++
++import sys
++import os
++import re
++
++import pandas as pd
++
++MAX_SAMPLE = 8
++MAX_CARDINALITY_SHOW = 30
++
++
++def load_units(paths):
++    units = []
++    for path in paths:
++        if not os.path.exists(path):
++            print(f"!! not found: {path}")
++            continue
++        base = os.path.basename(path)
++        ext = os.path.splitext(base)[1].lower()
++        try:
++            if ext == ".csv":
++                units.append((base, pd.read_csv(path, low_memory=False)))
++            elif ext in (".xlsx", ".xls"):
++                xl = pd.ExcelFile(path)
++                for sheet in xl.sheet_names:
++                    units.append((f"{base}::{sheet}", xl.parse(sheet)))
++            else:
++                print(f"!! unsupported type skipped: {path}")
++        except Exception as exc:  # noqa: BLE001 - report and continue
++            print(f"!! failed to read {path}: {exc}")
++    return units
++
++
++def norm_col(name):
++    return re.sub(r"[^a-z0-9]+", "", str(name).lower())
++
++
++def profile_unit(label, df):
++    print(f"\n=== {label}  shape={df.shape[0]}x{df.shape[1]} ===")
++    for col in df.columns:
++        s = df[col]
++        card = s.nunique(dropna=True)
++        line = f"  {col} [{s.dtype}] nonnull={s.notna().sum()} unique={card}"
++        if 0 < card <= MAX_CARDINALITY_SHOW:
++            vals = [str(v) for v in s.dropna().unique()[:MAX_CARDINALITY_SHOW]]
++            line += " values: " + ", ".join(vals)
++        print(line)
++        if s.dtype == object and card > MAX_CARDINALITY_SHOW:
++            parsed = pd.to_datetime(s, errors="coerce", format="mixed")
++            ok = parsed.notna().mean()
++            if ok > 0.8:
++                print(f"    date-like ({ok:.0%} parse): min={parsed.min()} max={parsed.max()}")
++
++
++def key_sets(units):
++    by_col = {}
++    for label, df in units:
++        for col in df.columns:
++            vals = set(df[col].dropna().astype(str).str.strip())
++            if vals:
++                by_col.setdefault(norm_col(col), []).append((label, str(col), vals))
++    return by_col
++
++
++def cross_overlap(by_col):
++    print("\n=== cross-file overlap for same-named columns ===")
++    seen = set()
++    for key, entries in sorted(by_col.items()):
++        if len(entries) < 2:
++            continue
++        for i in range(len(entries)):
++            for j in range(i + 1, len(entries)):
++                la, ca, va = entries[i]
++                lb, cb, vb = entries[j]
++                pair = (la, ca, lb, cb)
++                rpair = (lb, cb, la, ca)
++                if pair in seen or rpair in seen:
++                    continue
++                seen.add(pair)
++                inter = va & vb
++                pct_a = (len(inter) / len(va) * 100) if va else 0.0
++                pct_b = (len(inter) / len(vb) * 100) if vb else 0.0
++                print(f"\n  {la}.{ca} x {lb}.{cb}: "
++                      f"|A|={len(va)} |B|={len(vb)} |A&B|={len(inter)} "
++                      f"(A cover {pct_a:.0f}%, B cover {pct_b:.0f}%)")
++                only_a = sorted(va - vb)[:MAX_SAMPLE]
++                only_b = sorted(vb - va)[:MAX_SAMPLE]
++                if only_a:
++                    print(f"    only in A: {', '.join(only_a)}")
++                if only_b:
++                    print(f"    only in B: {', '.join(only_b)}")
++                if not inter:
++                    print("    ZERO overlap — check identifier format variants before treating as a true mismatch")
++
++
++def main(argv):
++    paths = [a for a in argv[1:] if not a.startswith("-")]
++    if not paths:
++        print(__doc__)
++        return 1
++    units = load_units(paths)
++    if not units:
++        return 1
++    for label, df in units:
++        profile_unit(label, df)
++    cross_overlap(key_sets(units))
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main(sys.argv))
+--- baseline/scripts/verify_artifacts.py
++++ execution/scripts/verify_artifacts.py
+@@ -0,0 +1,122 @@
++"""Reopen produced deliverables with independent readers and flag problems.
++
++Usage: python3 scripts/verify_artifacts.py [file ...]
++With no arguments it scans ./output (then cwd) for xlsx/docx/csv files.
++Checks: files open, sheets/tabs are non-empty and carry headers, xlsx cells
++hold computed values rather than unevaluated formulas, documents have real
++content. Exit code 0 = all checks passed, 1 = at least one problem found.
++"""
++import glob
++import os
++import sys
++
++problems = []
++
++
++def flag(message):
++    problems.append(message)
++    print("  FAIL: %s" % message)
++
++
++def verify_xlsx(path):
++    import openpyxl
++
++    workbook = openpyxl.load_workbook(path)
++    values = openpyxl.load_workbook(path, data_only=True)
++    print("  sheets: %s" % workbook.sheetnames)
++    if not workbook.sheetnames:
++        flag("workbook has no sheets")
++        return
++    for name in workbook.sheetnames:
++        sheet = workbook[name]
++        filled = sum(
++            1 for row in sheet.iter_rows() for cell in row if cell.value not in (None, "")
++        )
++        if filled == 0:
++            flag("sheet %r is empty" % name)
++            continue
++        if filled <= 1:
++            flag("sheet %r has only %d non-empty cell(s)" % (name, filled))
++        header = [cell.value for cell in next(sheet.iter_rows(max_row=1))]
++        if all(v in (None, "") for v in header):
++            flag("sheet %r has no header row" % name)
++        unevaluated = sum(
++            1
++            for row_v, row_f in zip(values[name].iter_rows(), sheet.iter_rows())
++            for cell_v, cell_f in zip(row_v, row_f)
++            if isinstance(cell_f.value, str) and cell_f.value.startswith("=") and cell_v.value is None
++        )
++        if unevaluated:
++            flag(
++                "sheet %r has %d formula cell(s) with no computed value; write values instead"
++                % (name, unevaluated)
++            )
++    print("  OK xlsx opens: %s" % path)
++
++
++def verify_docx(path):
++    from docx import Document
++
++    document = Document(path)
++    paragraphs = [p for p in document.paragraphs if p.text.strip()]
++    words = sum(len(p.text.split()) for p in paragraphs)
++    print("  paragraphs=%d tables=%d words~=%d" % (len(paragraphs), len(document.tables), words))
++    if len(paragraphs) < 5:
++        flag("document has fewer than 5 non-empty paragraphs")
++    if words < 100:
++        flag("document has fewer than 100 words of body text")
++    print("  OK docx opens: %s" % path)
++
++
++def verify_csv(path):
++    import csv
++
++    with open(path, newline="", encoding="utf-8", errors="replace") as handle:
++        rows = list(csv.reader(handle))
++    if len(rows) < 2:
++        flag("csv has fewer than 2 rows")
++    print("  rows=%d cols=%d" % (max(len(rows) - 1, 0), len(rows[0]) if rows else 0))
++
++
++def find_default_files():
++    found = sorted(glob.glob(os.path.join("output", "**", "*.xls*"), recursive=True))
++    found += sorted(glob.glob(os.path.join("output", "**", "*.docx"), recursive=True))
++    if found:
++        return found
++    # fallback: top of cwd only (never recurse into input/reference folders)
++    found = sorted(glob.glob("*.xls*")) + sorted(glob.glob("*.docx"))
++    return found
++
++
++def main():
++    targets = sys.argv[1:] or find_default_files()
++    if not targets:
++        print("No deliverable files found to verify - nothing has been written yet.")
++        return 1
++    print("VERIFYING %d file(s)" % len(targets))
++    for target in targets:
++        print("- %s" % target)
++        if not os.path.exists(target):
++            flag("file does not exist")
++            continue
++        ext = os.path.splitext(target)[1].lower()
++        try:
++            if ext == ".xlsx":
++                verify_xlsx(target)
++            elif ext == ".docx":
++                verify_docx(target)
++            elif ext == ".csv":
++                verify_csv(target)
++            else:
++                print("  (skipped: unhandled extension)")
++        except Exception as error:
++            flag("could not open with independent reader: %s: %s" % (type(error).__name__, error))
++    if problems:
++        print("RESULT: %d problem(s) found" % len(problems))
++        return 1
++    print("RESULT: all checks passed")
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+--- baseline/skills/README.md
++++ execution/skills/README.md
+@@ -0,0 +1 @@
++<!-- c6: reusable workflows loaded on demand via the `skill` tool. Add one as skills/<name>/SKILL.md with frontmatter `name:` matching the directory and a `description:`. -->
+--- baseline/skills/deliverables/SKILL.md
++++ execution/skills/deliverables/SKILL.md
+@@ -0,0 +1,25 @@
++---
++name: deliverables
++description: Build and verify the requested file artifacts (xlsx workbooks, docx reports, csv outputs) for a client deliverable task
++---
++
++# Building and verifying deliverables
++
++## 1. Manifest first
++List every requested artifact with its exact output path, required tabs/sections, columns/fields, and limits (page caps, naming). Confirm each item maps to a line of the task text before building.
++
++## 2. Skeleton every artifact immediately
++Create each file with its full structure (tab names, section headings, column headers) plus any values already computed. A complete-but-rough file on disk beats a perfect one that never gets written; improve in place afterwards.
++
++## 3. Excel mechanics (openpyxl)
++- Write computed values, not formulas: nothing recalculates them, so any `data_only` reader sees None where a number should be.
++- Bold headers and frozen top row on data tabs; explicit number formats for currency, percent, and rate columns.
++- Put the weighting rationale / assumptions block on the tab that uses it, not only in chat.
++- Scratch and intermediate files go to /tmp — or a workspace dotfolder such as `.scratch/` when /tmp is blocked — never into the deliverables folder.
++
++## 4. Word mechanics (python-docx)
++- Use real heading styles for sections; use tables for matrices (go/no-go grids, scoring tables) rather than prose.
++- Respect page limits; estimate length from word count before finalizing.
++
++## 5. Verify before closing
++Run `python3 scripts/verify_artifacts.py <produced files>`: it reopens each file with an independent reader and flags empty sheets, formula-only cells, header-less tabs, and unreadable files. Fix what it flags and re-run. Then walk the manifest item by item against the task text.
+--- baseline/sub_agents/README.md
++++ execution/sub_agents/README.md
+@@ -1,4 +1 @@
+-<!-- c5 — delegated subagents (placeholder). The evolve loop may add a subagent here as
+-     sub_agents/<name>/AGENT.md (YAML frontmatter with `mode: subagent` + a description + a
+-     markdown body). render_opencode.py materializes each as .opencode/agent/<name>.md, which the
+-     primary agent can invoke through the `task` tool. None defined in the v0 baseline. -->
++<!-- c5: delegated subagents, invoked with the `task` tool in their OWN context. Add one as sub_agents/<name>/AGENT.md with frontmatter `mode: subagent` and `description:`. -->
+--- baseline/systemprompt.md
++++ execution/systemprompt.md
+@@ -1,4 +1,9 @@
+-<!-- c1 system prompt. EMPTY in v0 — v0 is the BARE stock OpenCode run (same as the real
+-     run1/run2/high). Evolution (later rounds) writes domain guidance here; render_opencode appends
+-     it on top of OpenCode's stock provider prompt via AGENTS.md. Template tokens available if used:
+-     {{env_description}} {{domain_focus}} {{date}} {{working_directory}}. -->
++You are a management/operations consultant engaged by a client organization. Your value on disk, not in chat: the deliverables the task names (workbooks, documents, data files) are the work product; analysis prose only supports them. Establish a clean operational baseline, reconcile sources, define each metric and comparison group, test constraints, and turn findings into quantified, implementable actions.
++
++Operating loop:
++1. Inventory the full workspace before analyzing: every folder and format (csv, xlsx, docx, txt), noting which source is authoritative for which figure. `python3 scripts/inventory_workspace.py` does this in one bounded call.
++2. Reconcile sources before building anything: shared keys, coverage gaps (which entities appear in which source), date/version mismatches. Record assumptions with counts. `python3 scripts/recon_audit.py FILE [FILE ...]` profiles every source and prints pairwise value-set overlap for same-named columns in one call.
++3. Turn the request into an output manifest: exact file paths, tab names, columns, and document sections, each traceable to a line of the task text.
++4. Compute with short python scripts; park intermediate aggregates in a scratch directory (/tmp, or a workspace dotfolder such as .scratch/ when /tmp is blocked) so nothing is recomputed or re-derived from memory.
++5. Write viable deliverables early and improve them incrementally; polish only after every requested file exists.
++6. Close by reopening each artifact with an independent reader and verifying values, formats, and cross-file consistency.
+--- baseline/tool_descriptions/tool_guidance.md
++++ execution/tool_descriptions/tool_guidance.md
+@@ -1 +1,9 @@
+-<!-- c4 tool guidance. EMPTY in v0. Evolution adds prose tool-usage guidance here. -->
++Tool mechanics:
++
++- bash: every call needs both `command` and `description`; calls missing `description` are rejected and the turn is wasted.
++- Multi-step python analysis: one `python3 << 'EOF' ... EOF` heredoc per call beats many `python3 -c` fragments.
++- Printed output is truncated beyond a few KB and the truncated part is lost. Print narrow: select columns, use `.head()`, `df.to_string()` for small frames, and set `pd.set_option("display.width", 200)` with `display.max_columns=None` so groupby tables do not elide middle columns as `...`.
++- Never re-run a whole analysis to recover truncated output; re-print just the missing part.
++- Writes outside the workspace (e.g. /tmp) are denied by the sandbox; keep scratch files in a directory inside the workspace such as `.scratch/`.
++- Standard data stack is preinstalled: pandas, numpy, openpyxl, python-docx.
++- Prefer the dedicated `read`/`grep`/`glob` tools over cat/grep/find in the shell.

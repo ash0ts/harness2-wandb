@@ -1,0 +1,467 @@
+{
+  "evaluated_model": "evaluate__rep1",
+  "judge_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+  "timestamp": "2026-10-19T15:32:40+00:00",
+  "total_score": 40,
+  "max_score": 84,
+  "pass_rate": "50%",
+  "passed_count": 6,
+  "total_count": 12,
+  "rubrics": [
+    {
+      "index": 0,
+      "rubric": "Does the discrepancy report correctly identify the per_page default mismatch between the YAML spec (default: 25, max: 200) and the Markdown docs (default: 20, max: 100) for GET /tasks?",
+      "weight": 8,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The discrepancy CSV must contain an entry for the GET /tasks endpoint's per_page parameter documenting that the OpenAPI YAML specifies a default of 25 while the current Markdown docs state a default of 20.",
+            "passed": true,
+            "reasoning": "The discrepancy report contains D-006 for GET /tasks per_page default mismatch, with openapi_spec_value 'default: 25' and markdown_docs_value 'default: 20'.",
+            "evidence": "D-006,/tasks,GET,parameter_schema,per_page default mismatch,default: 25,default: 20,P2 audit note on /api/v1/tasks GET,P2,Document default 25."
+          },
+          {
+            "index": 1,
+            "criterion": "The discrepancy CSV must document that the OpenAPI YAML specifies a maximum of 200 for per_page on GET /tasks while the current Markdown docs state a maximum of 100.",
+            "passed": true,
+            "reasoning": "The discrepancy report contains D-007 for GET /tasks per_page maximum mismatch, with openapi_spec_value 'maximum: 200' and markdown_docs_value 'max: 100'.",
+            "evidence": "D-007,/tasks,GET,parameter_schema,per_page maximum mismatch,maximum: 200,max: 100,P2 audit note,P2,Document maximum 200."
+          },
+          {
+            "index": 2,
+            "criterion": "The discrepancy_type for the per_page mismatch should be 'default_mismatch' or 'value_mismatch'.",
+            "passed": false,
+            "reasoning": "The discrepancy_type for both per_page mismatch rows is 'parameter_schema', not one of the allowed values 'default_mismatch' or 'value_mismatch'.",
+            "evidence": "D-006 and D-007 both use discrepancy_type 'parameter_schema' in the CSV."
+          },
+          {
+            "index": 3,
+            "criterion": "The recommended_resolution for the per_page mismatch should favor the YAML spec values.",
+            "passed": true,
+            "reasoning": "The recommended_resolution values favor the YAML spec values: D-006 says 'Document default 25' and D-007 says 'Document maximum 200'.",
+            "evidence": "D-006 recommended_resolution: 'Document default 25.'; D-007 recommended_resolution: 'Document maximum 200.'"
+          }
+        ],
+        "overall_reasoning": "The CSV correctly documents the per_page default and maximum mismatches and recommends the YAML spec values, but it uses discrepancy_type 'parameter_schema' instead of the required 'default_mismatch' or 'value_mismatch', so the rubric fails."
+      }
+    },
+    {
+      "index": 1,
+      "rubric": "Does the discrepancy report capture the enum mismatch for the 'status' parameter on GET /tasks, where the YAML includes 'blocked' but the docs do not, and the priority enum mismatch where the YAML includes 'urgent' but the docs do not?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 2,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The CSV must flag GET /tasks 'status' parameter enum mismatch: YAML lists [open, in_progress, done, archived, blocked] while docs list only [open, in_progress, done, archived], missing 'blocked'.",
+            "passed": true,
+            "reasoning": "The CSV row D-005 explicitly flags the GET /tasks status parameter enum mismatch, listing the OpenAPI spec enum as open, in_progress, done, archived, blocked and the docs as missing blocked.",
+            "evidence": "D-005: endpoint /tasks, method GET, category parameter_enum, summary 'status filter enum mismatch', openapi_spec_value 'enum: open, in_progress, done, archived, blocked', markdown_docs_value 'Docs list open, in_progress, done, archived only', recommended_resolution 'Add blocked to documented enum values.'"
+          },
+          {
+            "index": 1,
+            "criterion": "The CSV must flag POST /tasks 'priority' field enum mismatch: YAML lists [low, medium, high, critical, urgent] while docs list only [low, medium, high, critical], missing 'urgent'.",
+            "passed": true,
+            "reasoning": "The CSV row D-012 explicitly flags the POST /tasks priority field enum mismatch, listing the OpenAPI spec enum as low, medium, high, critical, urgent and the docs as missing urgent.",
+            "evidence": "D-012: endpoint /tasks, method POST, category parameter_enum, summary 'priority enum mismatch', openapi_spec_value 'enum: low, medium, high, critical, urgent', markdown_docs_value 'Docs list low, medium, high, critical only', recommended_resolution 'Add urgent to documented enum values.'"
+          },
+          {
+            "index": 2,
+            "criterion": "The discrepancy_type for both the status and priority enum mismatches should be 'enum_mismatch'.",
+            "passed": false,
+            "reasoning": "The CSV does not use discrepancy_type 'enum_mismatch' for these rows. The relevant column is 'category', and both D-005 and D-012 have category 'parameter_enum' rather than 'enum_mismatch'.",
+            "evidence": "CSV header is 'discrepancy_id,endpoint,http_method,category,...' with no discrepancy_type column. D-005 and D-012 both have category 'parameter_enum'."
+          }
+        ],
+        "overall_reasoning": "The report captures both the status and priority enum mismatches correctly, but it fails the discrepancy_type requirement because the relevant rows use category 'parameter_enum' instead of 'enum_mismatch'."
+      }
+    },
+    {
+      "index": 2,
+      "rubric": "Does the discrepancy report identify the title maxLength mismatch for POST /tasks, where the YAML specifies maxLength 200 but the docs say 255 characters?",
+      "weight": 8,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 2,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The CSV must contain a row for the POST /tasks endpoint's 'title' field noting that the YAML spec defines maxLength as 200 while the current Markdown docs state 'Max 255 characters'.",
+            "passed": true,
+            "reasoning": "The CSV contains row D-011 for POST /tasks, specifically identifying the title field maxLength mismatch: OpenAPI spec value is maxLength: 200 and Markdown docs value is Max 255 characters.",
+            "evidence": "D-011,/tasks,POST,parameter_schema,title maxLength mismatch,maxLength: 200,Max 255 characters,P3 audit status acceptable,P1,Document the enforced limit as 200 to match validation; 255 in docs is incorrect."
+          },
+          {
+            "index": 1,
+            "criterion": "The discrepancy_type for the title maxLength mismatch should be 'value_mismatch'.",
+            "passed": false,
+            "reasoning": "The criterion requires discrepancy_type to be 'value_mismatch', but the CSV row uses the category column value 'parameter_schema' rather than 'value_mismatch'. There is no discrepancy_type column in the CSV, and the row does not classify the mismatch as value_mismatch.",
+            "evidence": "D-011,/tasks,POST,parameter_schema,title maxLength mismatch,maxLength: 200,Max 255 characters,P3 audit status acceptable,P1,Document the enforced limit as 200 to match validation; 255 in docs is incorrect."
+          },
+          {
+            "index": 2,
+            "criterion": "The recommended resolution should prefer the YAML value (200) for the title maxLength.",
+            "passed": true,
+            "reasoning": "The recommended resolution for D-011 explicitly prefers the YAML/OpenAPI value of 200 and states that the docs value of 255 is incorrect.",
+            "evidence": "D-011 recommended_resolution: 'Document the enforced limit as 200 to match validation; 255 in docs is incorrect.'"
+          }
+        ],
+        "overall_reasoning": "The report correctly identifies the title maxLength mismatch and recommends the YAML value of 200, but it does not classify the discrepancy_type as 'value_mismatch'; the CSV uses 'parameter_schema' in the category column instead. Therefore, not all criteria pass."
+      }
+    },
+    {
+      "index": 3,
+      "rubric": "Does the style guide establish a clear, justified date/time format standard that addresses the mixed timestamp formats (Unix timestamps vs. ISO 8601) found in the current docs?",
+      "weight": 6,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 1,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The style guide must explicitly identify the timestamp inconsistency in the current TaskFlow API docs: projects endpoint returns Unix timestamps for 'created' while tasks use ISO 8601, and GET /users/me has 'created_at' in ISO 8601 but 'last_login' as Unix timestamp.",
+            "passed": false,
+            "reasoning": "The style guide names the two Unix holdover fields (`projects.created`, `users.last_login`) but does not explicitly identify the full timestamp inconsistency described in the criterion. It does not state that the projects endpoint returns Unix timestamps for `created` while task timestamps use ISO 8601, nor does it explicitly contrast `GET /users/me` having `created_at` in ISO 8601 while `last_login` is Unix. The inconsistency is only implied by the general ISO 8601 standard.",
+            "evidence": "Style guide section 10: 'ISO 8601 with a UTC offset (`2024-03-01T14:22:00Z`) is the documentation standard for all date-time values. Known Unix-timestamp holdovers (`projects.created`, `users.last_login`) must be called out inline as legacy fields with a note that they migrate to ISO 8601 in API v3.'"
+          },
+          {
+            "index": 1,
+            "criterion": "The guide must select one timestamp standard (ISO 8601 is the expected professional choice) and provide justification for the decision.",
+            "passed": false,
+            "reasoning": "The guide selects ISO 8601 as the standard, but it does not provide any justification for that decision. It states the standard and the migration note, but gives no rationale such as interoperability, machine-readability, or consistency with common API conventions.",
+            "evidence": "Style guide section 10: 'ISO 8601 with a UTC offset (`2024-03-01T14:22:00Z`) is the documentation standard for all date-time values.' No justification is provided in this section or elsewhere in the style guide."
+          },
+          {
+            "index": 2,
+            "criterion": "The guide must specify how all timestamp fields should be formatted going forward, resolving the mixed format problem rather than ignoring it.",
+            "passed": true,
+            "reasoning": "The guide specifies how all timestamp fields should be formatted going forward: ISO 8601 with a UTC offset. It also addresses the mixed-format problem by requiring the known Unix timestamp holdovers to be called out inline as legacy fields and noting their migration to ISO 8601 in API v3.",
+            "evidence": "Style guide section 10: 'ISO 8601 with a UTC offset (`2024-03-01T14:22:00Z`) is the documentation standard for all date-time values. Known Unix-timestamp holdovers (`projects.created`, `users.last_login`) must be called out inline as legacy fields with a note that they migrate to ISO 8601 in API v3.'"
+          }
+        ],
+        "overall_reasoning": "The style guide partially addresses the timestamp issue by selecting ISO 8601 and identifying legacy Unix fields, but it fails two required criteria: it does not explicitly identify the full mixed-format inconsistency as described, and it provides no justification for choosing ISO 8601. Therefore the rubric does not pass."
+      }
+    },
+    {
+      "index": 4,
+      "rubric": "Does the style guide include a terminology glossary that resolves the specific terminology issues identified in the audit tracker CSV, such as standardizing 'fetch'/'retrieve', 'task ID'/'taskId'/'task_id', 'modify'/'update', 'callback URL'/'webhook URL'/'destination', 'user'/'assignee', and 'filter'/'query'?",
+      "weight": 8,
+      "result": {
+        "passed": true,
+        "score": 8,
+        "criteria_count": 4,
+        "criteria_passed": 4,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The style guide must contain a terminology glossary or approved/rejected terms section addressing at least 5 of these 7 terminology conflicts from the audit tracker.",
+            "passed": true,
+            "reasoning": "The style guide contains a terminology glossary (§11) plus additional approved/rejected term rules in §4, §6, and §10 that collectively address all seven terminology conflicts from the audit tracker.",
+            "evidence": "§11 table covers retrieve/list vs fetch/get/show, assignee vs user, and query parameter vs filter. §4 covers Update vs modify and Create vs add/register. §6 covers taskId vs task_id/id/task ID. §10 covers webhook URL vs callback URL/destination."
+          },
+          {
+            "index": 1,
+            "criterion": "The glossary must address verb inconsistencies: (1) 'retrieve' vs. 'fetch' (flagged on GET /tasks), (2) 'update' vs. 'modify' (flagged on PUT /tasks/{taskId}), and (3) 'create' vs. 'add'/'register' (flagged on POST /projects).",
+            "passed": true,
+            "reasoning": "All three verb inconsistencies are addressed with clear approved and rejected terms. Retrieve vs fetch is in the §11 glossary; update vs modify and create vs add/register are addressed in §4 operation title rules.",
+            "evidence": "§11: 'retrieve (single item), list (collection)' vs 'fetch, get, show'. §4: PUT title verb 'Update' and 'must not describe itself as modifying'; POST title verb 'Create' and 'must not drift from create to add to register'."
+          },
+          {
+            "index": 2,
+            "criterion": "The glossary must address naming inconsistencies: (1) 'task ID' vs. 'taskId' vs. 'task_id' (flagged on GET /tasks/{taskId}), (2) 'callback URL' vs. 'webhook URL' vs. 'destination' (flagged on POST /webhooks), (3) 'user' vs. 'assignee' (flagged on POST /tasks/{taskId}/assign), and (4) 'filter' vs. 'query' (flagged on GET /search/tasks).",
+            "passed": true,
+            "reasoning": "All four naming inconsistencies are addressed. taskId is covered in §6, webhook URL in §10, and user/assignee and filter/query in §11.",
+            "evidence": "§6: 'If the spec says taskId, the docs say taskId — never task_id, id, or task ID in a parameter context.' §10: 'Use the term webhook URL... do not alternate with callback URL or destination.' §11: 'assignee' vs 'user'; 'query parameter' vs 'filter'."
+          },
+          {
+            "index": 3,
+            "criterion": "Each addressed terminology conflict must specify which term is approved and which is rejected.",
+            "passed": true,
+            "reasoning": "Each addressed conflict explicitly identifies the approved term and the rejected term(s), either in the Use/Do not use table or in explicit rules.",
+            "evidence": "Approved/rejected pairs include: retrieve vs fetch; Update vs modify; Create vs add/register; taskId vs task_id/id/task ID; webhook URL vs callback URL/destination; assignee vs user; query parameter vs filter."
+          }
+        ],
+        "overall_reasoning": "The style guide addresses all seven terminology conflicts from the audit tracker with clear approved/rejected terms across its terminology glossary and related sections, satisfying all criteria."
+      }
+    },
+    {
+      "index": 5,
+      "rubric": "Does the rewritten API documentation resolve the inconsistent response envelope formats by standardizing the documented wrapper structures, or by explicitly documenting and justifying the differences?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 3,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The rewritten documentation must acknowledge the current inconsistency where GET /tasks returns {\"data\": [...], \"meta\": {...}}, GET /projects uses {\"projects\": [...]}, and GET /users/me uses {\"user\": {...}}.",
+            "passed": true,
+            "reasoning": "The output set acknowledges the envelope inconsistency explicitly. The discrepancy report records D-044 for tasks vs projects list envelopes and D-031 for the /users/me user wrapper. The style guide states list responses use data+meta and single-resource responses return the resource object directly, with the documented exception of GET /users/me wrapping in user. The v2 docs also note that GET /projects previously returned a bare projects array and now follows data+meta.",
+            "evidence": "discrepancy_report.csv D-044: 'Tasks list uses data + meta envelope; projects list uses bare projects array with no meta'; D-031: 'Docs wrap payload in a user object'; taskflow_api_style_guide.md §8: 'single-resource responses return the resource object directly (with the documented exception of GET /users/me, which wraps the payload in a user object)'; taskflow_api_v2_docs.md Projects note: 'This endpoint previously returned a bare projects array with no pagination. It now follows the standard data + meta list envelope.'"
+          },
+          {
+            "index": 1,
+            "criterion": "The rewritten documentation must either standardize all endpoints to use a consistent envelope format (using 'data' key for collection responses and 'meta' for pagination), or explicitly document and justify each difference in a dedicated section.",
+            "passed": true,
+            "reasoning": "The documentation standardizes collection endpoints to data+meta. GET /tasks, GET /projects, and GET /search/tasks all use data plus meta. The single-resource /users/me user wrapper is explicitly documented as an exception in the style guide and retained with a note in the discrepancy report, so the difference is justified rather than left unexplained.",
+            "evidence": "taskflow_api_v2_docs.md shows GET /tasks response with data and meta, GET /projects response with data and meta, and GET /search/tasks response with data and meta; taskflow_api_style_guide.md §8 documents the /users/me exception; discrepancy_report.csv D-031 recommends 'Keep documented envelope; flag last_login Unix value as legacy'."
+          },
+          {
+            "index": 2,
+            "criterion": "Simply copying the 3 inconsistent formats without acknowledging or resolving the discrepancy fails this criterion.",
+            "passed": true,
+            "reasoning": "The output does not merely copy the three inconsistent formats. It changes GET /projects from a bare projects array to data+meta and explicitly notes the change. The /users/me user wrapper is retained but documented as a deliberate exception. The discrepancy report records the inconsistency and resolution.",
+            "evidence": "taskflow_api_v2_docs.md Projects list response uses data+meta and note says it previously returned bare projects array; taskflow_api_style_guide.md §8 documents the /users/me exception; discrepancy_report.csv D-044 recommends standardizing list responses on data+meta and noting the projects endpoint deviation."
+          }
+        ],
+        "overall_reasoning": "The rewritten documentation acknowledges the prior envelope inconsistency, standardizes collection responses to data+meta, and explicitly documents the /users/me user wrapper as a justified exception. It does not simply copy the inconsistent formats."
+      }
+    },
+    {
+      "index": 6,
+      "rubric": "Does the rewritten API documentation include error code documentation for the endpoints flagged as missing error codes in the audit tracker (GET /tasks, PUT /tasks/{taskId}, DELETE /tasks/{taskId}, POST /tasks/{taskId}/assign, POST /projects, DELETE /projects/{projectId}, POST /auth/refresh, POST /webhooks, GET /search/tasks)?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 3,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The rewritten docs must include error code tables or sections for the 9 endpoints flagged in the audit tracker as missing error documentation: GET /tasks, PUT /tasks/{taskId}, DELETE /tasks/{taskId}, POST /tasks/{taskId}/assign, POST /projects, DELETE /projects/{projectId}, POST /auth/refresh, POST /webhooks, and GET /search/tasks.",
+            "passed": true,
+            "reasoning": "The rewritten API documentation includes an 'Error responses' table for all 9 flagged endpoints. Each endpoint section contains a two-column Status code/Meaning table, satisfying the requirement for error code documentation.",
+            "evidence": "GET /tasks has 400/401/429; PUT /tasks/{taskId} has 400/401/403/404/409; DELETE /tasks/{taskId} has 401/403/404; POST /tasks/{taskId}/assign has 400/401/404; POST /projects has 400/401/422; DELETE /projects/{projectId} has 401/403/404/409; POST /auth/refresh has 400/401; POST /webhooks has 400/401/422; GET /search/tasks has 400/401."
+          },
+          {
+            "index": 1,
+            "criterion": "Error documentation must cover at minimum the HTTP status codes defined in the OpenAPI YAML spec, specifically: DELETE /tasks must include 403 and 404; PUT /tasks must include 404 and 409 (Conflict — concurrent modification); POST /tasks/{taskId}/assign must include 404; POST /auth/refresh must include 401 (expired/revoked token).",
+            "passed": true,
+            "reasoning": "The required minimum HTTP status codes from the OpenAPI spec are present in the corresponding endpoint error tables. DELETE /tasks includes 403 and 404; PUT /tasks includes 404 and 409 with conflict/concurrent modification meaning; POST /tasks/{taskId}/assign includes 404; POST /auth/refresh includes 401 with expired/revoked token meaning.",
+            "evidence": "DELETE /tasks table: '403 Forbidden - insufficient permissions' and '404 Task not found.' PUT /tasks table: '404 Task not found.' and '409 Conflict - concurrent modification detected. Re-fetch the task and retry.' POST /tasks/{taskId}/assign table: '404 Task or user not found. An invalid assignee is reported here.' POST /auth/refresh table: '401 Refresh token expired or revoked. Authenticate again with POST /auth/login.'"
+          },
+          {
+            "index": 2,
+            "criterion": "At least 7 of these 9 flagged endpoints must have error documentation in the rewritten docs.",
+            "passed": true,
+            "reasoning": "All 9 flagged endpoints have error documentation, which exceeds the minimum requirement of at least 7 endpoints.",
+            "evidence": "The 9 flagged endpoints are GET /tasks, PUT /tasks/{taskId}, DELETE /tasks/{taskId}, POST /tasks/{taskId}/assign, POST /projects, DELETE /projects/{projectId}, POST /auth/refresh, POST /webhooks, and GET /search/tasks. Each has an 'Error responses' table in taskflow_api_v2_docs.md."
+          }
+        ],
+        "overall_reasoning": "The rewritten API documentation satisfies all three criteria. Every one of the 9 audit-flagged endpoints now has an error responses table, the specific OpenAPI-required status codes are covered, and the count of documented endpoints exceeds the minimum threshold of 7."
+      }
+    },
+    {
+      "index": 7,
+      "rubric": "Does the webhook event catalog correctly identify 'task.due_date_approaching' and 'task.overdue' as events observed in the production delivery log but absent from the YAML spec's enum list, and flag them as undocumented behavior requiring escalation?",
+      "weight": 8,
+      "result": {
+        "passed": true,
+        "score": 8,
+        "criteria_count": 4,
+        "criteria_passed": 4,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The YAML spec's webhook events enum lists 10 event types: [task.created, task.updated, task.deleted, task.assigned, task.commented, project.created, project.archived, project.deleted, member.added, member.removed]. The catalog must reference this as the defined set.",
+            "passed": true,
+            "reasoning": "The webhook event catalog references the YAML/OpenAPI spec's defined set of 10 webhook event types. It states the spec declares 10 event values and lists all ten in the source reconciliation table and event catalog as 'Spec + Production'.",
+            "evidence": "webhook_event_catalog.html: 'OpenAPI spec (declares 10 event values)' and source reconciliation table rows for task.created, task.updated, task.deleted, task.assigned, task.commented, project.created, project.archived, project.deleted, member.added, member.removed."
+          },
+          {
+            "index": 1,
+            "criterion": "The webhook catalog must identify 'task.due_date_approaching' (delivery d-90007, with days_remaining field) as present in the production delivery log but absent from the YAML spec.",
+            "passed": true,
+            "reasoning": "The catalog identifies task.due_date_approaching as present in the production delivery log but absent from the YAML spec, including the correct delivery ID and days_remaining field.",
+            "evidence": "webhook_event_catalog.html: article id='task-due-date-approaching' with badge 'Production only', payload containing 'days_remaining': 9, and observation 'delivery d-90007'. Source table row shows 'No' for spec and 'Yes' for production."
+          },
+          {
+            "index": 2,
+            "criterion": "The webhook catalog must identify 'task.overdue' (delivery d-90011, with days_overdue field) as present in the production delivery log but absent from the YAML spec.",
+            "passed": true,
+            "reasoning": "The catalog identifies task.overdue as present in the production delivery log but absent from the YAML spec, including the correct delivery ID and days_overdue field.",
+            "evidence": "webhook_event_catalog.html: article id='task-overdue' with badge 'Production only', payload containing 'days_overdue': 1, and observation 'delivery d-90011'. Source table row shows 'No' for spec and 'Yes' for production."
+          },
+          {
+            "index": 3,
+            "criterion": "Both undocumented events must be explicitly flagged as undocumented behavior that should be escalated to engineering.",
+            "passed": true,
+            "reasoning": "Both undocumented events are explicitly flagged as undocumented behavior and assigned a remediation action to file them for spec addition, which semantically satisfies escalation to engineering.",
+            "evidence": "webhook_event_catalog.html: legend says 'Production only' means 'not declared in the specification's events enum; treat as undocumented until the spec is updated'. Known gaps says: 'Spec gap: task.due_date_approaching and task.overdue are emitted in production but absent from the events enum. File them for addition to the specification.' The warning note also says to track the spec update in the discrepancy report before relying on them."
+          }
+        ],
+        "overall_reasoning": "The webhook event catalog correctly references the 10-event YAML spec enum as the defined set, identifies both task.due_date_approaching (d-90007, days_remaining) and task.overdue (d-90011, days_overdue) as production-observed but spec-absent, and explicitly flags them as undocumented with a required spec/escalation action. All four criteria pass."
+      }
+    },
+    {
+      "index": 8,
+      "rubric": "Does the V1-to-V2 migration guide document the key field renaming changes, covering at least five of the following: 'desc' to 'description', 'assigned_to' to 'assignee_id', 'project' to 'project_id', 'deadline' to 'due_date', 'org' to 'organization_id', and 'limit'/'offset' to 'page'/'per_page'?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 3,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The migration guide must include a field renaming table or section mapping v1 field names to v2 equivalents: 'desc' → 'description', 'assigned_to' → 'assignee_id', 'project' → 'project_id'.",
+            "passed": true,
+            "reasoning": "The migration guide includes a dedicated 'Field renames' section with a table mapping v1 fields to v2 equivalents, and it explicitly lists 'desc' → 'description', 'assigned_to' → 'assignee_id', and 'project' → 'project_id'.",
+            "evidence": "In v1_to_v2_migration_guide.md, the 'Field renames' table contains: 'Task | desc | description', 'Task | assigned_to | assignee_id', and 'Task | project | project_id'."
+          },
+          {
+            "index": 1,
+            "criterion": "The field renaming must also cover: 'deadline' → 'due_date', 'org' → 'organization_id', and 'limit'/'offset' → 'page'/'per_page' for pagination.",
+            "passed": true,
+            "reasoning": "The migration guide also documents the remaining required renames: 'deadline' → 'due_date', 'org' → 'organization_id', and pagination 'limit'/'offset' → 'page'/'per_page'.",
+            "evidence": "The same 'Field renames' table includes 'Task | deadline (Unix timestamp) | due_date (ISO 8601)' and 'User | org | organization_id'. The 'Quick reference: breaking changes' table and the 'Pagination' section both document 'limit', 'offset' → 'page', 'per_page'."
+          },
+          {
+            "index": 2,
+            "criterion": "At least 5 of these 6 field name changes must be documented, as this is critical for developers updating their API client code.",
+            "passed": true,
+            "reasoning": "All six field name changes are documented, which exceeds the requirement of at least five.",
+            "evidence": "The guide documents: desc→description, assigned_to→assignee_id, project→project_id, deadline→due_date, org→organization_id, and limit/offset→page/per_page."
+          }
+        ],
+        "overall_reasoning": "The v1-to-v2 migration guide clearly documents all six key field renaming changes in its quick reference, field renames table, and pagination section. Therefore, all three criteria pass."
+      }
+    },
+    {
+      "index": 9,
+      "rubric": "Does the V1-to-V2 migration guide correctly identify the key deprecated/removed v1 features, covering at least three of the following: task comments endpoints (GET/POST /api/tasks/:id/comments), task history endpoint (GET /api/tasks/:id/history), task assignment method change (PUT to POST), and the general search endpoint split?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 5,
+        "criteria_passed": 5,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The migration guide must identify the removal of task comment endpoints: GET /api/tasks/:id/comments and POST /api/tasks/:id/comments have no direct v2 equivalent (though task.commented webhook events still fire).",
+            "passed": true,
+            "reasoning": "The migration guide identifies that both task comment endpoints are removed or folded. It maps GET /api/tasks/:id/comments to GET /tasks/{taskId}?include=comments and explicitly states POST /api/tasks/:id/comments has no direct v2 equivalent in the specification. It also lists task.commented among v2 webhook events, so the webhook signal is still covered.",
+            "evidence": "Endpoint mapping table: 'GET /api/tasks/:id/comments' -> 'GET /tasks/{taskId}?include=comments' with note 'No longer a separate endpoint.' Also: 'POST /api/tasks/:id/comments' -> '*No direct v2 equivalent in the specification*'. Removed and folded endpoints section repeats this and says 'the specification defines no operation to create a comment.' Webhooks section lists 'task.commented' as a v2 event."
+          },
+          {
+            "index": 1,
+            "criterion": "The migration guide must identify the removal of the task change history endpoint: GET /api/tasks/:id/history has no v2 equivalent.",
+            "passed": true,
+            "reasoning": "The migration guide identifies the task history endpoint as removed as a separate endpoint and folded into the task retrieval include parameter.",
+            "evidence": "Endpoint mapping table: 'GET /api/tasks/:id/history' -> 'GET /tasks/{taskId}?include=history' with note 'No longer a separate endpoint.' Removed and folded endpoints section states: 'GET /api/tasks/:id/comments and GET /api/tasks/:id/history — replaced by the include query parameter on GET /tasks/{taskId}.'"
+          },
+          {
+            "index": 2,
+            "criterion": "The migration guide must document the task assignment HTTP method change from PUT /api/tasks/:id/assign to POST /api/v2/tasks/{taskId}/assign.",
+            "passed": true,
+            "reasoning": "The migration guide clearly documents the assignment HTTP method change from PUT to POST, including the v1 and v2 paths and the request body field rename.",
+            "evidence": "Quick reference table: 'Assign a task | PUT /api/tasks/:id/assign | POST /tasks/{taskId}/assign'. Endpoint mapping table: 'PUT /api/tasks/:id/assign' -> 'POST /tasks/{taskId}/assign' with note '**Verb changed.** Body field renamed user_id → assignee_id.' Assigning a task section shows before/after examples with PUT v1 and POST v2."
+          },
+          {
+            "index": 3,
+            "criterion": "The migration guide must document the search endpoint narrowing from GET /api/search (unified search) to GET /api/v2/search/tasks (task-only search).",
+            "passed": true,
+            "reasoning": "The migration guide documents the search endpoint narrowing from unified v1 search to task-only v2 search and explains the removal of the type parameter.",
+            "evidence": "Quick reference table: 'Search | GET /api/search (tasks and projects) | GET /search/tasks (tasks only)'. Endpoint mapping table: 'GET /api/search' -> 'GET /search/tasks' with note 'Tasks only; the type parameter is gone; filter by project_id.' Search section states: 'v1 search spanned tasks and projects' and 'v2 search is task-scoped.'"
+          },
+          {
+            "index": 4,
+            "criterion": "At least 3 of these 4 deprecated/removed/changed features must be identified with explanations.",
+            "passed": true,
+            "reasoning": "All four deprecated/removed/changed features are identified with explanations, exceeding the minimum of three.",
+            "evidence": "The guide covers task comment endpoints, task history endpoint, assignment method change, and search endpoint split in the quick reference table, endpoint mapping table, and dedicated sections such as 'Assigning a task', 'Removed and folded endpoints', and 'Search'."
+          }
+        ],
+        "overall_reasoning": "The v1-to-v2 migration guide correctly identifies all four key deprecated/removed/changed v1 features: task comment endpoints, task history endpoint, task assignment method change from PUT to POST, and the search endpoint split from unified search to task-only search. Each is documented with explanations and before/after or replacement guidance, so all criteria pass."
+      }
+    },
+    {
+      "index": 10,
+      "rubric": "Does the discrepancy report capture that the YAML spec lists pagination parameters (page, per_page) for GET /projects but the current docs state 'the projects endpoint does not currently support pagination'?",
+      "weight": 6,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 2,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The discrepancy report must flag that the OpenAPI YAML defines 'page' and 'per_page' query parameters for GET /projects.",
+            "passed": true,
+            "reasoning": "The discrepancy report includes a row for GET /projects whose openapi_spec_value explicitly says 'page and per_page query parameters defined', flagging the YAML-defined pagination parameters.",
+            "evidence": "D-022: endpoint '/projects', http_method 'GET', openapi_spec_value 'page and per_page query parameters defined'."
+          },
+          {
+            "index": 1,
+            "criterion": "The report must note that the current Markdown docs explicitly state 'the projects endpoint does not currently support pagination - all projects are returned in a single response', which directly contradicts the YAML spec.",
+            "passed": true,
+            "reasoning": "The report notes the Markdown docs claim that the projects endpoint does not support pagination and returns all projects in a single response, directly contradicting the YAML spec.",
+            "evidence": "D-022 markdown_docs_value: \"Docs state 'the projects endpoint does not currently support pagination - all projects are returned in a single response'\"."
+          },
+          {
+            "index": 2,
+            "criterion": "The discrepancy_type should be 'missing_in_docs' or 'value_mismatch', with a recommendation to add pagination documentation per the YAML spec.",
+            "passed": false,
+            "reasoning": "The report's category for this discrepancy is 'contradiction', not one of the required discrepancy_type values 'missing_in_docs' or 'value_mismatch'. The recommendation does align with adding pagination documentation, but the type/category does not meet the criterion.",
+            "evidence": "D-022 category is 'contradiction'; recommended_resolution is 'Treat spec as source of truth: document page/per_page and meta object for the projects list.'"
+          }
+        ],
+        "overall_reasoning": "Criteria 0 and 1 pass because D-022 clearly flags the YAML page/per_page parameters and quotes the contradictory Markdown docs statement. Criterion 2 fails because the discrepancy type/category is 'contradiction' rather than the required 'missing_in_docs' or 'value_mismatch', even though the recommendation is appropriate."
+      }
+    },
+    {
+      "index": 11,
+      "rubric": "Does the discrepancy report identify that the YAML spec includes a 'role' enum of [owner, admin, member, viewer] for GET /projects, while the current docs list only [owner, admin, member], missing 'viewer'?",
+      "weight": 6,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 2,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The discrepancy report must note that the OpenAPI YAML defines the 'role' query parameter on GET /projects with enum [owner, admin, member, viewer].",
+            "passed": true,
+            "reasoning": "The discrepancy report row D-023 explicitly states the OpenAPI spec value for the GET /projects role parameter includes viewer.",
+            "evidence": "D-023 openapi_spec_value: \"enum: owner, admin, member, viewer\""
+          },
+          {
+            "index": 1,
+            "criterion": "The report must identify that the current docs list the role filter options as only 'owner', 'admin', 'member', omitting 'viewer'.",
+            "passed": true,
+            "reasoning": "The report identifies that the current docs list only owner, admin, and member, omitting viewer.",
+            "evidence": "D-023 markdown_docs_value: \"Docs list owner, admin, member only\""
+          },
+          {
+            "index": 2,
+            "criterion": "The entry should be classified as 'enum_mismatch' for the GET /projects endpoint's 'role' parameter, noting the missing 'viewer' value.",
+            "passed": false,
+            "reasoning": "The report notes the missing viewer value, but the entry is classified as 'parameter_enum' rather than the required 'enum_mismatch' category.",
+            "evidence": "D-023 category field is \"parameter_enum\", not \"enum_mismatch\""
+          }
+        ],
+        "overall_reasoning": "The report correctly identifies the role enum mismatch and the missing viewer value, but it does not use the required 'enum_mismatch' classification for the GET /projects role parameter, so the rubric fails."
+      }
+    }
+  ]
+}

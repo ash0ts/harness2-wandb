@@ -1,0 +1,355 @@
+{
+  "evaluated_model": "adapt__baseline",
+  "judge_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+  "timestamp": "2026-10-19T15:30:02+00:00",
+  "total_score": 18,
+  "max_score": 80,
+  "pass_rate": "22%",
+  "passed_count": 2,
+  "total_count": 9,
+  "rubrics": [
+    {
+      "index": 0,
+      "rubric": "Does the composite scoring model include all five required factors: utilization rate, cost efficiency, service reliability (late shipment rate), customer satisfaction, and port connectivity?",
+      "weight": 8,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 5,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The Composite_Score tab must incorporate a utilization rate dimension derived by comparing actual order volume from OrderList.csv against daily capacity from WhCapacities.csv for each plant.",
+            "passed": false,
+            "reasoning": "The Composite_Score tab does not include a utilization rate dimension that compares actual order volume from OrderList.csv against daily capacity from WhCapacities.csv. D1 uses stated daily capacity only, and D4 uses order-book share only. The workbook explicitly states utilization percentages are not computable at face value and uses relative shares instead.",
+            "evidence": "D1 formula: '100 × (1 − (ln(cap) − ln(min)) / (ln(max) − ln(min)))' sourced from WhCapacities.csv; D4 formula: '100 × (1 − plant units / total observed units)' sourced from OrderList.csv; Data_Reconciliation R-13: 'Utilization percentages are therefore not computable at face value; the model uses relative shares and order-count uplift instead.'"
+          },
+          {
+            "index": 1,
+            "criterion": "The Composite_Score tab must incorporate a cost efficiency dimension using WhCosts.csv cost-per-unit data and/or FreightRates.csv.",
+            "passed": true,
+            "reasoning": "The Composite_Score tab includes a cost efficiency dimension using WhCosts.csv cost-per-unit data. D2 Unit handling cost competitiveness scores each plant's cost per unit against the network range.",
+            "evidence": "D2 row: 'Unit handling cost competitiveness' with formula '100 × (cost − min) / (max − min) across 19 plants' and source 'WhCosts.csv'."
+          },
+          {
+            "index": 2,
+            "criterion": "The Composite_Score tab must incorporate a service reliability dimension measured via late shipment rate (Ship_Late_Day_Count > 0 in OrderList.csv).",
+            "passed": true,
+            "reasoning": "The Composite_Score tab incorporates service reliability through late shipment rate. D5 Service performance includes a 40% late-rate percentile component sourced from OrderList.csv, and the Risk_Matrix shows late shipment rates calculated from Ship_Late_Day_Count > 0.",
+            "evidence": "D5 formula: '40% late-rate percentile + 30% severity-weighted complaint load + 30% detractor share' with source 'OrderList.csv, Complaint_Log, Survey_Results'; Risk_Matrix shows PLANT08 late orders 18 (17.65%) and PLANT09 0 (0.00%)."
+          },
+          {
+            "index": 3,
+            "criterion": "The Composite_Score tab must incorporate a customer satisfaction dimension sourced from the Survey_Results sheet in Customer_Satisfaction_Survey_Q4.xlsx.",
+            "passed": true,
+            "reasoning": "The Composite_Score tab incorporates customer satisfaction data from the survey results through the D5 service dimension, which includes a 30% detractor share component sourced from Survey_Results. Although combined with service reliability, the survey-based satisfaction component is operationalized with actual data.",
+            "evidence": "D5 formula includes '30% detractor share' and source 'Survey_Results'; Risk_Matrix shows survey responses, detractors, and average satisfaction/timeliness per plant, e.g., PLANT09 4 of 8 detractors and 2.50/5 satisfaction."
+          },
+          {
+            "index": 4,
+            "criterion": "The Composite_Score tab must incorporate a port connectivity dimension from PlantPorts.csv, where plants with single-port access (16 of 19 plants) are flagged as higher risk, and all five factors must be operationalized with actual data, not merely listed.",
+            "passed": false,
+            "reasoning": "The Composite_Score tab includes a port-related dimension using PlantPorts.csv, but it does not flag plants with single-port access as higher risk as required. D3 instead scores same-port peer redundancy, giving unique-port plants a score of 0 (lower consolidation risk), which is the opposite of the required single-port risk flag.",
+            "evidence": "D3 formula: '100 × peer capacity / (peer capacity + own capacity), peers = plants sharing ≥1 port'; PLANT15 sole plant on PORT08 has D3=0, PLANT18 sole plant on PORT11 has D3=0, PLANT17 sole plant on PORT10 has D3=0."
+          }
+        ],
+        "overall_reasoning": "The rubric fails because the Composite_Score model does not include a utilization rate dimension comparing actual order volume to daily capacity (Criterion 0), and it does not flag single-port access plants as higher risk in the port connectivity dimension (Criterion 4). It does include cost efficiency, late shipment rate, and survey-based customer satisfaction components."
+      }
+    },
+    {
+      "index": 1,
+      "rubric": "Does the Data_Reconciliation tab independently calculate the company-wide late shipment rate and compare it to the COO memo's stated '~2%' figure?",
+      "weight": 10,
+      "result": {
+        "passed": true,
+        "score": 10,
+        "criteria_count": 3,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The Data_Reconciliation tab must compute the late shipment rate directly from OrderList.csv: 192 orders with Ship_Late_Day_Count > 0 out of 9,215 total orders = approximately 2.08%, and compare it against the COO memo's stated '~2%' figure.",
+            "passed": true,
+            "reasoning": "The Data_Reconciliation tab directly computes the late shipment rate from OrderList.csv and compares it to the memo's ~2% figure. It states the test as 'Share of orders with Ship_Late_Day_Count > 0' and the result as '192 of 9,215 orders = 2.08% late', with verdict 'VERIFIED'.",
+            "evidence": "R-03: Memo claim 'Approximately 2% of all orders ship late'; Test applied 'Share of orders with Ship_Late_Day_Count > 0'; Result from data '192 of 9,215 orders = 2.08% late'; Verdict 'VERIFIED'."
+          },
+          {
+            "index": 1,
+            "criterion": "The Data_Reconciliation tab should note that the computed figure (2.08%) is consistent with the memo's approximation and document any interpretation assumptions (e.g., whether Ship_Late_Day_Count > 0 is the correct definition of 'late,' whether the memo covers a different time period).",
+            "passed": true,
+            "reasoning": "The tab notes that the computed 2.08% figure is consistent with the memo's approximation by marking the claim VERIFIED. It also documents the interpretation assumption by specifying the late definition as Ship_Late_Day_Count > 0, and it flags the time-period caveat elsewhere in the reconciliation (single-day order book dated 26-May-2013).",
+            "evidence": "R-03 uses 'Ship_Late_Day_Count > 0' as the late definition and returns 2.08% vs the memo's ~2%. R-02 and R-14 note all orders are dated 26-May-2013, a single operating day, and that the 'annual' framing rests on the memo's caveat."
+          },
+          {
+            "index": 2,
+            "criterion": "The reconciliation must also check whether all Plant_Codes in OrderList.csv appear in WhCapacities.csv and PlantPorts.csv, confirming no orphaned records exist (all 7 active plants are present in both reference files).",
+            "passed": true,
+            "reasoning": "The Data_Reconciliation tab includes a plant-code coverage reconciliation across all datasets. The table shows every plant in OrderList.csv (PLANT03, PLANT04, PLANT08, PLANT09, PLANT12, PLANT13, PLANT16) has checkmarks in both WhCapacities and PlantPorts, confirming no orphaned order records exist.",
+            "evidence": "Section 2 table lists all 19 plants with WhCapacities, WhCosts, PlantPorts, OrderList, Survey, and Complaints columns. All 7 order-active plants show ✓ in WhCapacities and PlantPorts; totals show 19/19 reference-file coverage and 7/19 plants covered by OrderList."
+          }
+        ],
+        "overall_reasoning": "All three criteria pass. The Data_Reconciliation tab independently calculates the company-wide late shipment rate as 192/9,215 = 2.08% and compares it to the memo's ~2% figure, documents the late definition and time-period caveat, and confirms all OrderList plant codes are present in WhCapacities and PlantPorts with no orphaned records."
+      }
+    },
+    {
+      "index": 2,
+      "rubric": "Does the consolidation scenario verify that receiving plants will not exceed their warehouse capacity after absorbing redistributed volume?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 0,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "For each proposed closure, the Consolidation_Scenarios tab must check WhCapacities.csv to confirm that the receiving plant(s) can handle the additional order volume without exceeding daily capacity.",
+            "passed": false,
+            "reasoning": "The Consolidation_Scenarios tab does not confirm that receiving plants can handle additional order volume without exceeding daily capacity. It uses WhCapacities.csv capacity shares to allocate volume, but explicitly states that capacity headroom cannot be tested and instead assesses feasibility on order-count load uplift.",
+            "evidence": "The tab states: 'Stated-capacity headroom cannot be tested at face value: observed units (29.5M) exceed total stated daily capacity (5,791) by ≈5,096×... Feasibility is therefore assessed on order-count load uplift.' Scenario rows show only load uplift percentages, not capacity verification."
+          },
+          {
+            "index": 1,
+            "criterion": "The Consolidation_Scenarios tab must present specific capacity utilization calculations for receiving plants both before and after absorption, using actual unit quantities from OrderList.csv against daily capacities from WhCapacities.csv.",
+            "passed": false,
+            "reasoning": "The tab does not present specific before/after capacity utilization calculations for receiving plants using actual unit quantities from OrderList.csv against daily capacities from WhCapacities.csv. It provides order counts, units, and capacity-share allocations, but no utilization percentages or headroom calculations.",
+            "evidence": "For PLANT08, the tab shows 'Load uplift: PLANT03 +0.6%, PLANT12 +3.5%, PLANT13 +28.4% of order counts' rather than capacity utilization before/after absorption. The note explicitly says utilization percentages are not computable at face value."
+          },
+          {
+            "index": 2,
+            "criterion": "For example, PLANT03 has a daily capacity of 1,013 units and already handles 8,541 orders (92.7% of total volume); absorbing volume from smaller PORT04 plants (PLANT08 at 102 orders, PLANT09 at 12 orders) requires verifying PLANT03's post-absorption utilization remains feasible.",
+            "passed": false,
+            "reasoning": "The PLANT03 example is not verified with a post-absorption utilization calculation. The output notes PLANT03's 92.7% order share and allocates redistributed orders to it, but does not calculate whether PLANT03 remains within its 1,013-unit daily capacity after absorption.",
+            "evidence": "The workbook states PLANT03 already carries 92.7% of orders and 96.9% of units, and caps PLANT03 at 49.6% of redistributed volume, but also states 'Stated-capacity headroom cannot be tested at face value.' No post-absorption utilization calculation for PLANT03 is provided."
+          }
+        ],
+        "overall_reasoning": "The consolidation scenario does not verify that receiving plants will not exceed warehouse capacity after absorbing redistributed volume. It explicitly disclaims the ability to test capacity headroom due to a unit-scale inconsistency and substitutes order-count load uplift for capacity utilization calculations, so all three criteria fail."
+      }
+    },
+    {
+      "index": 3,
+      "rubric": "Does the Risk_Matrix tab correctly cross-reference the Complaint_Log data with closure candidates and apply the customer attrition risk flag (severity >= High AND resolution rate < 70%)?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 2,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The Risk_Matrix must extract complaint data per plant from the Complaint_Log sheet with the correct distribution: PLANT03 (5 complaints), PLANT08 (3 complaints), PLANT09 (3 complaints), PLANT12 (2 complaints), PLANT13 (2 complaints), PLANT16 (2 complaints), PLANT04 (1 complaint).",
+            "passed": true,
+            "reasoning": "The Risk_Matrix tab includes a Q4-2023 complaint log cross-reference listing all 18 complaints. Counting by plant matches the required distribution exactly.",
+            "evidence": "PLANT03: C-001, C-003, C-005, C-011, C-012 = 5; PLANT08: C-002, C-006, C-008 = 3; PLANT09: C-004, C-009, C-014 = 3; PLANT12: C-010, C-016 = 2; PLANT13: C-017, C-018 = 2; PLANT16: C-007, C-013 = 2; PLANT04: C-015 = 1."
+          },
+          {
+            "index": 1,
+            "criterion": "For each closure candidate, the Risk_Matrix must calculate: number of open complaints (status other than 'Resolved'), average severity, unresolved complaint rate, and most frequent complaint category.",
+            "passed": false,
+            "reasoning": "The Risk_Matrix does not calculate all required metrics for each closure candidate. It shows open complaint counts and a severity-weighted load, but it does not calculate average severity, unresolved complaint rate, or most frequent complaint category.",
+            "evidence": "The candidate table columns include 'Complaints (Q4)', 'Severity-weighted load', and 'Open complaints', but there is no average severity, no unresolved complaint rate, and no most frequent complaint category per candidate. For example, PLANT08 has severity-weighted load 6 and open complaints 2, but no 66.7% unresolved rate or 'Late Delivery' as most frequent category is shown."
+          },
+          {
+            "index": 2,
+            "criterion": "The attrition risk flag must be applied where any complaint has severity 'High' AND the plant's resolution rate is below 70% (e.g., PLANT09 has 3 complaints with 1 High-severity complaint C-014 and only 1 resolved out of 3 at 33% resolution rate, triggering the attrition risk flag).",
+            "passed": true,
+            "reasoning": "The attrition risk flag is correctly applied to the closure candidates that have a High-severity complaint and resolution rate below 70%. PLANT08 and PLANT09 are flagged HIGH, while the other candidates are LOW.",
+            "evidence": "PLANT08 has High-severity complaint C-008 and only 1 of 3 complaints resolved (33.3% < 70%), so HIGH is correct. PLANT09 has High-severity complaint C-014 and only 1 of 3 complaints resolved (33.3% < 70%), so HIGH is correct. PLANT19, PLANT15, and PLANT06 have no High-severity complaints and are flagged LOW."
+          }
+        ],
+        "overall_reasoning": "Criterion 0 passes because the complaint distribution is correct. Criterion 2 passes because the attrition risk flag is correctly applied to PLANT08 and PLANT09. However, Criterion 1 fails because the Risk_Matrix does not calculate average severity, unresolved complaint rate, or most frequent complaint category for each closure candidate. Since all criteria must pass, the rubric fails."
+      }
+    },
+    {
+      "index": 4,
+      "rubric": "Does the analysis correctly calculate net cost impact for each consolidation scenario, incorporating both savings from closure and increased costs at receiving plants?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 1,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "For each proposed plant closure, the response must calculate cost savings from closing the plant using WhCosts.csv cost-per-unit data and the plant's current order volume.",
+            "passed": false,
+            "reasoning": "The response does not explicitly calculate cost savings from closing each plant using WhCosts cost-per-unit data and current order volume. It presents a net warehousing delta (e.g., PLANT08 +$4,281) without showing the closure savings component such as 277,008 units × $0.5229/unit. For zero-volume plants the savings are implicitly $0, but for PLANT08 and PLANT09 the savings from eliminating current volume are not separately calculated or presented.",
+            "evidence": "Consolidation_Scenarios table shows 'Δ Warehousing cost / period' values only (PLANT08 4281, PLANT09 16394, others 0) and does not show a 'savings from closure' line. Board_Decision_Brief.docx states 'On variable costs alone the programme adds ≈$20,675 per period' but does not itemize closure savings."
+          },
+          {
+            "index": 1,
+            "criterion": "The response must calculate increased costs at receiving plants from handling additional volume, using both WhCosts.csv warehouse costs and FreightRates.csv for any changed freight routes.",
+            "passed": false,
+            "reasoning": "The response does not calculate increased costs at receiving plants separately. It shows net warehousing deltas but not the receiving plants' added handling costs derived from WhCosts.csv unit costs and allocated volume. FreightRates.csv is referenced for same-port no-change and for the PLANT16 sensitivity, but the receiving-plant warehouse cost calculation is not presented.",
+            "evidence": "For PLANT08, the output gives only '+$4,281' as Δ Warehousing, not the receiving-plant cost total (which would be the sum of allocated units × PLANT03/PLANT13/PLANT11/PLANT12 unit costs). The allocation rule is described, but the resulting increased costs at receiving plants are not itemized."
+          },
+          {
+            "index": 2,
+            "criterion": "The response must present a net annual cost impact (savings minus increased costs) for each scenario, using actual data values from WhCosts.csv (e.g., PLANT08's cost per unit is $0.5229 and PLANT03's is $0.5175).",
+            "passed": false,
+            "reasoning": "The response does not present a net annual cost impact (savings minus increased costs) for each scenario. It presents per-period figures, and the Excel 'Net variable impact / period' column includes one-off transition costs rather than being savings minus increased costs. Actual WhCosts values such as PLANT08 $0.5229 and PLANT03 $0.5175 appear in the scoring sheet but are not used transparently in the scenario net cost calculations.",
+            "evidence": "Consolidation_Scenarios 'Net variable impact / period' for PLANT08 is 179281, which equals 4281 + 175000 one-off, not savings minus increased costs. Board_Decision_Brief.docx uses 'per order-book period' rather than annualized net cost impact."
+          },
+          {
+            "index": 3,
+            "criterion": "Freight cost changes must also be considered if orders are rerouted through different carriers or modes.",
+            "passed": true,
+            "reasoning": "Freight cost changes are considered. The analysis states that same-port absorption requires no freight re-rating and therefore Δ Freight is $0 for the five candidates. It also includes a sensitivity scenario for PLANT16 that calculates freight re-rating on changed lanes, showing a freight reduction of $2,484.",
+            "evidence": "Board_Decision_Brief.docx: 'Δ Freight $0 (same port)' for PLANT08/PLANT09; Consolidation_Scenarios S-1: 'All 173 orders re-priced on PORT04→PORT09 lanes: $4,128 → $1,644 per period (Δ −$2,484).'"
+          }
+        ],
+        "overall_reasoning": "The analysis partially addresses freight considerations but fails to explicitly calculate closure savings and receiving-plant increased costs, and does not present a correct net annual cost impact per scenario. Because criteria 0, 1, and 2 fail, the rubric as a whole fails."
+      }
+    },
+    {
+      "index": 5,
+      "rubric": "Does the Board Decision Brief include a Methodology Statement that explains the composite scoring approach, factor weights, and acknowledges data limitations?",
+      "weight": 6,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 2,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The Word document must contain a Methodology Statement section (approximately 0.5 pages) that explains what factors were included in the composite score and why, and how weights were derived from data patterns.",
+            "passed": true,
+            "reasoning": "The Word document contains a Methodology Statement section (Section 2) that identifies the five factors included in the composite score, provides a rationale for each factor, and lists the weights (D1 25%, D2 20%, D3 20%, D4 15%, D5 20%). The rationale for weights is tied to data patterns such as the capacity imbalance, cost range, topology constraints, and the 12-plant coverage gap.",
+            "evidence": "Section 2 'Methodology Statement' includes a dimension table with weights and 'Why this weight' explanations, e.g., D4 Demand contribution (15%) is 'down-weighted for the 12-plant coverage gap' and D5 Service record (20%) uses 'neutral 50 where no data exists'."
+          },
+          {
+            "index": 1,
+            "criterion": "The Methodology Statement must explain how the scoring model was constructed, including the normalization approach and aggregation method.",
+            "passed": true,
+            "reasoning": "The Methodology Statement explains how the scoring model was constructed: each plant scores 0-100 on five dimensions, the composite is the weighted sum, and scores are linear with log-scaling for capacity. This covers the normalization approach and aggregation method.",
+            "evidence": "Section 2 states: 'each plant scores 0–100 on five dimensions; the composite is the weighted sum. Scores are linear (log-scaled for capacity) and reproducible; weights are live cells in the workbook so the Board can stress-test them.'"
+          },
+          {
+            "index": 2,
+            "criterion": "The Methodology Statement must explicitly acknowledge data limitations — critically, that only 7 of 19 plants have order data in OrderList.csv, that the customer satisfaction survey covers only a subset of plants, and that FreightRates.csv may not perfectly map to actual order routes; a methodology statement that claims completeness without noting these gaps fails this criterion.",
+            "passed": false,
+            "reasoning": "The Methodology Statement acknowledges some data limitations but does not explicitly acknowledge all critical gaps required by the criterion. It notes that 12 of 19 plants have no shipment or customer records and that the order book is a single operating day, but it does not explicitly state that the customer satisfaction survey covers only a subset of plants, and it does not mention that FreightRates.csv may not perfectly map to actual order routes.",
+            "evidence": "Section 2 limitations state: '12 of 19 plants have no shipment or customer records; the order book is a single operating day (26-May-2013); unit scales conflict across datasets (29.5M observed units vs 5,791 stated daily capacity, R-13).' No mention of FreightRates.csv mapping limitations or explicit survey subset coverage."
+          }
+        ],
+        "overall_reasoning": "The Methodology Statement exists and explains the scoring model, factors, weights, normalization, and aggregation. However, it fails Criterion 2 because it does not explicitly acknowledge all required data limitations, particularly the FreightRates.csv mapping limitation and the explicit survey subset coverage. Therefore the rubric does not pass."
+      }
+    },
+    {
+      "index": 6,
+      "rubric": "Does the Consolidation Recommendation section provide ranked closure candidates with all six required metrics per plant (utilization, cost per unit, late shipment rate, satisfaction score, redistribution plan, and net annual cost impact)?",
+      "weight": 10,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 0,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "For each of the 3-5 closure candidates, the Board Decision Brief must include: current utilization rate (actual orders vs. daily capacity from WhCapacities.csv), cost per unit from WhCosts.csv, and late shipment rate from OrderList.csv.",
+            "passed": false,
+            "reasoning": "The Board Decision Brief provides daily capacity and order counts for each candidate, and cost per unit for all five, but it does not compute or state a current utilization rate (actual orders vs. daily capacity) for any candidate. Late shipment rate is only stated for PLANT08 (17.65%) in the Consolidation Recommendation section; PLANT09's late rate appears only in the Risk_Matrix, and the zero-volume plants have no late rate stated. Therefore the required utilization and late shipment rate metrics are not included for each candidate.",
+            "evidence": "Section 3 table lists '7 units/day stated capacity... Zero orders' for PLANT19, '14 units/day... 102 orders' for PLANT08, etc., but no utilization percentage. PLANT08 key weaknesses includes 'Worst late-shipment rate (17.65%)'; PLANT09 key weaknesses lacks a late rate."
+          },
+          {
+            "index": 1,
+            "criterion": "Each closure candidate must include a customer satisfaction score from the Survey_Results sheet and a proposed volume redistribution plan identifying which plant(s) will absorb the volume with port-sharing justification.",
+            "passed": false,
+            "reasoning": "Redistribution plans with port-sharing justification are present for all five candidates, but customer satisfaction scores are not included for each candidate in the Board Decision Brief's Consolidation Recommendation section. PLANT09 has 2.50/5, PLANT08 only mentions detractors rather than a satisfaction score, and PLANT19, PLANT15, and PLANT06 have no satisfaction score stated.",
+            "evidence": "Section 3 table: PLANT09 'Worst satisfaction (2.50/5)'; PLANT08 '4 of 8 survey detractors'; PLANT19/15/06 no satisfaction score. Redistribution table identifies absorbers and port-sharing for each candidate."
+          },
+          {
+            "index": 2,
+            "criterion": "Each closure candidate must include a net annual cost impact estimate.",
+            "passed": false,
+            "reasoning": "The brief provides cost impacts 'per order-book period' and one-off transition costs, but it does not provide a net annual cost impact estimate for each candidate. The figures are not annualized and no single net annual cost impact is stated per plant.",
+            "evidence": "Section 3 'Redistribution plans and net cost impact (per order-book period)' table has Δ Warehousing, Δ Freight, and One-off transition, but no net annual cost impact. Text says 'adds ≈$20,675 per period ... plus $875,000 one-off'."
+          },
+          {
+            "index": 3,
+            "criterion": "Each candidate must also include a brief counterargument for retention; strong closure candidates based on the data include PLANT08 (daily capacity 14, 17.65% late rate, shared PORT04), PLANT09 (daily capacity 11, only 12 orders, shared PORT04), and potentially zero-volume plants on shared ports.",
+            "passed": false,
+            "reasoning": "The brief does not include a brief counterargument for retention for each candidate. It provides closure/consolidation rationales, implementation risks, and decision gates, but not a dedicated retention counterargument per candidate. Only PLANT15's port-unique position is noted as a reason physical closure would strand PORT08; the other candidates lack retention counterarguments.",
+            "evidence": "Section 5 Go/No-Go Matrix gives action/rationale/decision gate but no 'counterargument for retention' field. Section 4 risks are implementation risks, not retention arguments."
+          }
+        ],
+        "overall_reasoning": "The Consolidation Recommendation section identifies five ranked candidates and includes some required metrics such as cost per unit and redistribution plans, but it fails to provide current utilization rates, satisfaction scores for every candidate, net annual cost impact estimates, and brief retention counterarguments for each candidate. Because all criteria must pass and multiple criteria fail, the rubric fails."
+      }
+    },
+    {
+      "index": 7,
+      "rubric": "Does the Go/No-Go Matrix present a single-page summary table with a recommended action (Close, Consolidate, or Retain-and-Monitor) and one-line justification for each candidate plant?",
+      "weight": 8,
+      "result": {
+        "passed": true,
+        "score": 8,
+        "criteria_count": 3,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The Board Decision Brief must include a Go/No-Go Matrix as a clear table with one row per closure candidate plant, covering all 3-5 identified candidates.",
+            "passed": true,
+            "reasoning": "The Board Decision Brief includes a clearly labeled Go/No-Go Matrix in Section 5 with a table structure. It contains one row for each of the five identified closure/consolidation candidate plants: PLANT19, PLANT08, PLANT09, PLANT15, and PLANT06. This satisfies the requirement to cover all 3-5 identified candidates.",
+            "evidence": "Board_Decision_Brief.docx Section 5 'Go/No-Go Matrix' includes columns 'Plant (score)', 'Action', 'Rationale', and 'Decision gate before execution', with rows for PLANT19, PLANT08, PLANT09, PLANT15, and PLANT06."
+          },
+          {
+            "index": 1,
+            "criterion": "Each row must contain: the plant identifier, the recommended action (exactly one of: Close, Consolidate, or Retain-and-Monitor), and a concise one-line justification.",
+            "passed": true,
+            "reasoning": "Each candidate row contains the plant identifier, a recommended action, and a concise one-line justification. The actions are CLOSE for PLANT19, CONSOLIDATE for PLANT08, PLANT09, PLANT15 (administrative), and PLANT06. The watchlist row is additional and does not undermine the candidate rows.",
+            "evidence": "PLANT19 row: 'CLOSE' with rationale 'Dormant (0 orders); 7 units/day capacity; PORT04 access fully preserved by 6 peers; zero customer exposure'. PLANT08 row: 'CONSOLIDATE' with rationale. PLANT09 row: 'CONSOLIDATE' with rationale. PLANT15 row: 'CONSOLIDATE (administrative)' with rationale. PLANT06 row: 'CONSOLIDATE' with rationale."
+          },
+          {
+            "index": 2,
+            "criterion": "The recommended actions should logically follow from the preceding analysis — for example, a plant with shared port access, low volume, and no customer attrition risk might warrant 'Close,' while a plant with unresolved high-severity complaints might warrant 'Retain-and-Monitor' until complaints are resolved.",
+            "passed": true,
+            "reasoning": "The recommended actions logically follow from the preceding analysis. PLANT19 is dormant with shared port access and no customer exposure, so CLOSE is logical. PLANT08 and PLANT09 have service failures and absorbable volume, so CONSOLIDATE is logical. PLANT15 has no volume but a port-unique position, so administrative CONSOLIDATE is logical. PLANT06 is redundant with a larger, cheaper same-port peer, so CONSOLIDATE is logical. Unresolved complaints are addressed through decision gates before execution.",
+            "evidence": "Section 3 profiles and Section 4 risk assessment support the actions: PLANT19 has 0 orders and 6 PORT04 peers; PLANT08 has worst late rate and same-port absorption; PLANT09 has worst CSAT and concentration; PLANT15 is sole plant on PORT08; PLANT06 shares PORT06 with PLANT05. Decision gates include resolving open complaints before execution."
+          }
+        ],
+        "overall_reasoning": "The Go/No-Go Matrix is present as a clear table with one row per candidate plant, covering all five identified candidates. Each candidate row includes the plant identifier, a recommended action from the allowed set, and a concise one-line justification. The actions are consistent with the preceding analysis and risk assessment."
+      }
+    },
+    {
+      "index": 8,
+      "rubric": "Does the response correctly identify that PLANT03 handles approximately 92.7% of all order volume and assess the strategic implications of this extreme concentration?",
+      "weight": 8,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 3,
+        "criteria_passed": 2,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The analysis must identify that PLANT03 processes 8,541 out of 9,215 orders (92.69%), making NovaTrans heavily dependent on a single facility with only single-port access (PORT04).",
+            "passed": true,
+            "reasoning": "The output identifies PLANT03's order volume and share, and its single-port access. It states PLANT03 carries 92.7% of orders and 96.9% of units, and the workbook shows PLANT03 with 8,541 observed orders out of the 9,215-order book, with PORT04 as its port.",
+            "evidence": "Board brief: 'PLANT03 already carries 92.7% of orders and 96.9% of units.' Composite_Score sheet: PLANT03 row shows 'Observed orders (order book)' = 8541 and 'Port(s)' = PORT04. Methodology states 9,215 orders."
+          },
+          {
+            "index": 1,
+            "criterion": "The analysis must discuss concentration risk implications: PLANT03 is critical infrastructure that cannot be consolidated, and any consolidation of other PORT04 plants into PLANT03 increases this concentration risk further.",
+            "passed": true,
+            "reasoning": "The output discusses concentration risk implications of PLANT03 dependency and explicitly notes that consolidation of other PORT04 plants into PLANT03 increases that concentration risk. It also treats PLANT03 as a retained absorber and caps its share of redistributed volume.",
+            "evidence": "Board brief: 'The capacity-share allocation caps PLANT03 at 49.6% of redistributed volume; the Board should treat any further PLANT03 dependence as a standing risk metric.' Risk_Matrix sheet: 'Consolidation into the PORT04 cluster increases PLANT03 dependence: it already carries 92.7% of orders and 96.9% of units. Allocation caps (≤50% of redistributed volume to any single absorber) are embedded in the capacity-share rule.'"
+          },
+          {
+            "index": 2,
+            "criterion": "The analysis must note that PLANT03's own late shipment rate (2.04%, representing 174 late orders) contributes the vast majority of late deliveries by volume, and should consider whether diversifying away from PLANT03 dependency might be more strategically important than closing small plants.",
+            "passed": false,
+            "reasoning": "The output does not identify PLANT03's own late shipment rate as 2.04% or 174 late orders, nor does it state that PLANT03 contributes the vast majority of late deliveries by volume. It also does not consider whether diversifying away from PLANT03 dependency might be more strategically important than closing small plants.",
+            "evidence": "Data_Reconciliation R-03 only gives the network-wide late rate: '192 of 9,215 orders = 2.08% late.' The Risk_Matrix concentration note mentions PLANT03's order/unit share but not its late-order contribution. The Board brief identifies PLANT08 as having the worst late rate (17.65%) but does not analyze PLANT03's late shipment volume or a diversification alternative."
+          }
+        ],
+        "overall_reasoning": "The response passes the first two criteria by identifying PLANT03's 92.7% order share and single-port access, and by discussing concentration risk and the increased dependence from PORT04 consolidation. However, it fails the third criterion because it does not note PLANT03's own late shipment rate of 2.04% or 174 late orders, nor does it evaluate whether reducing PLANT03 dependency might be more strategically important than closing small plants."
+      }
+    }
+  ]
+}

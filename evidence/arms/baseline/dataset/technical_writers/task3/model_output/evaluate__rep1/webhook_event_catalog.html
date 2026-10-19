@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskFlow API — Webhook Event Catalog</title>
+<style>
+  :root {
+    --ink: #1f2933;
+    --muted: #52606d;
+    --line: #d9e2ec;
+    --bg: #f9fafc;
+    --card: #ffffff;
+    --accent: #1d4ed8;
+    --spec-bg: #e7f0fe;
+    --spec-ink: #1e40af;
+    --prod-bg: #e6f6ec;
+    --prod-ink: #166534;
+    --warn-bg: #fdf0e3;
+    --warn-ink: #9a5b13;
+    --code-bg: #f4f6f8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    margin: 0;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+  header.page h1 { font-size: 1.9rem; margin: 0 0 0.25rem; }
+  header.page p.lede { color: var(--muted); margin: 0 0 1.5rem; max-width: 46rem; }
+  .meta-line { font-size: 0.85rem; color: var(--muted); }
+  .meta-line code { background: var(--code-bg); padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.8rem; }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0.75rem;
+    margin: 1.5rem 0 2rem;
+  }
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+  }
+  .stat .num { font-size: 1.6rem; font-weight: 700; }
+  .stat .lbl { font-size: 0.82rem; color: var(--muted); }
+
+  section { margin-bottom: 2.5rem; }
+  h2 { font-size: 1.25rem; border-bottom: 1px solid var(--line); padding-bottom: 0.35rem; }
+  h3 { font-size: 1.02rem; margin: 1.4rem 0 0.4rem; }
+
+  .legend { font-size: 0.9rem; color: var(--muted); }
+  .badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge.spec-prod { background: var(--spec-bg); color: var(--spec-ink); }
+  .badge.prod-only { background: var(--warn-bg); color: var(--warn-ink); }
+
+  .event {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 1.1rem;
+  }
+  .event header { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+  .event h3 { margin: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1rem; }
+  .event dl { display: grid; grid-template-columns: 9.5rem 1fr; gap: 0.25rem 0.75rem; margin: 0.6rem 0; font-size: 0.92rem; }
+  .event dt { font-weight: 600; color: var(--muted); }
+  .event dd { margin: 0; }
+  .event pre {
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0.75rem 0.9rem;
+    font-size: 0.82rem;
+    overflow-x: auto;
+    margin: 0.6rem 0 0.4rem;
+  }
+  .event .obs { font-size: 0.8rem; color: var(--muted); margin-top: 0.35rem; }
+
+  table.sources { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  table.sources th, table.sources td { border: 1px solid var(--line); padding: 0.45rem 0.6rem; text-align: left; }
+  table.sources th { background: #eef2f7; }
+  table.sources code { font-size: 0.82rem; }
+
+  code.inline { background: var(--code-bg); padding: 0.08rem 0.35rem; border-radius: 4px; font-size: 0.85em; }
+  .note {
+    border-left: 4px solid var(--accent);
+    background: var(--spec-bg);
+    border-radius: 0 6px 6px 0;
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
+    margin: 1rem 0;
+  }
+  .note.warn { border-left-color: var(--warn-ink); background: var(--warn-bg); }
+  footer.doc { font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="page">
+  <h1>TaskFlow API — Webhook Event Catalog</h1>
+  <p class="lede">
+    This catalog lists every webhook event the TaskFlow platform emits, combining two sources:
+    the events declared as subscribable values in the OpenAPI 3.0 specification
+    (<code>taskflow_openapi_v2_extract.yaml</code>, API version 2.0.1) and the events actually observed
+    in a production delivery log (<code>webhook_delivery_log.json</code>, export dated 2024-03-10).
+  </p>
+  <p class="meta-line">
+    Sources reconciled: OpenAPI spec (declares <strong>10</strong> event values) &middot;
+    Production delivery log for webhook <code>301</code> → <code>https://integrations.acme.corp/taskflow/events</code>
+    (12 deliveries, <strong>12</strong> unique event types, 11 successful / 1 failed).
+  </p>
+</header>
+
+<section id="summary">
+  <h2>At a glance</h2>
+  <div class="summary">
+    <div class="stat"><div class="num">12</div><div class="lbl">Total event types documented</div></div>
+    <div class="stat"><div class="num">10</div><div class="lbl">Declared in spec & observed in production</div></div>
+    <div class="stat"><div class="num">2</div><div class="lbl">Observed in production only (not in spec)</div></div>
+    <div class="stat"><div class="num">1</div><div class="lbl">Failed delivery in sample (3 retries)</div></div>
+  </div>
+  <p class="legend">
+    <span class="badge spec-prod">Spec + Production</span> — subscribable via the <code>events</code> array on
+    <code>POST /webhooks</code> and confirmed firing in production.
+    &nbsp; <span class="badge prod-only">Production only</span> — observed firing in production but
+    <em>not</em> declared in the specification's <code>events</code> enum; treat as undocumented until the
+    spec is updated (see <a href="#gaps">Known gaps</a>).
+  </p>
+</section>
+
+<section id="catalog">
+  <h2>Event catalog</h2>
+
+  <h3>Task events</h3>
+
+  <article class="event" id="task-created">
+    <header><h3>task.created</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a new task is created in a project.</dd>
+      <dt>Trigger</dt><dd>Successful <code>POST /tasks</code>.</dd>
+    </dl>
+    <pre>{
+  "event": "task.created",
+  "task_id": 1042,
+  "project_id": 12,
+  "actor_id": 57
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90001</code>, 2024-03-01T14:22:00Z, HTTP 200.</p>
+  </article>
+
+  <article class="event" id="task-updated">
+    <header><h3>task.updated</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when one or more fields of an existing task change. The <code>changed_fields</code> array names the fields that were modified, so consumers can react selectively.</dd>
+      <dt>Trigger</dt><dd>Successful <code>PUT /tasks/{taskId}</code>, or any other mutation that alters task fields (for example <code>POST /tasks/{taskId}/assign</code>).</dd>
+    </dl>
+    <pre>{
+  "event": "task.updated",
+  "task_id": 1042,
+  "changed_fields": ["status", "assignee_id"],
+  "actor_id": 57
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90002</code>, 2024-03-01T15:05:33Z, HTTP 200.</p>
+  </article>
+
+  <article class="event" id="task-assigned">
+    <header><h3>task.assigned</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a task is assigned to a user. Note that in production, task updates that change the assignee also emitted <code>task.updated</code> — consumers should be prepared to receive both events for one assignment.</dd>
+      <dt>Trigger</dt><dd>Successful <code>POST /tasks/{taskId}/assign</code>, or an update that sets <code>assignee_id</code>.</dd>
+    </dl>
+    <pre>{
+  "event": "task.assigned",
+  "task_id": 1050,
+  "assignee_id": 93,
+  "actor_id": 57
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90006</code>, 2024-03-05T10:02:00Z, HTTP 200.</p>
+  </article>
+
+  <article class="event" id="task-commented">
+    <header><h3>task.commented</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a comment is added to a task. The payload identifies the comment so consumers can fetch or display it.</dd>
+      <dt>Trigger</dt><dd>A new comment is posted on the task.</dd>
+    </dl>
+    <pre>{
+  "event": "task.commented",
+  "task_id": 1042,
+  "comment_id": 5567,
+  "actor_id": 82
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90003</code>, 2024-03-02T09:17:44Z, HTTP 200.</p>
+  </article>
+
+  <article class="event" id="task-deleted">
+    <header><h3>task.deleted</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a task is deleted. Includes the owning <code>project_id</code> so consumers can clean up project-scoped state.</dd>
+      <dt>Trigger</dt><dd>Successful <code>DELETE /tasks/{taskId}</code>, or deletion of a task via project cascade.</dd>
+    </dl>
+    <pre>{
+  "event": "task.deleted",
+  "task_id": 999,
+  "project_id": 3,
+  "actor_id": 57
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90010</code>, 2024-03-08T09:00:00Z, HTTP 200.</p>
+  </article>
+
+  <article class="event" id="task-due-date-approaching">
+    <header><h3>task.due_date_approaching</h3><span class="badge prod-only">Production only</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a task's due date is approaching. The payload carries the due date and the number of days remaining. Both scheduled events in the sample fired at exactly 00:00:00Z, consistent with a once-daily scheduled job.</dd>
+      <dt>Trigger</dt><dd>Scheduled daily check; fired while the task's due date is still in the future within the reminder window (observed at <code>days_remaining: 9</code>).</dd>
+    </dl>
+    <pre>{
+  "event": "task.due_date_approaching",
+  "task_id": 1042,
+  "due_date": "2024-03-15T00:00:00Z",
+  "days_remaining": 9
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90007</code>, 2024-03-06T00:00:00Z, HTTP 200.</p>
+  </article>
+
+  <article class="event" id="task-overdue">
+    <header><h3>task.overdue</h3><span class="badge prod-only">Production only</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a task's due date has passed without the task being completed. The payload carries the due date and the number of days overdue. Like <code>task.due_date_approaching</code>, it fires from the daily scheduled run.</dd>
+      <dt>Trigger</dt><dd>Scheduled daily check; fired once the due date has passed (observed at <code>days_overdue: 1</code>).</dd>
+    </dl>
+    <pre>{
+  "event": "task.overdue",
+  "task_id": 1042,
+  "due_date": "2024-03-15T00:00:00Z",
+  "days_overdue": 1
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90011</code>, 2024-03-16T00:00:00Z, HTTP 200.</p>
+  </article>
+
+  <h3>Project events</h3>
+
+  <article class="event" id="project-created">
+    <header><h3>project.created</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a new project is created.</dd>
+      <dt>Trigger</dt><dd>Successful <code>POST /projects</code>.</dd>
+    </dl>
+    <pre>{
+  "event": "project.created",
+  "project_id": 15,
+  "actor_id": 82
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90012</code>, 2024-03-09T13:55:00Z, HTTP 200.</p>
+  </article>
+
+  <article class="event" id="project-archived">
+    <header><h3>project.archived</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a project is archived. Archived projects are hidden from default listings but not deleted.</dd>
+      <dt>Trigger</dt><dd>The project's status changes to archived.</dd>
+    </dl>
+    <pre>{
+  "event": "project.archived",
+  "project_id": 8,
+  "actor_id": 57
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90004</code>, 2024-03-03T11:30:00Z, HTTP 200.</p>
+  </article>
+
+  <article class="event" id="project-deleted">
+    <header><h3>project.deleted</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a project is deleted. This is the only event in the sample log with a failed delivery: the first attempt returned HTTP 502 and was retried 3 times before being marked permanently failed. Consumers that must not miss this event (for example, to tear down synced resources) should implement a reconciliation check.</dd>
+      <dt>Trigger</dt><dd>Successful <code>DELETE /projects/{projectId}</code>.</dd>
+    </dl>
+    <pre>{
+  "event": "project.deleted",
+  "project_id": 3,
+  "actor_id": 57
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90008</code>, 2024-03-07T08:20:00Z, HTTP 502, <code>retry_attempts: 3</code>, <code>final_status: "failed"</code>.</p>
+  </article>
+
+  <h3>Membership events</h3>
+
+  <article class="event" id="member-added">
+    <header><h3>member.added</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a user is added to a project. The payload includes the granted <code>role</code>.</dd>
+      <dt>Trigger</dt><dd>A user is granted membership on a project.</dd>
+    </dl>
+    <pre>{
+  "event": "member.added",
+  "project_id": 12,
+  "user_id": 93,
+  "role": "member",
+  "actor_id": 57
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90005</code>, 2024-03-04T16:45:12Z, HTTP 200.</p>
+  </article>
+
+  <article class="event" id="member-removed">
+    <header><h3>member.removed</h3><span class="badge spec-prod">Spec + Production</span></header>
+    <dl>
+      <dt>Description</dt><dd>Fired when a user's membership on a project is revoked.</dd>
+      <dt>Trigger</dt><dd>A user's membership is removed from a project.</dd>
+    </dl>
+    <pre>{
+  "event": "member.removed",
+  "project_id": 12,
+  "user_id": 45,
+  "actor_id": 57
+}</pre>
+    <p class="obs">Observed in production: delivery <code>d-90009</code>, 2024-03-07T14:10:00Z, HTTP 200.</p>
+  </article>
+</section>
+
+<section id="subscribing">
+  <h2>Subscribing to events</h2>
+  <p>
+    Register a webhook with <code>POST /webhooks</code>. The request requires a <code>url</code> and an
+    <code>events</code> array whose values must come from the ten spec-declared event names listed above.
+    An optional <code>secret</code> enables HMAC payload verification, and <code>active</code>
+    (default <code>true</code>) controls whether the subscription is live. A successful registration
+    returns <code>201 Created</code>. Delete a subscription with <code>DELETE /webhooks/{webhookId}</code>,
+    which returns <code>204 No Content</code>.
+  </p>
+  <div class="note warn">
+    <strong>Undocumented events cannot be subscribed to.</strong> <code>task.due_date_approaching</code> and
+    <code>task.overdue</code> are emitted by the platform but are not part of the <code>events</code> enum in the
+    specification, so they cannot be requested at registration time. Existing endpoints observed receiving them
+    (such as webhook <code>301</code> in the sample) appear to receive all events regardless of subscription.
+    If your integration depends on these events, verify actual delivery behavior against your own endpoint and
+    track the spec update in the discrepancy report before relying on them.
+  </div>
+</section>
+
+<section id="delivery">
+  <h2>Delivery and retry semantics</h2>
+  <p>
+    TaskFlow delivers events by HTTP <code>POST</code> to the destination URL registered for the webhook.
+    A delivery is considered successful when the endpoint responds with an HTTP 2xx status.
+    When the endpoint returns an error response, TaskFlow retries the delivery — the production sample shows
+    <strong>3 retry attempts</strong> for the failed <code>project.deleted</code> delivery
+    (<code>d-90008</code>, destination returned <code>502</code>) — and if all attempts fail, the delivery is
+    marked <code>final_status: "failed"</code> and is not re-attempted further.
+  </p>
+  <p>Recommendations for consumer endpoints:</p>
+  <ul>
+    <li>Respond quickly with <code>2xx</code> and process the payload asynchronously; slow handlers risk timeouts.</li>
+    <li>Treat event delivery as <em>at-least-once</em>: deduplicate using <code>task_id</code>/<code>project_id</code> plus the event type and timestamp.</li>
+    <li>Do not rely on ordering between events; in the sample, related events (<code>task.updated</code> and <code>task.assigned</code>) can both fire for one user action.</li>
+    <li>Monitor for missed <code>project.deleted</code>-style events by periodically reconciling state, since permanently failed deliveries are not re-sent.</li>
+  </ul>
+</section>
+
+<section id="security">
+  <h2>Verifying payloads (HMAC)</h2>
+  <p>
+    When a webhook is registered with a <code>secret</code>, TaskFlow signs each payload with that shared secret
+    using HMAC. Verify the signature server-side before trusting the payload contents. Keep the secret out of
+    client-side code and rotate it by re-registering the webhook with a new <code>secret</code> value.
+  </p>
+</section>
+
+<section id="sources">
+  <h2>Source reconciliation</h2>
+  <table class="sources">
+    <thead>
+      <tr><th>Event</th><th>Declared in OpenAPI spec (subscribable)</th><th>Observed in production log</th><th>Sample delivery</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>task.created</code></td><td>Yes</td><td>Yes</td><td><code>d-90001</code></td></tr>
+      <tr><td><code>task.updated</code></td><td>Yes</td><td>Yes</td><td><code>d-90002</code></td></tr>
+      <tr><td><code>task.deleted</code></td><td>Yes</td><td>Yes</td><td><code>d-90010</code></td></tr>
+      <tr><td><code>task.assigned</code></td><td>Yes</td><td>Yes</td><td><code>d-90006</code></td></tr>
+      <tr><td><code>task.commented</code></td><td>Yes</td><td>Yes</td><td><code>d-90003</code></td></tr>
+      <tr><td><code>project.created</code></td><td>Yes</td><td>Yes</td><td><code>d-90012</code></td></tr>
+      <tr><td><code>project.archived</code></td><td>Yes</td><td>Yes</td><td><code>d-90004</code></td></tr>
+      <tr><td><code>project.deleted</code></td><td>Yes</td><td>Yes</td><td><code>d-90008</code> (failed, 3 retries)</td></tr>
+      <tr><td><code>member.added</code></td><td>Yes</td><td>Yes</td><td><code>d-90005</code></td></tr>
+      <tr><td><code>member.removed</code></td><td>Yes</td><td>Yes</td><td><code>d-90009</code></td></tr>
+      <tr><td><code>task.due_date_approaching</code></td><td>No</td><td>Yes</td><td><code>d-90007</code></td></tr>
+      <tr><td><code>task.overdue</code></td><td>No</td><td>Yes</td><td><code>d-90011</code></td></tr>
+    </tbody>
+  </table>
+  <h3 id="gaps">Known gaps</h3>
+  <ul>
+    <li><strong>Spec gap:</strong> <code>task.due_date_approaching</code> and <code>task.overdue</code> are emitted in production but absent from the <code>events</code> enum. File them for addition to the specification.</li>
+    <li><strong>Docs gap:</strong> the legacy v1 documentation advertised only 4 events (<code>task.created</code>, <code>task.updated</code>, <code>task.deleted</code>, <code>project.created</code>). The current catalog supersedes that list entirely.</li>
+    <li><strong>Payload fidelity:</strong> the production log stores <code>payload_excerpt</code> values. Example payloads in this catalog are reconstructed from those excerpts and may omit fields present in real deliveries.</li>
+  </ul>
+</section>
+
+<footer class="doc">
+  <p>
+    TaskFlow Technical Documentation &middot; Webhook Event Catalog &middot; Compiled from
+    <code>taskflow_openapi_v2_extract.yaml</code> (v2.0.1) and <code>webhook_delivery_log.json</code>
+    (export 2024-03-10). Related deliverables: API v2 documentation, discrepancy report,
+    v1-to-v2 migration guide.
+  </p>
+</footer>
+
+</div>
+</body>
+</html>

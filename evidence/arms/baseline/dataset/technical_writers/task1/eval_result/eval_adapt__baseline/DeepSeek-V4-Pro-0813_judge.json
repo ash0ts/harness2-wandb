@@ -1,0 +1,432 @@
+{
+  "evaluated_model": "adapt__baseline",
+  "judge_model": "deepseek-ai/DeepSeek-V4-Pro-0813",
+  "timestamp": "2026-10-19T15:27:49+00:00",
+  "total_score": 46,
+  "max_score": 66,
+  "pass_rate": "70%",
+  "passed_count": 7,
+  "total_count": 10,
+  "rubrics": [
+    {
+      "index": 0,
+      "rubric": "Does the MIGRATION_GUIDE address the JWT migration path for enterprises with legacy API keys, explaining that both authentication methods work during the transition period (API keys deprecated in v2.1 but not removed until v3)?",
+      "weight": 6,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The migration guide explains that API keys were deprecated in v2.1 but still function during the transition period.",
+            "passed": true,
+            "reasoning": "The migration guide explicitly states that API keys were deprecated in v2.1 but still function during the transition period.",
+            "evidence": "MIGRATION_GUIDE_v2.0_to_v2.2.md §2.1: \"API keys were deprecated in v2.1, but not removed — they continue to work during the transition period and will be removed in v3.\""
+          },
+          {
+            "index": 1,
+            "criterion": "The migration guide states that both JWT and API keys can be used simultaneously during the transition.",
+            "passed": true,
+            "reasoning": "The migration guide clearly states that both JWT and API key authentication are accepted simultaneously during the transition window.",
+            "evidence": "MIGRATION_GUIDE_v2.0_to_v2.2.md §2.1: \"During the transition window, both authentication methods are accepted in parallel, so you can migrate service-by-service without a big-bang cutover.\""
+          },
+          {
+            "index": 2,
+            "criterion": "The migration guide specifies that API keys will be fully removed in v3.",
+            "passed": true,
+            "reasoning": "The migration guide specifies that API keys will be fully removed in v3.",
+            "evidence": "MIGRATION_GUIDE_v2.0_to_v2.2.md §2.1: \"will be removed in v3\" and §2.3: \"all API-key usage must end before v3.\""
+          },
+          {
+            "index": 3,
+            "criterion": "The migration guide provides a recommended migration strategy for enterprises with multiple services, addressing support ticket SUP-78234 from Acme Analytics.",
+            "passed": false,
+            "reasoning": "The migration guide provides a phased migration strategy for enterprises with many services, but it does not mention support ticket SUP-78234 or Acme Analytics by name or otherwise address that specific ticket.",
+            "evidence": "MIGRATION_GUIDE_v2.0_to_v2.2.md §2.5 describes an escalated scenario with 47 microservices, but the text contains no reference to \"SUP-78234\" or \"Acme Analytics\"."
+          }
+        ],
+        "overall_reasoning": "The migration guide satisfies the core JWT migration path requirements: it explains API keys were deprecated in v2.1, still work during the transition, both auth methods are accepted in parallel, and API keys will be removed in v3. However, it fails the final criterion because it does not address support ticket SUP-78234 from Acme Analytics, so the rubric as a whole does not pass."
+      }
+    },
+    {
+      "index": 1,
+      "rubric": "Does the documentation correctly state that 'dataset.deleted' is NOT a valid webhook event and that DELETE /datasets/{id} performs a soft delete that triggers 'dataset.updated' instead?",
+      "weight": 8,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 4,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The documentation lists the valid webhook events as: dataset.created, dataset.updated, sync.completed, and sync.failed.",
+            "passed": true,
+            "reasoning": "The documentation lists the complete webhook event set as dataset.created, dataset.updated, sync.completed, and sync.failed in multiple places.",
+            "evidence": "API_REFERENCE.md Webhooks section: 'Available events (complete list):' table includes dataset.created, dataset.updated, sync.completed, sync.failed. MIGRATION_GUIDE_v2.0_to_v2.2.md §3.1 also states 'There are exactly four webhook event types' with the same list."
+          },
+          {
+            "index": 1,
+            "criterion": "The documentation clarifies that 'dataset.deleted' is NOT a valid webhook event.",
+            "passed": true,
+            "reasoning": "The documentation explicitly states that dataset.deleted is not a valid webhook event and warns against subscribing to it.",
+            "evidence": "API_REFERENCE.md: '⚠️ There is no `dataset.deleted` event.' MIGRATION_GUIDE_v2.0_to_v2.2.md: '`dataset.deleted` does not exist. Do not subscribe to it — you will never receive it.' RELEASE_NOTES_v2.2.md and TROUBLESHOOTING_GUIDE.md also repeat this warning."
+          },
+          {
+            "index": 2,
+            "criterion": "The documentation explains that DELETE /datasets/{id} sets an archived flag (soft delete) and triggers 'dataset.updated' instead of a separate deletion event.",
+            "passed": true,
+            "reasoning": "The documentation explains that DELETE /datasets/{id} is a soft delete that sets an archived flag and triggers dataset.updated rather than a deletion event.",
+            "evidence": "API_REFERENCE.md DELETE /datasets/{id} notes: 'This is a soft delete: it sets the dataset's `archived` flag. The dataset is not destroyed. Archiving fires the **`dataset.updated`** webhook event — there is **no `dataset.deleted` event**.' MIGRATION_GUIDE_v2.0_to_v2.2.md §3.2 and TROUBLESHOOTING_GUIDE.md §1.2 provide the same explanation."
+          },
+          {
+            "index": 3,
+            "criterion": "The documentation addresses support ticket SUP-78456 from DataPipe Solutions regarding this confusion.",
+            "passed": false,
+            "reasoning": "The provided documentation does not mention support ticket SUP-78456 or DataPipe Solutions anywhere. It discusses the webhook deletion confusion as an escalated scenario, but without the specific ticket or customer name required by this criterion.",
+            "evidence": "No occurrence of 'SUP-78456' or 'DataPipe Solutions' appears in API_REFERENCE.md, MIGRATION_GUIDE_v2.0_to_v2.2.md, RELEASE_NOTES_v2.2.md, or TROUBLESHOOTING_GUIDE.md. The closest content is generic escalated-scenario language such as 'webhook not firing for deleted datasets' in MIGRATION_GUIDE_v2.0_to_v2.2.md and TROUBLESHOOTING_GUIDE.md, but it does not identify the ticket or customer."
+          }
+        ],
+        "overall_reasoning": "The documentation correctly covers the technical facts: it lists the four valid webhook events, explicitly states that dataset.deleted is not valid, and explains that DELETE /datasets/{id} is a soft delete that sets an archived flag and fires dataset.updated. However, it does not address support ticket SUP-78456 from DataPipe Solutions by name or ticket number, so criterion 3 fails and the overall rubric does not pass."
+      }
+    },
+    {
+      "index": 2,
+      "rubric": "Does the documentation explain rate limit categories (standard, bulk, sync), with specific tier limits where documented, including Free tier bulk limit of 20 requests/minute?",
+      "weight": 8,
+      "result": {
+        "passed": true,
+        "score": 8,
+        "criteria_count": 5,
+        "criteria_passed": 5,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The documentation identifies three rate limit categories: standard, bulk, and sync.",
+            "passed": true,
+            "reasoning": "The API reference explicitly names the three rate-limit categories.",
+            "evidence": "API_REFERENCE.md: 'Requests are counted in per-endpoint categories (`standard`, `bulk`, `sync`).'"
+          },
+          {
+            "index": 1,
+            "criterion": "The documentation specifies Free tier limits: 100 req/min standard, 20 req/min bulk, 10000/day.",
+            "passed": true,
+            "reasoning": "The troubleshooting guide's rate limiting table specifies Free tier standard and bulk limits, including the 20/min bulk limit and 10,000/day standard limit.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 2.2: 'standard | 100 requests/min · 10,000/day' and 'bulk | 20 requests/min' under Free tier."
+          },
+          {
+            "index": 2,
+            "criterion": "The documentation specifies Pro tier limits: 1000 req/min standard, unlimited daily.",
+            "passed": true,
+            "reasoning": "The same table specifies Pro tier standard limit and unlimited daily usage.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 2.2: 'standard | 1,000 requests/min · unlimited daily' under Pro tier."
+          },
+          {
+            "index": 3,
+            "criterion": "The documentation identifies which endpoints use bulk category (POST /datasets/{id}/records) and sync category (POST /datasets/{id}/sync).",
+            "passed": true,
+            "reasoning": "The endpoint index and endpoint-specific notes identify bulk and sync categories for the required endpoints.",
+            "evidence": "API_REFERENCE.md endpoint index lists POST /datasets/{id}/records as 'bulk' and POST /datasets/{id}/sync as 'sync'; the Records and Sync sections also state these categories."
+          },
+          {
+            "index": 4,
+            "criterion": "The documentation addresses support ticket SUP-78512 regarding rate limiting confusion.",
+            "passed": true,
+            "reasoning": "The troubleshooting guide includes a dedicated section addressing the rate limiting confusion described in SUP-78512, explaining that bulk inserts have a separate lower limit and giving the Free tier 20/min figure. The ticket number is not explicitly cited, but the issue is semantically addressed.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 1.3 'Rate limits hit much faster on bulk inserts' describes the exact confusion and section 2.2 provides the per-category limits."
+          }
+        ],
+        "overall_reasoning": "All criteria are met: the documentation identifies standard, bulk, and sync categories; specifies Free and Pro tier limits; maps bulk and sync endpoints; and addresses the rate limiting confusion from SUP-78512 in the troubleshooting guide."
+      }
+    },
+    {
+      "index": 3,
+      "rubric": "Does the TROUBLESHOOTING_GUIDE explain 401 vs 403 authentication errors, with 401 indicating not authenticated and 403 indicating authenticated but not authorized?",
+      "weight": 8,
+      "result": {
+        "passed": true,
+        "score": 8,
+        "criteria_count": 4,
+        "criteria_passed": 4,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The troubleshooting guide explains that 401 means not authenticated (missing, invalid, or expired token).",
+            "passed": true,
+            "reasoning": "The troubleshooting guide clearly states that 401 means not authenticated and lists missing, invalid, or expired token as causes.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 4.3 says: '401 Unauthorized — not authenticated: the request didn't carry a valid token.' Section 5 lists 401 as 'Not authenticated' with typical trigger 'Missing/expired/invalid token'."
+          },
+          {
+            "index": 1,
+            "criterion": "The troubleshooting guide explains that 403 means authenticated but not authorized (valid token but insufficient permissions).",
+            "passed": true,
+            "reasoning": "The guide clearly explains that 403 means authenticated but not authorized, with a valid token but insufficient permissions.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 4.3 says: '403 Forbidden — authenticated but not authorized: the token is valid; the account lacks permission for that resource or action.' Section 5 lists 403 as 'Forbidden' with typical trigger 'Valid token, insufficient permission'."
+          },
+          {
+            "index": 2,
+            "criterion": "The troubleshooting guide provides diagnostic steps for each error scenario.",
+            "passed": true,
+            "reasoning": "The guide provides diagnostic steps for both 401 and 403 scenarios, including a diagnostic flow and symptom/cause/fix table.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 4.1 provides a step-by-step 401 diagnostic flow. Section 4.2 includes a row for 403: 'Authenticated, but not allowed to do that' with fix 'Request access/permissions — the token itself is fine.'"
+          },
+          {
+            "index": 3,
+            "criterion": "The troubleshooting guide does NOT expose internal bug references (JIRA-4521) or TODO notes.",
+            "passed": true,
+            "reasoning": "The troubleshooting guide does not contain internal bug references such as JIRA-4521 or TODO notes.",
+            "evidence": "No occurrence of 'JIRA-4521' or 'TODO' was found in TROUBLESHOOTING_GUIDE.md."
+          }
+        ],
+        "overall_reasoning": "The TROUBLESHOOTING_GUIDE correctly explains 401 as not authenticated and 403 as authenticated but not authorized, provides diagnostic guidance for both scenarios, and does not expose internal bug references or TODO notes."
+      }
+    },
+    {
+      "index": 4,
+      "rubric": "Does the documentation explain that POST /datasets/{id}/sync supports both 'full' and 'incremental' modes and returns a job_id for async tracking via GET /jobs/{job_id}?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 4,
+        "criteria_passed": 4,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The documentation explains the sync endpoint accepts a mode parameter with values 'full' or 'incremental'.",
+            "passed": true,
+            "reasoning": "The API reference documents the sync endpoint's mode parameter with both supported values.",
+            "evidence": "API_REFERENCE.md Trigger sync section lists `mode` as a body parameter with description: `full` (default) — re-sync everything; `incremental` — only changes since the last successful sync."
+          },
+          {
+            "index": 1,
+            "criterion": "The documentation notes that incremental sync was added in v2.1.0.",
+            "passed": true,
+            "reasoning": "The documentation explicitly states that incremental sync was added in v2.1.0.",
+            "evidence": "MIGRATION_GUIDE_v2.0_to_v2.2.md section 4 is titled 'Incremental sync (added in v2.1 — commonly missed)' and the version table lists v2.1.0 as adding 'incremental sync mode'. RELEASE_NOTES_v2.2.md also says incremental mode was 'added in v2.1'."
+          },
+          {
+            "index": 2,
+            "criterion": "The documentation explains the endpoint returns 202 with a job_id for async tracking.",
+            "passed": true,
+            "reasoning": "The sync endpoint is documented as returning 202 with a job_id for async tracking.",
+            "evidence": "API_REFERENCE.md Trigger sync responses table shows `202` -> 'Job started — returns `job_id`' and Notes state 'Track progress via `GET /jobs/{job_id}`'."
+          },
+          {
+            "index": 3,
+            "criterion": "The documentation describes how to check job status via GET /jobs/{job_id} including status values (pending, running, completed, failed) and progress (0-100).",
+            "passed": true,
+            "reasoning": "The documentation describes checking job status via GET /jobs/{job_id} and includes the required status values and progress range.",
+            "evidence": "API_REFERENCE.md Check job status section documents `GET /jobs/{job_id}` and shows a Job status object with `status`: `pending` | `running` | `completed` | `failed`, and `progress` ranging from 0–100."
+          }
+        ],
+        "overall_reasoning": "All four criteria are satisfied by the provided documentation. The API reference and migration guide clearly document the sync mode parameter, the v2.1.0 addition of incremental sync, the 202/job_id async response, and job status tracking via GET /jobs/{job_id} with the required statuses and progress range."
+      }
+    },
+    {
+      "index": 5,
+      "rubric": "Does the RELEASE_NOTES_v2.2 follow the template structure with sections for Upgrade Steps, Breaking Changes, New Features, Bug Fixes, and Improvements?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 5,
+        "criteria_passed": 5,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The release notes include required sections from release_notes_template.md: Upgrade Steps (with action items), Breaking Changes, New Features, Bug Fixes, and Improvements.",
+            "passed": true,
+            "reasoning": "The release notes contain all required sections: Upgrade Steps with action items, Breaking Changes, New Features, Bug Fixes, and an Improvements section titled 'Performance Improvements'.",
+            "evidence": "RELEASE_NOTES_v2.2.md includes '### Upgrade Steps' with action items, '### Breaking Changes', '### New Features', '### Bug Fixes', and '### Performance Improvements'."
+          },
+          {
+            "index": 1,
+            "criterion": "The New Features section covers webhooks.",
+            "passed": true,
+            "reasoning": "The New Features section explicitly covers webhooks, including available events, signature verification, management endpoints, and the dataset.deleted caveat.",
+            "evidence": "RELEASE_NOTES_v2.2.md '### New Features' includes '* **Webhooks** — subscribe to platform events and receive `POST` deliveries at your own HTTPS endpoint...'"
+          },
+          {
+            "index": 2,
+            "criterion": "The Bug Fixes section covers sync jobs stuck in 'running' state.",
+            "passed": true,
+            "reasoning": "The Bug Fixes section explicitly addresses sync jobs stuck in the 'running' state.",
+            "evidence": "RELEASE_NOTES_v2.2.md '### Bug Fixes' includes '* **Sync jobs occasionally stuck in `running`** now transition correctly to `completed` or `failed`.'"
+          },
+          {
+            "index": 3,
+            "criterion": "The Improvements section mentions bulk insert being 3x faster.",
+            "passed": true,
+            "reasoning": "The Improvements section, titled 'Performance Improvements', explicitly mentions bulk inserts being 3x faster.",
+            "evidence": "RELEASE_NOTES_v2.2.md '### Performance Improvements' includes '* **Bulk record inserts** (`POST /datasets/{id}/records`) are up to **3x faster**.'"
+          },
+          {
+            "index": 4,
+            "criterion": "Content is synthesized from the changelog in developer_notes_raw.txt.",
+            "passed": true,
+            "reasoning": "The release notes content is consistent with the v2.2 changelog items reflected across the provided v2.2 documentation: webhooks, sync jobs stuck in running, and bulk insert performance improvement.",
+            "evidence": "RELEASE_NOTES_v2.2.md synthesizes the v2.2 changes: webhooks, sync job fix, and 3x faster bulk inserts, matching the changelog-derived details in API_REFERENCE.md and MIGRATION_GUIDE_v2.0_to_v2.2.md."
+          }
+        ],
+        "overall_reasoning": "All five criteria pass. RELEASE_NOTES_v2.2.md follows the required template structure with the expected sections, covers webhooks in New Features, covers the sync job stuck-in-running fix in Bug Fixes, mentions the 3x faster bulk insert in the Improvements/Performance Improvements section, and its content is synthesized from the v2.2 changelog items."
+      }
+    },
+    {
+      "index": 6,
+      "rubric": "Does the documentation specify the API base URLs (production: https://api.datasync.io/v2, sandbox: https://sandbox.api.datasync.io/v2) and Content-Type requirement of application/json?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 3,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The documentation includes the production base URL: https://api.datasync.io/v2.",
+            "passed": true,
+            "reasoning": "The documentation explicitly lists the production base URL.",
+            "evidence": "API_REFERENCE.md: '**Base URL (production):** `https://api.datasync.io/v2`'"
+          },
+          {
+            "index": 1,
+            "criterion": "The documentation includes the sandbox base URL: https://sandbox.api.datasync.io/v2 with a note that it resets daily.",
+            "passed": true,
+            "reasoning": "The documentation includes the sandbox base URL and notes that it resets daily.",
+            "evidence": "API_REFERENCE.md: '**Base URL (sandbox):** `https://sandbox.api.datasync.io/v2` — resets daily, pre-loaded with fake data.'"
+          },
+          {
+            "index": 2,
+            "criterion": "The documentation states that Content-Type must be application/json for all POST/PUT/PATCH requests.",
+            "passed": true,
+            "reasoning": "The documentation states the Content-Type requirement for POST, PUT, and PATCH requests.",
+            "evidence": "API_REFERENCE.md: '`Content-Type: application/json` is required for all `POST` / `PUT` / `PATCH` requests.'"
+          }
+        ],
+        "overall_reasoning": "All three criteria are satisfied by the documentation. The production and sandbox base URLs are both specified, the sandbox URL includes the daily reset note, and the Content-Type application/json requirement for POST/PUT/PATCH requests is clearly stated."
+      }
+    },
+    {
+      "index": 7,
+      "rubric": "Does the TROUBLESHOOTING_GUIDE include a 'Common Migration Pitfalls' section identifying patterns from the support tickets?",
+      "weight": 6,
+      "result": {
+        "passed": false,
+        "score": 0,
+        "criteria_count": 5,
+        "criteria_passed": 4,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The troubleshooting guide includes a section identifying common migration pitfalls.",
+            "passed": true,
+            "reasoning": "The TROUBLESHOOTING_GUIDE contains a section titled '3. Common migration pitfalls (v2.0 → v2.2)' that identifies recurring support patterns.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md: '## 3. Common migration pitfalls (v2.0 → v2.2)' and 'Drawn from recurring support patterns:'"
+          },
+          {
+            "index": 1,
+            "criterion": "The pitfalls include: assuming API keys stop working immediately after deprecation.",
+            "passed": false,
+            "reasoning": "The common migration pitfalls table does not include the specific pitfall 'assuming API keys stop working immediately after deprecation.' The closest row is 'Keeping API-key auth past v2.1', which is a different pitfall about failing to migrate, not about assuming immediate loss of function.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 3 table row 1: 'Keeping API-key auth past v2.1' with '401 after upgrade' and 'Migrate to JWT'."
+          },
+          {
+            "index": 2,
+            "criterion": "The pitfalls include: expecting a 'dataset.deleted' webhook event for soft deletes.",
+            "passed": true,
+            "reasoning": "The pitfalls include expecting a 'dataset.deleted' webhook event for soft deletes, with symptom and fix.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 3 table row 3: 'Subscribing to `dataset.deleted`' -> 'Webhook never fires' -> 'Event doesn't exist; archive fires `dataset.updated` with `archived: true`'."
+          },
+          {
+            "index": 3,
+            "criterion": "The pitfalls include: assuming uniform rate limits across all endpoint types.",
+            "passed": true,
+            "reasoning": "The pitfalls include assuming uniform rate limits across all endpoint types, described as treating all endpoints as one rate budget.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 3 table row 12: 'Treating all endpoints as one rate budget' -> 'Unexpected `429` on bulk/sync endpoints' -> 'Categories are separate — see §2'."
+          },
+          {
+            "index": 4,
+            "criterion": "Each pitfall includes symptoms and resolution steps.",
+            "passed": true,
+            "reasoning": "Each row in the common migration pitfalls table includes a 'What happens' column describing symptoms and a 'Fix' column providing resolution steps or guidance.",
+            "evidence": "TROUBLESHOOTING_GUIDE.md section 3 table has columns '# | Pitfall | What happens | Fix' and all 18 rows populate both 'What happens' and 'Fix'."
+          }
+        ],
+        "overall_reasoning": "The TROUBLESHOOTING_GUIDE has a Common Migration Pitfalls section and includes the dataset.deleted and uniform rate-limit pitfalls, with symptoms and fixes for each row. However, it does not include the specific pitfall about assuming API keys stop working immediately after deprecation, so criterion 1 fails and the rubric does not pass."
+      }
+    },
+    {
+      "index": 8,
+      "rubric": "Does the documentation correctly align endpoint versions with the changelog version history (v2.0.0, v2.1.0, v2.2.0)?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 3,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "Core dataset and records endpoints are documented as part of v2.0.0.",
+            "passed": true,
+            "reasoning": "The API reference endpoint index explicitly marks the core dataset and record endpoints as added in v2.0.0, matching the changelog baseline.",
+            "evidence": "API_REFERENCE.md endpoint index lists GET/POST /datasets, GET/PUT/DELETE /datasets/{id}, GET/POST /datasets/{id}/records, and GET/PATCH/DELETE /datasets/{id}/records/{record_id} all with 'added in' v2.0.0."
+          },
+          {
+            "index": 1,
+            "criterion": "Auth endpoints, /me/usage, and incremental sync are documented as added in v2.1.0 (with API keys deprecated).",
+            "passed": true,
+            "reasoning": "Auth endpoints and /me/usage are marked as v2.1.0 in the endpoint index, API keys are documented as deprecated since v2.1, and incremental sync is documented as added in v2.1.0 in the migration guide and release notes.",
+            "evidence": "API_REFERENCE.md endpoint index lists POST /auth/login, POST /auth/refresh, POST /auth/logout, and GET /me/usage as v2.1.0. The deprecated endpoints section says API keys are deprecated since v2.1. MIGRATION_GUIDE_v2.0_to_v2.2.md and RELEASE_NOTES_v2.2.md both state incremental sync was added in v2.1.0."
+          },
+          {
+            "index": 2,
+            "criterion": "Webhook endpoints are documented as added in v2.2.0.",
+            "passed": true,
+            "reasoning": "All webhook endpoints are explicitly marked as added in v2.2.0 in the endpoint index, matching the v2.2.0 changelog.",
+            "evidence": "API_REFERENCE.md endpoint index lists GET /webhooks, POST /webhooks, GET /webhooks/{id}, and DELETE /webhooks/{id} with 'added in' v2.2.0. RELEASE_NOTES_v2.2.md also lists webhooks as a new feature in v2.2.0."
+          }
+        ],
+        "overall_reasoning": "The documentation aligns endpoint versions with the changelog version history: core dataset and record endpoints are v2.0.0, auth endpoints, /me/usage, API key deprecation, and incremental sync are v2.1.0, and webhook endpoints are v2.2.0."
+      }
+    },
+    {
+      "index": 9,
+      "rubric": "Does the documentation specify validation constraints including dataset name length (3-100 characters), bulk record insert limit (max 1000 records), and list pagination limit (max 100)?",
+      "weight": 6,
+      "result": {
+        "passed": true,
+        "score": 6,
+        "criteria_count": 3,
+        "criteria_passed": 3,
+        "criteria_results": [
+          {
+            "index": 0,
+            "criterion": "The API reference documents that POST /datasets requires a name field with 3-100 character length.",
+            "passed": true,
+            "reasoning": "The API reference documents that POST /datasets requires a name field and specifies the 3-100 character length constraint.",
+            "evidence": "In API_REFERENCE.md under 'Create dataset', the name parameter is described as: 'Dataset name — must be **3–100 characters**' and is marked required."
+          },
+          {
+            "index": 1,
+            "criterion": "The API reference documents that POST /datasets/{id}/records has a max of 1000 records per request.",
+            "passed": true,
+            "reasoning": "The API reference documents that POST /datasets/{id}/records has a maximum of 1000 records per request.",
+            "evidence": "In API_REFERENCE.md under 'Add records (single or bulk)', the records parameter is described as: 'A single record object or an array — **max 1000 records per request**' and is marked required."
+          },
+          {
+            "index": 2,
+            "criterion": "The API reference documents that the GET /datasets list endpoint has a max limit of 100 for pagination.",
+            "passed": true,
+            "reasoning": "The API reference documents that the GET /datasets list endpoint has a maximum pagination limit of 100.",
+            "evidence": "In API_REFERENCE.md under 'List datasets', the limit query parameter is described as: 'Items per page — **maximum 100**' with a default of 20."
+          }
+        ],
+        "overall_reasoning": "All three validation constraints are explicitly documented in the API reference: dataset name length of 3-100 characters for POST /datasets, a maximum of 1000 records per bulk insert request for POST /datasets/{id}/records, and a maximum pagination limit of 100 for GET /datasets."
+      }
+    }
+  ]
+}
