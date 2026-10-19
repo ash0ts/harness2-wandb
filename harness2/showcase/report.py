@@ -540,6 +540,19 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
 def make_public(runtime, api):
     """Publish only a project containing this campaign's recorded data."""
     entity, project = runtime.manifest["project"].split("/")
+    # An already-public destination needs no visibility mutation. This also lets
+    # later campaigns coexist with preserved public results in the same project.
+    response = httpx.post(
+        "https://api.wandb.ai/graphql",
+        json={
+            "query": "query($name:String!,$entity:String!){project(name:$name,entityName:$entity){name access}}",
+            "variables": {"name": project, "entity": entity},
+        },
+        timeout=60,
+    )
+    response.raise_for_status()
+    if (response.json().get("data", {}).get("project") or {}).get("access") == "USER_READ":
+        return
     for run in api.runs(runtime.manifest["project"]):
         if run.config.get("campaign") != runtime.manifest["campaign"]:
             raise RuntimeError(

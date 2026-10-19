@@ -1,10 +1,36 @@
 import copy
 import hashlib
 import json
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 
-from harness2.showcase.report import index_generated_files, reconcile
+from harness2.showcase.report import index_generated_files, make_public, reconcile
+
+
+def test_existing_public_project_requires_no_visibility_change(monkeypatch):
+    response = Mock()
+    response.json.return_value = {"data": {"project": {"access": "USER_READ"}}}
+    post = Mock(return_value=response)
+    monkeypatch.setattr("harness2.showcase.report.httpx.post", post)
+    runtime = SimpleNamespace(manifest={"project": "team/project", "campaign": "pilot-v2"})
+    make_public(runtime, SimpleNamespace())
+    assert post.call_count == 1
+    assert "auth" not in post.call_args.kwargs
+    assert post.call_args.kwargs["json"]["query"].startswith("query(")
+
+
+def test_private_project_with_other_campaign_remains_private(monkeypatch):
+    response = Mock()
+    response.json.return_value = {"data": {"project": None}}
+    post = Mock(return_value=response)
+    monkeypatch.setattr("harness2.showcase.report.httpx.post", post)
+    runtime = SimpleNamespace(manifest={"project": "team/project", "campaign": "pilot-v2"})
+    api = SimpleNamespace(runs=lambda _: [SimpleNamespace(config={"campaign": "unrelated"})])
+    with pytest.raises(RuntimeError, match="another campaign"):
+        make_public(runtime, api)
+    assert post.call_count == 1
 
 
 def row(arm, rep, score):
