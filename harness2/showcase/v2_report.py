@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import html
 import json
 import random
@@ -475,7 +476,7 @@ def markdown(data, artifact_url=""):
             "",
             "## Launch budget projection",
             "",
-            "The gate uses per-stage maxima observed during qualification and a 50% contingency. These are spending forecasts, not incurred costs.",
+            f"The main-phase limit is ${float(data['manifest']['budget_buckets']['main']['usd']):.2f}. The gate uses per-stage maxima observed during qualification and a 50% contingency. These are spending forecasts, not incurred costs.",
             "",
             "| Transfer executions | Main forecast | Judge forecast | Fits both phase limits |",
             "|---|---:|---:|---|",
@@ -784,6 +785,28 @@ def report(runtime, *, publish=False):
         raise ValueError("Only a complete or explicitly stopped campaign can be published")
     output = runtime.state / "public"
     output.mkdir(exist_ok=True)
+    gate_path = runtime.state / "article-gate.json"
+    prior_gate = read(gate_path) if gate_path.exists() else {}
+    review_hash = hashlib.sha256((data.get("evidence_review") or "").encode()).hexdigest()
+    reviewed = (
+        prior_gate.get("article_ready", False)
+        and prior_gate.get("validation") == validation
+        and prior_gate.get("evidence_review_sha256") == review_hash
+    )
+    write_json(
+        gate_path,
+        {
+            **(prior_gate if reviewed else {}),
+            "evidence_audited": True,
+            "validation": validation,
+            "evidence_review_sha256": review_hash,
+            "primary_comparison_complete": data["complete"],
+            "article_ready": bool(reviewed),
+            "remaining_review": None
+            if reviewed
+            else "Inspect selected deliverable and native criteria; capture native product screens and follow-up evidence before writing.",
+        },
+    )
     bundle(runtime, output / "evidence")
     # Canonical experimental source is public alongside its pinned manifest.
     source = output / "source"
@@ -826,16 +849,6 @@ def report(runtime, *, publish=False):
         '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Harness² pilot-v2 evidence</title><style>body{max-width:1100px;margin:3rem auto;padding:0 1.5rem;font:16px/1.6 system-ui;background:#f4f1eb;color:#19242c}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>Harness² + Agent Lens</h1><p><a href="results.csv">Complete results CSV</a> · <a href="results.json">Machine-readable evidence index</a> · <a href="evidence/manifest.json">Frozen protocol</a></p><pre>'
         + body
         + "</pre></html>"
-    )
-    write_json(
-        runtime.state / "article-gate.json",
-        {
-            "evidence_audited": True,
-            "validation": validation,
-            "primary_comparison_complete": data["complete"],
-            "article_ready": False,
-            "remaining_review": "Inspect selected deliverable and native criteria; capture native product screens and follow-up evidence before writing.",
-        },
     )
     if publish:
         receipt = publish_results(runtime, data, output)
