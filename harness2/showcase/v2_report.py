@@ -330,6 +330,9 @@ def dataset(runtime):
         if (runtime.state / "qualification.json").exists()
         else None,
         "qualification_runs": qualification_runs,
+        "evidence_review": (runtime.state / "presentation/evidence-review.md").read_text()
+        if (runtime.state / "presentation/evidence-review.md").exists()
+        else None,
         "allocation": allocation,
         "cost_projection": read(runtime.state / "cost-projection.json")
         if (runtime.state / "cost-projection.json").exists()
@@ -363,7 +366,11 @@ def choose_case(data):
 
 def narrative(data):
     if not data["complete"]:
-        return "The comparison has not completed. No performance claim is supported."
+        return (
+            "The campaign stopped before the controlled comparison. No held-out quality or diagnostics-benefit claim is supported."
+            if data.get("stopped") and not data["rows"]
+            else "The comparison has not completed. No performance claim is supported."
+        )
     changes = [
         s
         for s in data["sessions"]
@@ -382,11 +389,11 @@ def narrative(data):
 
 def markdown(data, artifact_url=""):
     text = [
-        "# Harness² + Agent Lens: repaired loop, controlled test",
+        "# Harness² + Agent Lens: pilot-v2",
         "",
         narrative(data),
         "",
-        "This is a JobBench-based pilot with a frozen-harness transfer test. Model weights stay fixed. Harness² already receives execution trajectories; the added treatment is a bounded deterministic summary retrieved from stored Agent Lens spans.",
+        "The protocol defines a JobBench-based pilot with a frozen-harness transfer test. Model weights stay fixed. Harness² already receives execution trajectories; the added treatment is a bounded deterministic summary retrieved from stored Agent Lens spans.",
         "",
         f"Coverage: **{data['heldout_judged']}/{data['heldout_planned']}** planned held-out judgments. New inference spend: **${data['spent_usd']:.6f}**; including pilot-v1: **${data['lifetime_spent_usd']:.6f}**. Unresolved reservations: **${data['reserved_usd']:.6f}**.",
         "",
@@ -448,7 +455,7 @@ def markdown(data, artifact_url=""):
             "",
             "These previously inspected tasks test completion and instrumentation. Their scores are native judgments of the selected qualification outputs, not a controlled comparison or transfer result.",
             "",
-            "| Task | Valid edit stages | Readable files | Native score | Evidence |",
+            "| Task | Valid decision stages | Readable files | Native score | Evidence |",
             "|---|---:|---:|---:|---|",
         ]
         for case in data["qualification_runs"]:
@@ -461,6 +468,8 @@ def markdown(data, artifact_url=""):
             text.append(
                 f"| {case['task']} | {case['valid_edit_stages']} / 6 | {sum(f['readable'] is True for f in case['files'])} | {score} | [Score, harness, deliverable]({run_url}) · [Trace]({case['trace']['url']}) |"
             )
+    if data.get("evidence_review"):
+        text += ["", "## What the qualification evidence shows", "", data["evidence_review"]]
     if data.get("cost_projection"):
         text += [
             "",
@@ -473,9 +482,16 @@ def markdown(data, artifact_url=""):
         ]
         for candidate in data["cost_projection"]["candidates"]:
             fits = candidate["fits_main_bucket"] and candidate["fits_judging_bucket"]
+            judge = candidate["projected_judging_usd"]
+            judge_text = f"${judge:.2f}" if judge is not None else "Not projected"
             text.append(
-                f"| {candidate['planned_transfer_executions']} | ${candidate['projected_main_usd']:.2f} | ${candidate['projected_judging_usd']:.2f} | {'Yes' if fits else 'No'} |"
+                f"| {candidate['planned_transfer_executions']} | ${candidate['projected_main_usd']:.2f} | {judge_text} | {'Yes' if fits else 'No'} |"
             )
+        if data["cost_projection"].get("lower_bound"):
+            text += [
+                "",
+                "Qualification did not pass. These forecasts exclude unobserved stages and judging; they are cost floors under the stated projection method. They cannot authorize a campaign launch.",
+            ]
     text += [
         "",
         "## Cost",
@@ -751,6 +767,12 @@ def publish_results(runtime, data, output):
 
 def report(runtime, *, publish=False):
     validation = audit(runtime)
+    if (runtime.state / "stopped.json").exists() and not (
+        runtime.state / "allocation.json"
+    ).exists():
+        from .v2 import stopped_cost_floor
+
+        stopped_cost_floor(runtime)
     data = dataset(runtime)
     if publish and not data["complete"] and not data["stopped"]:
         raise ValueError("Only a complete or explicitly stopped campaign can be published")

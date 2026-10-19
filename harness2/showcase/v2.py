@@ -635,6 +635,66 @@ def allocation(runtime):
     )
 
 
+def stopped_cost_floor(runtime):
+    """Explain a stopped qualification without inventing costs for unobserved stages."""
+    budget = runtime.budget()
+    if budget["unresolved"]:
+        raise CampaignStop("Cannot project with unresolved usage")
+    costs = defaultdict(float)
+    for call in budget["calls"]:
+        costs[call["session"]] += call["spent"] / 1e6
+    cases = defaultdict(lambda: defaultdict(float))
+    largest_solver = 0
+    for sid, cost in costs.items():
+        identity = read(runtime.state / "gateway/sessions" / sid / "identity.json")
+        if (
+            identity["phase"] != "smoke"
+            or identity["task"] == "infrastructure-tools"
+            or identity["role"] == "judge"
+        ):
+            continue
+        role = identity["role"]
+        label = (
+            identity.get("run_id", "").split("/")[-1]
+            if role == "solver"
+            else re.sub(r"\.a\d+$", "", identity["stage"])
+        )
+        cases[identity["task"]][role + "/" + label] += cost
+        if role == "solver":
+            largest_solver = max(largest_solver, cost)
+    keys = set().union(*(case.keys() for case in cases.values()))
+    maxima = {key: max(case.get(key, 0) for case in cases.values()) for key in sorted(keys)}
+    shared = sum(value for key, value in maxima.items() if key.startswith("solver/base"))
+    n = len(runtime.manifest["task_families"]) * runtime.manifest["adaptation_replicates"]
+    adaptation = n * (shared + 2 * (sum(maxima.values()) - shared)) * 1.5
+    candidates = []
+    for reps in (2, 1):
+        executions = n * 3 * reps
+        main = adaptation + executions * largest_solver * 1.5
+        candidates.append(
+            {
+                "repetitions": reps,
+                "planned_transfer_executions": executions,
+                "projected_adaptation_usd": adaptation,
+                "projected_main_usd": main,
+                "projected_judging_usd": None,
+                "fits_main_bucket": main
+                <= float(runtime.manifest["budget_buckets"]["main"]["usd"]),
+                "fits_judging_bucket": None,
+            }
+        )
+    value = {
+        "lower_bound": True,
+        "qualification_spend_usd": budget["spent_usd"],
+        "observed_max_stage_usd": maxima,
+        "safety_multiplier": 1.5,
+        "method": "Same per-stage maximum method; unobserved stages and judging excluded. A failed qualification cannot authorize launch even if this floor fits.",
+        "candidates": candidates,
+    }
+    write_json(runtime.state / "cost-projection.json", value)
+    return value
+
+
 def schedule(runtime, reps):
     rng = random.Random(runtime.manifest["seed"])
     result = []

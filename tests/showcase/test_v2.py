@@ -22,7 +22,7 @@ from harness2.showcase.protocol import (
     write_json,
 )
 from harness2.showcase.runtime import ROOT, CampaignStop
-from harness2.showcase.v2 import V2Adapter, V2Proposer, adapt_one, schedule
+from harness2.showcase.v2 import V2Adapter, V2Proposer, adapt_one, schedule, stopped_cost_floor
 
 
 def manifest():
@@ -276,6 +276,43 @@ def test_schedule_has_task_level_repeats_and_interleaved_conditions(tmp_path):
     assert len(schedule(runtime, 1)) == 36
     for i in range(0, len(jobs), 3):
         assert {j["arm"] for j in jobs[i : i + 3]} == {"baseline", "harness2", "diagnostics"}
+
+
+def test_stopped_projection_counts_shared_baselines_once_and_all_retries(tmp_path):
+    calls = []
+    for session, role, stage, cost in [
+        ("base1", "solver", "base1", 100000),
+        ("base2", "solver", "base2", 200000),
+        ("proposal1", "improver", "inv1.a1", 300000),
+        ("proposal2", "improver", "inv1.a1", 200000),
+    ]:
+        calls.append({"session": session, "spent": cost})
+        write_json(
+            tmp_path / "gateway/sessions" / session / "identity.json",
+            {
+                "phase": "smoke",
+                "task": "qualification/task1",
+                "role": role,
+                "stage": stage,
+                "run_id": "shared/" + stage,
+            },
+        )
+    runtime = SimpleNamespace(
+        state=tmp_path,
+        manifest=manifest(),
+        budget=lambda: {
+            "calls": calls,
+            "unresolved": 0,
+            "spent_usd": 0.8,
+        },
+    )
+    result = stopped_cost_floor(runtime)
+    reduced = result["candidates"][1]
+    assert result["lower_bound"] and reduced["projected_judging_usd"] is None
+    # Twelve domain/replicate groups: one shared baseline pair, two independent
+    # proposal paths including the failed attempt, and 36 transfer executions.
+    assert reduced["projected_adaptation_usd"] == pytest.approx(23.4)
+    assert reduced["projected_main_usd"] == pytest.approx(34.2)
 
 
 def test_failed_adaptation_freezes_baseline_instead_of_dropping_transfer(tmp_path, monkeypatch):

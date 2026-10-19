@@ -202,6 +202,18 @@ def verify_readback(rows, calls, tools):
         ):
             if usage and row.get(stored) != usage.get(original):
                 raise RuntimeError("Stored usage differs from provider usage")
+        for stored, details, original in (
+            ("cache_read_input_tokens", "prompt_tokens_details", "cached_tokens"),
+            ("reasoning_tokens", "completion_tokens_details", "reasoning_tokens"),
+        ):
+            if usage and row.get(stored, 0) != (usage.get(details) or {}).get(original, 0):
+                raise RuntimeError("Stored detailed usage differs from provider usage")
+        if row.get("request_max_tokens") != record["request"].get("max_tokens"):
+            raise RuntimeError("Stored output limit differs")
+        choice = (response.get("choices") or [{}])[0]
+        reasons = [choice["finish_reason"]] if choice.get("finish_reason") else []
+        if row.get("finish_reasons", []) != reasons:
+            raise RuntimeError("Stored finish reason differs")
         if row.get("request_model") != record["request"]["model"]:
             raise RuntimeError("Stored request model differs")
         if response and row.get("response_model") != response.get("model"):
@@ -217,6 +229,21 @@ def verify_readback(rows, calls, tools):
         row = candidates[0]
         if json.loads(row["tool_call_arguments"]) != part["state"].get("input"):
             raise RuntimeError("Stored tool arguments differ")
+        state = part["state"]
+        for field, source in (("started_at", "start"), ("ended_at", "end")):
+            stamp = datetime.fromisoformat(row[field]).replace(tzinfo=timezone.utc).timestamp()
+            if abs(stamp - state["time"][source] / 1000) > 0.001:
+                raise RuntimeError("Stored tool timestamp differs")
+        original_result = str(state.get("output", state.get("error", "")))
+        stored_result = row.get("tool_call_result")
+        if stored_result != original_result:
+            # Agent Lens normalizes JSON-valued results; whitespace is not evidence loss.
+            try:
+                equivalent = json.loads(stored_result) == json.loads(original_result)
+            except (ValueError, TypeError):
+                equivalent = False
+            if not equivalent:
+                raise RuntimeError("Stored tool result differs")
         if tool_error(part) and row.get("status_code") != "ERROR":
             raise RuntimeError("Tool failure was lost during export")
 
