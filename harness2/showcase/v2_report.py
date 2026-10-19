@@ -588,7 +588,7 @@ def publish_results(runtime, data, output):
             type="evidence",
             metadata={"complete": data["complete"], "new_spend_usd": data["spent_usd"]},
         )
-        for name in ("results.json", "results.csv", "report.md"):
+        for name in ("results.json", "results.csv", "qualification.csv", "report.md"):
             artifact.add_file(str(output / name))
         artifact.add_dir(str(output / "evidence"))
         artifact = run.log_artifact(artifact)
@@ -612,7 +612,12 @@ def publish_results(runtime, data, output):
             table.add_data(
                 *[(row["trace"]["url"] if c == "trace_url" else row.get(c)) for c in cols]
             )
-        run.log({"heldout_results": table})
+        qualification_table = wandb.Table(columns=cols)
+        for row in data["qualification_runs"]:
+            qualification_table.add_data(
+                *[(row["trace"]["url"] if c == "trace_url" else row.get(c)) for c in cols]
+            )
+        run.log({"heldout_results": table, "qualification_results": qualification_table})
         run.summary.update(
             {
                 k: data[k]
@@ -809,6 +814,10 @@ def report(runtime, *, publish=False):
         writer = csv.DictWriter(stream, fieldnames=cols, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(portable["rows"])
+    with (output / "qualification.csv").open("w") as stream:
+        writer = csv.DictWriter(stream, fieldnames=cols, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(portable["qualification_runs"])
     text = markdown(data)
     (output / "report.md").write_text(text)
     # A portable readable fallback, while the walkthrough uses native product screens.

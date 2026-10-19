@@ -22,7 +22,14 @@ from harness2.showcase.protocol import (
     write_json,
 )
 from harness2.showcase.runtime import ROOT, CampaignStop
-from harness2.showcase.v2 import V2Adapter, V2Proposer, adapt_one, schedule, stopped_cost_floor
+from harness2.showcase.v2 import (
+    V2Adapter,
+    V2Proposer,
+    adapt_one,
+    allocation,
+    schedule,
+    stopped_cost_floor,
+)
 
 
 def manifest():
@@ -276,6 +283,15 @@ def test_schedule_has_task_level_repeats_and_interleaved_conditions(tmp_path):
     assert len(schedule(runtime, 1)) == 36
     for i in range(0, len(jobs), 3):
         assert {j["arm"] for j in jobs[i : i + 3]} == {"baseline", "harness2", "diagnostics"}
+
+
+@pytest.mark.parametrize("receipt", [None, {"passed": False}])
+def test_missing_or_failed_qualification_blocks_even_cached_allocation(tmp_path, receipt):
+    if receipt is not None:
+        write_json(tmp_path / "qualification.json", receipt)
+    write_json(tmp_path / "allocation.json", {"repetitions": 2})
+    with pytest.raises(CampaignStop, match="Qualification has not passed"):
+        allocation(SimpleNamespace(state=tmp_path))
 
 
 def test_stopped_projection_counts_shared_baselines_once_and_all_retries(tmp_path):

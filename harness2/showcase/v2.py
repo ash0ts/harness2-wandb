@@ -491,11 +491,12 @@ def smoke(runtime):
 
 
 def allocation(runtime):
+    qualification = runtime.state / "qualification.json"
+    if not qualification.exists() or not read(qualification).get("passed"):
+        raise CampaignStop("Qualification has not passed")
     path = runtime.state / "allocation.json"
     if path.exists():
         return read(path)
-    if not read(runtime.state / "qualification.json")["passed"]:
-        raise CampaignStop("Qualification has not passed")
     budget = runtime.budget()
     session_costs, roles = defaultdict(float), {}
     for call in budget["calls"]:
