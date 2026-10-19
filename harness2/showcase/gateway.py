@@ -135,7 +135,7 @@ class Gateway:
                     gateway.manifest["max_output_tokens"],
                 )
                 if (
-                    len(json.dumps(body.get("messages", [])).encode()) + 4096
+                    len(json.dumps(body).encode()) + 4096
                     > (gateway.manifest["max_input_tokens"])
                 ):
                     return self.send_json(413, {"error": "conservative input limit exceeded"})
