@@ -755,28 +755,19 @@ def publish_results(runtime, data, output):
     make_public(runtime, wandb.Api())
     blocks = [wr.MarkdownBlock(text="\n".join(markdown(data, artifact.url).splitlines()[4:]))]
     if (runtime.state / "presentation/walkthrough.mp4").exists():
+        media = f"https://api.wandb.ai/files/{entity}/{project}/{runtime.manifest['campaign']}-presentation"
         blocks[:0] = [
             wr.MarkdownBlock(
-                text="Captioned walkthrough: an edited sequence of recorded native browser views, without audio."
-            ),
-            wr.PanelGrid(
-                hide_run_sets=True,
-                runsets=[
-                    wr.Runset(
-                        entity=entity,
-                        project=project,
-                        filters="ID = '" + runtime.manifest["campaign"] + "-presentation'",
-                    )
-                ],
-                panels=[
-                    wr.MediaBrowser(
-                        title="Qualification evidence walkthrough",
-                        media_keys=["walkthrough"],
-                        num_columns=1,
-                        layout=wr.Layout(w=24, h=14),
-                    )
-                ],
-            ),
+                text=(
+                    f"[Watch the 88-second walkthrough]({media}/walkthrough.mp4) · "
+                    f"[Captions]({media}/walkthrough.vtt) · "
+                    f"[Transcript]({media}/walkthrough-transcript.md)\n\n"
+                    "An edited sequence of recorded native browser views, with captions and no audio. "
+                    "Select the image to open the video.\n\n"
+                    f"[![Recorded Agent Lens task conversation]({media}/pilot-v2-task-first-agent-lens.png)]"
+                    f"({media}/walkthrough.mp4)"
+                )
+            )
         ]
     report = wr.Report(
         entity=entity,
