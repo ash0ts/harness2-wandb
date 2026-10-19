@@ -53,6 +53,13 @@ This condition loads the same executable harness as baseline. Its score differen
 **Regression: diagnostics / technical_writers/task1 / adapt / repetition 0.** Native score 0/66; change -69.70 percentage points.
 [Score, diff, and deliverables](https://ash0ts.github.io/harness2-wandb/#e223c19ad2d54e4abbdb90e1970921ad) · [Harness diff](https://ash0ts.github.io/harness2-wandb/evidence/harnesses/1d065ca96df56b837a33c83eac4037637856f991f919fc4c29930da53f97f6e6/harness.diff) · [Agent Lens trace](https://forge.coreweave.com/agent-lens/wandb/harness2-agent-lens/conversations/e223c19ad2d54e4abbdb90e1970921ad)
 
+## Recorded walkthrough
+
+[Watch the 75-second captioned video](https://ash0ts.github.io/harness2-wandb/media/walkthrough.mp4) · [Read the transcript](https://ash0ts.github.io/harness2-wandb/media/transcript.md)
+This silent walkthrough is an edited sequence of recorded browser views. It follows a small adaptation gain and a transfer regression for the same Harness² harness. Captures and stored span records remain accessible without signing into Agent Lens.
+![Adaptation score, harness diff, and generated files](https://ash0ts.github.io/harness2-wandb/media/adaptation-gain-final.png)
+![Recorded Agent Lens tool failure with supporting span ID](https://ash0ts.github.io/harness2-wandb/media/agent-lens-gain-error.png)
+
 ## Costs
 
 | Phase | USD |
