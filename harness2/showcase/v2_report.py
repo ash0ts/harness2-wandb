@@ -684,6 +684,10 @@ def publish_results(runtime, data, output):
                 },
             )
             version.add_dir(str(output / "evidence" / path.parent.relative_to(runtime.state)))
+            version.add_file(
+                str(output / "evidence" / path.parent.relative_to(runtime.state) / "harness.diff"),
+                name="harness-diff.txt",
+            )
             version = run.log_artifact(version)
             version.wait()
             harness_artifacts[(frozen["arm"], frozen["domain"], frozen["adaptation_replicate"])] = (
@@ -749,12 +753,37 @@ def publish_results(runtime, data, output):
             )
             run.use_artifact(artifact)
     make_public(runtime, wandb.Api())
+    blocks = [wr.MarkdownBlock(text="\n".join(markdown(data, artifact.url).splitlines()[4:]))]
+    if (runtime.state / "presentation/walkthrough.mp4").exists():
+        blocks[:0] = [
+            wr.MarkdownBlock(
+                text="Captioned walkthrough: an edited sequence of recorded native browser views, without audio."
+            ),
+            wr.PanelGrid(
+                hide_run_sets=True,
+                runsets=[
+                    wr.Runset(
+                        entity=entity,
+                        project=project,
+                        filters="ID = '" + runtime.manifest["campaign"] + "-presentation'",
+                    )
+                ],
+                panels=[
+                    wr.MediaBrowser(
+                        title="Qualification evidence walkthrough",
+                        media_keys=["walkthrough"],
+                        num_columns=1,
+                        layout=wr.Layout(w=24, h=14),
+                    )
+                ],
+            ),
+        ]
     report = wr.Report(
         entity=entity,
         project=project,
         title="Harness² + Agent Lens: pilot-v2",
         description=narrative(data),
-        blocks=[wr.MarkdownBlock(text=markdown(data, artifact.url))],
+        blocks=blocks,
     )
     previous = runtime.state / "publication.json"
     if previous.exists():
