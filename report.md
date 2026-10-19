@@ -8,7 +8,7 @@ A JobBench-based pilot with a frozen-harness transfer test. Two held-out tasks d
 
 Baseline uses the unmodified upstream harness. Harness² runs Propose–Probe–Compose. The diagnostics condition adds deterministic observations read from stored Agent Lens spans. Upstream Harness² already provides trajectories to its improver.
 
-[Reproducible code](https://github.com/ash0ts/harness2-wandb) · [Evidence browser](https://ash0ts.github.io/harness2-wandb/) · [Captioned walkthrough](https://ash0ts.github.io/harness2-wandb/media/walkthrough.mp4) · [Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1) · [Downloadable evidence artifact](https://forge.coreweave.com/wandb/wandb/harness2-agent-lens/artifacts/evidence/pilot-v1-evidence/v0)
+[Reproducible code](https://github.com/ash0ts/harness2-wandb) · [Evidence browser](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html) · [Captioned walkthrough](https://raw.githubusercontent.com/ash0ts/harness2-wandb/gh-pages/media/walkthrough.mp4) · [Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1) · [Downloadable evidence artifact](https://forge.coreweave.com/wandb/wandb/harness2-agent-lens/artifacts/evidence/pilot-v1-evidence/v0)
 
 ## Held-out task scores
 
@@ -47,18 +47,18 @@ Means average repetitions of the same task. Native earned and possible rubric we
 These examples select the largest positive and negative paired changes across the recorded adaptation and transfer attempts. Their stage is explicit; an adaptation gain is not evidence of transfer. The full occurrence table remains downloadable.
 
 **Gain: diagnostics / management_analysts/task3 / heldout / repetition 1.** Native score 22/72; change +11.11 percentage points.
-[Score, diff, and deliverables](https://ash0ts.github.io/harness2-wandb/#fed6478fb97647e8b9a476aa55c90aae) · [Harness diff](https://ash0ts.github.io/harness2-wandb/evidence/harnesses/1d065ca96df56b837a33c83eac4037637856f991f919fc4c29930da53f97f6e6/harness.diff) · [Agent Lens trace](https://forge.coreweave.com/agent-lens/wandb/harness2-agent-lens/conversations/fed6478fb97647e8b9a476aa55c90aae)
+[Score, diff, and deliverables](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html#fed6478fb97647e8b9a476aa55c90aae) · [Harness diff](https://raw.githubusercontent.com/ash0ts/harness2-wandb/gh-pages/evidence/harnesses/1d065ca96df56b837a33c83eac4037637856f991f919fc4c29930da53f97f6e6/harness.diff) · [Agent Lens trace](https://forge.coreweave.com/agent-lens/wandb/harness2-agent-lens/conversations/fed6478fb97647e8b9a476aa55c90aae)
 This condition loads the same executable harness as baseline. Its score difference is not evidence of an improved harness.
 
 **Regression: diagnostics / technical_writers/task1 / adapt / repetition 0.** Native score 0/66; change -69.70 percentage points.
-[Score, diff, and deliverables](https://ash0ts.github.io/harness2-wandb/#e223c19ad2d54e4abbdb90e1970921ad) · [Harness diff](https://ash0ts.github.io/harness2-wandb/evidence/harnesses/1d065ca96df56b837a33c83eac4037637856f991f919fc4c29930da53f97f6e6/harness.diff) · [Agent Lens trace](https://forge.coreweave.com/agent-lens/wandb/harness2-agent-lens/conversations/e223c19ad2d54e4abbdb90e1970921ad)
+[Score, diff, and deliverables](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html#e223c19ad2d54e4abbdb90e1970921ad) · [Harness diff](https://raw.githubusercontent.com/ash0ts/harness2-wandb/gh-pages/evidence/harnesses/1d065ca96df56b837a33c83eac4037637856f991f919fc4c29930da53f97f6e6/harness.diff) · [Agent Lens trace](https://forge.coreweave.com/agent-lens/wandb/harness2-agent-lens/conversations/e223c19ad2d54e4abbdb90e1970921ad)
 
 ## Recorded walkthrough
 
-[Watch the 75-second captioned video](https://ash0ts.github.io/harness2-wandb/media/walkthrough.mp4) · [Read the transcript](https://ash0ts.github.io/harness2-wandb/media/transcript.md)
+[Watch the 75-second captioned video](https://raw.githubusercontent.com/ash0ts/harness2-wandb/gh-pages/media/walkthrough.mp4) · [Read the transcript](https://raw.githubusercontent.com/ash0ts/harness2-wandb/gh-pages/media/transcript.md)
 This silent walkthrough is an edited sequence of recorded browser views. It follows a small adaptation gain and a transfer regression for the same Harness² harness. Captures and stored span records remain accessible without signing into Agent Lens.
-![Adaptation score, harness diff, and generated files](https://ash0ts.github.io/harness2-wandb/media/adaptation-gain-final.png)
-![Recorded Agent Lens tool failure with supporting span ID](https://ash0ts.github.io/harness2-wandb/media/agent-lens-gain-error.png)
+![Adaptation score, harness diff, and generated files](https://raw.githubusercontent.com/ash0ts/harness2-wandb/gh-pages/media/adaptation-gain-final.png)
+![Recorded Agent Lens tool failure with supporting span ID](https://raw.githubusercontent.com/ash0ts/harness2-wandb/gh-pages/media/agent-lens-gain-error.png)
 
 ## Costs
 
