@@ -61,6 +61,38 @@ def test_manifest_cannot_drift_after_first_attempt(tmp_path):
         load_manifest(path)
 
 
+def test_render_audit_distinguishes_documentation_edits_from_loaded_guardrails(tmp_path):
+    import shutil
+
+    from harness2.showcase.audit import rendered_harnesses
+    from harness2.showcase.runtime import ROOT, fingerprint
+
+    frozen = tmp_path / "frozen/diagnostics/management_analysts"
+    harness = frozen / "harness"
+    shutil.copytree(ROOT / "third_party/jb_runner/harness_baseline_oc", harness)
+    (harness / "scripts/README.md").write_text("Changed placeholder documentation")
+
+    def receipt():
+        (frozen / "freeze.json").write_text(
+            json.dumps(
+                {
+                    "arm": "diagnostics",
+                    "domain": "management_analysts",
+                    "fingerprint": fingerprint(harness),
+                }
+            )
+        )
+
+    receipt()
+    runtime = SimpleNamespace(state=tmp_path)
+    assert rendered_harnesses(runtime)[0]["same_rendered_harness_as_baseline"]
+    (harness / "guardrails.md").write_text("Verify every deliverable before finishing.")
+    receipt()
+    changed = rendered_harnesses(runtime)[0]
+    assert not changed["same_rendered_harness_as_baseline"]
+    assert changed["rendered_files"] == ["AGENTS.md"]
+
+
 def test_parallel_conditions_materialize_one_complete_input_mirror(tmp_path, monkeypatch):
     import shutil
     import time

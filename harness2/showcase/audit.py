@@ -3,10 +3,44 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from decimal import ROUND_CEILING, Decimal
+from pathlib import Path
 
-from .runtime import fingerprint
+from harness2.benchmarks.jobbench import _render_ctx, render_opencode_tree
+
+from .runtime import ROOT, fingerprint
 from .telemetry import tool_events, verify_readback
+
+
+def rendered_harnesses(runtime):
+    """Distinguish source-tree changes from artifacts actually loaded by OpenCode."""
+    records = []
+    with tempfile.TemporaryDirectory(prefix="h2-render-audit-") as temporary:
+        root = Path(temporary)
+        for path in sorted((runtime.state / "frozen").glob("*/*/freeze.json")):
+            info = json.loads(path.read_text())
+            baseline, candidate = root / "baseline", root / "candidate"
+            context = _render_ctx(info["domain"])
+            render_opencode_tree(
+                ROOT / "third_party/jb_runner/harness_baseline_oc", baseline, context
+            )
+            render_opencode_tree(path.parent / "harness", candidate, context)
+            baseline_hash, candidate_hash = fingerprint(baseline), fingerprint(candidate)
+            records.append(
+                {
+                    "arm": info["arm"],
+                    "domain": info["domain"],
+                    "source_fingerprint": info["fingerprint"],
+                    "rendered_fingerprint": candidate_hash,
+                    "baseline_rendered_fingerprint": baseline_hash,
+                    "same_rendered_harness_as_baseline": candidate_hash == baseline_hash,
+                    "rendered_files": sorted(
+                        str(p.relative_to(candidate)) for p in candidate.rglob("*") if p.is_file()
+                    ),
+                }
+            )
+    return records
 
 
 def audit(runtime):
@@ -69,6 +103,7 @@ def audit(runtime):
         "spent_usd": total / 1e6,
         "unresolved_requests": budget["unresolved"],
         "frozen_harnesses": frozen,
+        "rendered_harnesses": rendered_harnesses(runtime),
         "scope": "Recorded provider requests and tool events; see pilot-notes.md for adaptation preflight-rejection coverage limits.",
     }
     (runtime.state / "validation.json").write_text(json.dumps(result, indent=2))

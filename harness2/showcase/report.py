@@ -147,6 +147,8 @@ def index_generated_files(destination, index):
 
 
 def dataset(runtime):
+    from .audit import rendered_harnesses
+
     rows = reconcile(
         [json.loads(p.read_text()) for p in sorted((runtime.state / "scores").rglob("*.json"))]
     )
@@ -185,6 +187,7 @@ def dataset(runtime):
         "heldout_planned": planned,
         "heldout_judged": sum(r["fraction"] is not None for r in heldout),
         "complete": (runtime.state / "evaluate-complete.json").exists(),
+        "rendered_harnesses": rendered_harnesses(runtime),
         "unavailable_conditions": [
             json.loads(p.read_text())
             for p in sorted((runtime.state / "frozen").glob("*/*/unavailable.json"))
@@ -340,6 +343,16 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
             + condition["reason"]
             + " It is excluded from score means and paired changes, and remains in planned coverage.",
         ]
+    for harness in data.get("rendered_harnesses", []):
+        if harness["arm"] != "baseline" and harness["same_rendered_harness_as_baseline"]:
+            lines += [
+                "",
+                f"**No executable harness change: {harness['arm']} / {harness['domain']}.** "
+                "Its frozen source diff changes metadata or placeholder documentation, but the "
+                "OpenCode renderer produces exactly the same files as the baseline. Any score "
+                "difference for this condition cannot be attributed to a changed execution harness. "
+                "Source and rendered fingerprints are included in the validation artifact.",
+            ]
     lines += [
         "",
         "Means average repetitions of the same task. Native earned and possible rubric weights appear below; missing judgments are excluded and shown in coverage.",
