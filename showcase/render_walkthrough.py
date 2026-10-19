@@ -64,7 +64,8 @@ with tempfile.TemporaryDirectory(prefix="h2-walkthrough-") as temporary:
         filters = (
             "[0:v]scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,"
             "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=white[screen];"
-            "[screen][1:v]overlay=0:950,scale=1920:1080,setsar=1"
+            "[screen][1:v]overlay=0:950,"
+            "scale=1920:1080:out_range=tv:out_color_matrix=bt709,format=yuv420p,setsar=1"
         )
         subprocess.run(
             [
@@ -97,6 +98,18 @@ with tempfile.TemporaryDirectory(prefix="h2-walkthrough-") as temporary:
                 "2",
                 "-pix_fmt",
                 "yuv420p",
+                "-profile:v",
+                "main",
+                "-level:v",
+                "4.0",
+                "-color_range",
+                "tv",
+                "-colorspace",
+                "bt709",
+                "-color_primaries",
+                "bt709",
+                "-color_trc",
+                "bt709",
                 str(output),
             ],
             cwd=root,
