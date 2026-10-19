@@ -368,42 +368,49 @@ def score_run(runtime, adapter, task_id, output, cohort, repetition):
     print(f"score {adapter.arm} {task_id} {cohort}/{repetition}: {score}", flush=True)
 
 
+def _evaluate_domain(runtime, domain, arm, reps):
+    adapter = ExperimentAdapter(runtime, arm)
+    for task in runtime.manifest["adapt_tasks"]:
+        task_id = domain + "/" + task
+        if arm == "baseline":
+            output = adapter._out_dir(task_id, "adapt__baseline")
+        else:
+            result = json.loads(
+                (
+                    runtime.state
+                    / "arms"
+                    / arm
+                    / "results"
+                    / (task_id.replace("/", "__") + ".json")
+                ).read_text()
+            )
+            output = Path(result["selections"]["agg"]["chosen_run_dir"])
+        score_run(runtime, adapter, task_id, output, "adapt", 0)
+    adapter.phase = "evaluate"
+    frozen = runtime.state / "frozen" / arm / domain
+    expected = json.loads((frozen / "freeze.json").read_text())["fingerprint"]
+    if fingerprint(frozen / "harness") != expected:
+        raise CampaignStop("Frozen harness drift")
+    for task in runtime.manifest["heldout_tasks"]:
+        for rep in range(1, reps + 1):
+            adapter.repetition = rep
+            task_id = domain + "/" + task
+            output = adapter.execute(task_id, frozen / "harness", f"evaluate/rep{rep}")
+            score_run(runtime, adapter, task_id, output, "heldout", rep)
+
+
 def evaluate(runtime):
     if not (runtime.state / "adapt-complete.json").exists():
         raise CampaignStop("Finish adaptation and freeze all harnesses before heldout evaluation")
     verify_fixtures(runtime)
     reps = allocation(runtime)["repetitions"]
-    # All model improvement and reflection has ended before any rubric is opened by a judge.
-    for domain in runtime.manifest["domains"]:
-        for arm in ARMS:
-            adapter = ExperimentAdapter(runtime, arm)
-            for task in runtime.manifest["adapt_tasks"]:
-                task_id = domain + "/" + task
-                if arm == "baseline":
-                    output = adapter._out_dir(task_id, "adapt__baseline")
-                else:
-                    result = json.loads(
-                        (
-                            runtime.state
-                            / "arms"
-                            / arm
-                            / "results"
-                            / (task_id.replace("/", "__") + ".json")
-                        ).read_text()
-                    )
-                    output = Path(result["selections"]["agg"]["chosen_run_dir"])
-                score_run(runtime, adapter, task_id, output, "adapt", 0)
-            adapter.phase = "evaluate"
-            frozen = runtime.state / "frozen" / arm / domain
-            expected = json.loads((frozen / "freeze.json").read_text())["fingerprint"]
-            if fingerprint(frozen / "harness") != expected:
-                raise CampaignStop("Frozen harness drift")
-            for task in runtime.manifest["heldout_tasks"]:
-                for rep in range(1, reps + 1):
-                    adapter.repetition = rep
-                    task_id = domain + "/" + task
-                    output = adapter.execute(task_id, frozen / "harness", f"evaluate/rep{rep}")
-                    score_run(runtime, adapter, task_id, output, "heldout", rep)
+    jobs = [(domain, arm) for domain in runtime.manifest["domains"] for arm in ARMS]
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        futures = [
+            pool.submit(_evaluate_domain, runtime, domain, arm, reps) for domain, arm in jobs
+        ]
+        for future in futures:
+            future.result()
     write(runtime.state / "evaluate-complete.json", {"complete": True})
 
 
