@@ -231,6 +231,12 @@ def _export_session(runtime, session, execution=None, directory=None):
     directory = Path(directory or runtime.state / "executions" / session)
     directory.mkdir(parents=True, exist_ok=True)
     saved = directory / "trace.json"
+    if runtime.manifest.get("schema_version", 1) >= 2 and (
+        not saved.exists() or "trace_groups" in json.loads(saved.read_text())
+    ):
+        from .telemetry_v2 import export_grouped
+
+        return export_grouped(runtime, session, execution, directory)
     calls = runtime.calls(session)
     if not calls:
         raise RuntimeError("No provider requests to trace")
@@ -247,6 +253,12 @@ def _export_session(runtime, session, execution=None, directory=None):
         saved.write_text(json.dumps(receipt, indent=2))
         return receipt
     spans = spans_from_records(calls, tools)
+    entry = directory / "entry-message.txt"
+    entry_messages = (
+        [{"role": "user", "content": entry.read_text()}]
+        if entry.exists()
+        else [m for m in calls[0]["request"].get("messages", []) if m.get("role") == "user"]
+    )
     identity = calls[0]["identity"]
     start = execution["started"] if execution else min(c["started"] for c in calls)
     end = execution["ended"] if execution else max(c["ended"] for c in calls)
@@ -264,11 +276,7 @@ def _export_session(runtime, session, execution=None, directory=None):
             with tracing.Turn(
                 agent_name="harness2-" + identity["role"],
                 agent_version=identity.get("harness_fingerprint", "unversioned"),
-                messages=[
-                    message(m)
-                    for m in calls[0]["request"].get("messages", [])
-                    if m.get("role") == "user"
-                ],
+                messages=[message(m) for m in entry_messages],
                 started_at=dt(start),
                 ended_at=dt(end),
             ):

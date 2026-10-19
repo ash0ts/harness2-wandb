@@ -40,4 +40,5 @@ if database.exists():
             if part.get("type") == "tool":
                 part.update(id=row["id"], sessionID=row["session_id"], messageID=row["message_id"])
                 print(json.dumps({"type": "audit_tool", "part": part}), flush=True)
+print(json.dumps({"type": "audit_complete", "collection_status": "complete"}), flush=True)
 sys.exit(code)

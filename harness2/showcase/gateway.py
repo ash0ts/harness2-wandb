@@ -104,7 +104,14 @@ class Gateway:
                         self.headers.get("X-Showcase-Admin", ""), gateway.admin
                     ):
                         return self.send_json(403, {"error": "admin required"})
-                    if body.get("phase") not in ("smoke", "adapt", "evaluate", "judge"):
+                    if body.get("phase") not in (
+                        "smoke",
+                        "adapt",
+                        "evaluate",
+                        "judge",
+                        "retry",
+                        "mechanism",
+                    ):
                         return self.send_json(400, {"error": "invalid phase"})
                     session = body.get("session", "")
                     if not session or not session.replace("-", "").isalnum():
@@ -124,7 +131,7 @@ class Gateway:
                 if not identity:
                     return self.send_json(403, {"error": "unknown session"})
 
-                def reject_call(code, reason):
+                def reject_call(code, reason, error_code="invalid_request_error"):
                     stamp = time.time()
                     call_id = "rejected-" + secrets.token_hex(16)
                     write_record(
@@ -141,11 +148,24 @@ class Gateway:
                             "cost_usd": 0,
                         },
                     )
-                    return self.send_json(code, {"error": reason})
+                    return self.send_json(
+                        code,
+                        {
+                            "error": {
+                                "message": reason,
+                                "type": "invalid_request_error",
+                                "code": error_code,
+                            }
+                        },
+                    )
 
                 expected = gateway.manifest["models"][
                     "judge" if identity.get("role") == "judge" else "actor"
                 ]
+                if (gateway.state / "halted.json").exists():
+                    return reject_call(
+                        402, "Campaign halted after a budget or usage gate; no new paid requests"
+                    )
                 if body.get("model") != expected:
                     return reject_call(400, "model differs from manifest")
                 # One provider request per invocation; the client owns explicit retries.
@@ -154,15 +174,54 @@ class Gateway:
                     requested or body.get("max_tokens") or gateway.manifest["max_output_tokens"],
                     gateway.manifest["max_output_tokens"],
                 )
-                if len(json.dumps(body).encode()) + 4096 > (gateway.manifest["max_input_tokens"]):
-                    return reject_call(413, "conservative input limit exceeded")
+                request_bytes = len(json.dumps(body).encode())
+                v2 = gateway.manifest.get("schema_version", 1) >= 2
+                if v2:
+                    if request_bytes > gateway.manifest["max_request_bytes"]:
+                        return reject_call(
+                            413,
+                            "Request body exceeds the byte transport limit; read smaller evidence slices.",
+                            "request_too_large",
+                        )
+                    # This is a billing upper bound for text, NOT a context-window estimate.
+                    # UTF-8 bytes cover text tokens; allow additional chat-template overhead.
+                    input_limit = request_bytes + 8192
+                    if input_limit > gateway.manifest["max_input_tokens"]:
+                        return reject_call(
+                            400, "Request exceeds the reserved billing bound", "request_too_large"
+                        )
+                    if any(
+                        part.get("type") not in ("text", "input_text")
+                        for msg in body.get("messages", [])
+                        if isinstance(msg.get("content"), list)
+                        for part in msg["content"]
+                    ):
+                        return reject_call(400, "Only text inputs are qualified for this campaign")
+                else:
+                    input_limit = None
+                    if request_bytes + 4096 > gateway.manifest["max_input_tokens"]:
+                        return reject_call(413, "conservative input limit exceeded")
                 if body.get("stream"):
                     body["stream_options"] = {"include_usage": True}
                 try:
                     call_id = gateway.ledger.reserve(
-                        identity["session"], identity["phase"], expected, body["max_tokens"]
+                        identity["session"],
+                        identity["phase"],
+                        expected,
+                        body["max_tokens"],
+                        input_limit,
                     )
                 except BudgetError as exc:
+                    if gateway.manifest.get("schema_version", 1) >= 2:
+                        with gateway.lock:
+                            write_record(
+                                gateway.state / "halted.json",
+                                {
+                                    "reason": str(exc),
+                                    "session": identity["session"],
+                                    "time": time.time(),
+                                },
+                            )
                     return reject_call(402, str(exc))
                 directory = gateway.state / "sessions" / identity["session"]
                 started = time.time()
@@ -221,7 +280,15 @@ class Gateway:
                     if 400 <= exc.code < 500:
                         rejected = "Provider rejected HTTP " + str(exc.code)
                     try:
-                        self.send_json(exc.code, {"error": error})
+                        try:
+                            provider_error = json.loads(detail)
+                        except ValueError:
+                            provider_error = {
+                                "error": {"message": detail, "type": "provider_error"}
+                            }
+                        # Preserve context_length_exceeded and the provider's message so
+                        # OpenCode can distinguish context overflow from transport errors.
+                        self.send_json(exc.code, provider_error)
                     except (BrokenPipeError, ConnectionResetError):
                         pass
                 except Exception as exc:

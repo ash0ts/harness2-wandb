@@ -9,10 +9,13 @@ from pathlib import Path, PurePosixPath
 from .runtime import ROOT
 
 
-def prepare(manifest, state):
+def prepare(manifest, state, tasks=None):
     revision = manifest["dataset_revision"]
     files = []
-    for domain in manifest["domains"]:
+    if tasks is None and manifest.get("schema_version", 1) >= 2:
+        tasks = manifest["qualification_tasks"]
+    domains = sorted({t.split("/")[0] for t in tasks}) if tasks else manifest["domains"]
+    for domain in domains:
         url = (
             f"https://huggingface.co/api/datasets/JobBench/job-bench/tree/{revision}"
             f"/dataset/{domain}?recursive=true&limit=1000"
@@ -24,7 +27,9 @@ def prepare(manifest, state):
             if entry["type"] != "file" or ".." in path.parts:
                 continue
             task = path.parts[2]
-            if task not in manifest["adapt_tasks"] + manifest["heldout_tasks"]:
+            if tasks is not None and f"{domain}/{task}" not in tasks:
+                continue
+            if tasks is None and task not in manifest["adapt_tasks"] + manifest["heldout_tasks"]:
                 continue
             # Task cards contain benchmark context; never copy them to an executor.
             if path.name == "task_card.md":
@@ -47,6 +52,16 @@ def prepare(manifest, state):
 
     with ThreadPoolExecutor(8) as pool:
         records = list(pool.map(download, files))
-    provenance = {"dataset_revision": revision, "files": sorted(records, key=lambda x: x["path"])}
-    (Path(state) / "source-provenance.json").write_text(json.dumps(provenance, indent=2))
+    path = Path(state) / "source-provenance.json"
+    old = json.loads(path.read_text())["files"] if path.exists() else []
+    merged = {r["path"]: r for r in old}
+    for record in records:
+        if record["path"] in merged and merged[record["path"]] != record:
+            raise RuntimeError("Source manifest drift")
+        merged[record["path"]] = record
+    provenance = {
+        "dataset_revision": revision,
+        "files": sorted(merged.values(), key=lambda x: x["path"]),
+    }
+    path.write_text(json.dumps(provenance, indent=2))
     return provenance

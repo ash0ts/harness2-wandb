@@ -103,7 +103,11 @@ class ExperimentAdapter(JobBenchAdapter):
         harness = Path(harness_dir or self.base_harness())
         session_key = uuid.uuid4().hex
         work = self.runtime.state / "work" / session_key
-        render_opencode_tree(harness, work, _render_ctx(self.domain_of(task_id)))
+        ctx = _render_ctx(self.domain_of(task_id))
+        if self.runtime.manifest.get("render_date"):
+            ctx["date"] = self.runtime.manifest["render_date"]
+        render_opencode_tree(harness, work, ctx)
+        rendered_fingerprint = fingerprint(work)
         shutil.copytree(self.task_files(task_id), work / "task_folder")
         (work / "output").mkdir()
         result, directory = self.runtime.run_agent(
@@ -115,7 +119,9 @@ class ExperimentAdapter(JobBenchAdapter):
             arm=self.arm,
             run_id=run_id,
             repetition=self.repetition,
+            adaptation_replicate=getattr(self, "replicate", 0),
             harness_fingerprint=fingerprint(harness),
+            rendered_fingerprint=rendered_fingerprint,
         )
         record_dir.mkdir(parents=True)
         shutil.copy(directory / "events.jsonl", record_dir / "events.jsonl")
@@ -133,12 +139,25 @@ class ExperimentAdapter(JobBenchAdapter):
             execution_dir=str(directory),
         )
         marker.write_text(json.dumps(result, indent=2))
+        if self.runtime.manifest.get("schema_version", 1) >= 2:
+            from .protocol import harness_record, inventory, write_json
+
+            write_json(directory / "file-inventory.json", inventory(out))
+            write_json(
+                directory / "harness-record.json",
+                harness_record(harness, self.domain_of(task_id), self.runtime.manifest),
+            )
+            shutil.copytree(harness, directory / "source-harness")
         try:
             trace = export_session(self.runtime, result["session"], result, directory)
         except Exception as exc:
             raise CampaignStop(f"Trace persistence failed for {result['session']}: {exc}") from exc
         result["trace"] = trace
         marker.write_text(json.dumps(result, indent=2))
+        if result.get("budget_blocked"):
+            raise CampaignStop(
+                f"Budget denied requests in {result['session']}; this is not an agent no-output outcome"
+            )
         stored = json.loads((directory / "stored-spans.json").read_text())
         dossier = diagnostics(stored, self.delivered(out))
         (record_dir / "diagnostics.json").write_text(json.dumps(dossier, indent=2))
@@ -165,12 +184,13 @@ class ExperimentAdapter(JobBenchAdapter):
         token = self.runtime.register(
             {
                 "session": session,
-                "phase": "smoke" if self.phase == "smoke" else "judge",
+                "phase": self.phase if self.phase in ("smoke", "mechanism") else "judge",
                 "role": "judge",
                 "task": task_id,
                 "arm": self.arm,
                 "run_id": label,
                 "campaign": self.runtime.manifest["campaign"],
+                "adaptation_replicate": getattr(self, "replicate", 0),
             }
         )
         _, own = self._details_candidates(task_id, label)
@@ -225,13 +245,13 @@ class ExperimentAdapter(JobBenchAdapter):
             "--timeout-per-rubric",
             "240",
             "--evaluated-model",
-            label,
+            session if self.runtime.manifest.get("schema_version", 1) >= 2 else label,
         ]
         env = dict(
             os.environ,
             JUDGE_API_KEY=token,
-            JUDGE_MAX_COMPLETION_TOKENS="16384",
-            JUDGE_REASONING_EFFORT="high",
+            JUDGE_MAX_COMPLETION_TOKENS=str(self.runtime.manifest["max_output_tokens"]),
+            JUDGE_REASONING_EFFORT=self.runtime.manifest.get("judge_reasoning_effort", "high"),
         )
         try:
             with (directory / "judge.log").open("w") as log:
@@ -240,8 +260,12 @@ class ExperimentAdapter(JobBenchAdapter):
             subprocess.run(["docker", "stop", "--time", "3", name], capture_output=True)
             raise CampaignStop(f"Judge timed out for {session}; preserve the attempt")
         if self.runtime.calls(session):
-            self.runtime.wait_calls(session)
+            rows = self.runtime.wait_calls(session)
             export_session(self.runtime, session, directory=directory)
+            if any((r.get("error") or {}).get("http_status") == 402 for r in rows):
+                raise CampaignStop(
+                    f"Judge budget denied requests in {session}; preserve the incomplete judgment"
+                )
         return result.returncode == 0
 
 

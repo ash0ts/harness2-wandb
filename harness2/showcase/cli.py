@@ -460,7 +460,7 @@ def evaluate(runtime):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=("smoke", "adapt", "evaluate", "report"))
+    parser.add_argument("phase", choices=("smoke", "adapt", "evaluate", "mechanism", "report"))
     parser.add_argument("--manifest", type=Path, default=ROOT / "showcase/pilot.json")
     parser.add_argument(
         "--prepare",
@@ -476,6 +476,12 @@ def main():
     tmp.mkdir(exist_ok=True)
     tempfile.tempdir = str(tmp)
     runtime = Runtime(manifest, state)
+    if manifest.get("schema_version", 1) >= 2:
+        from .v2 import dispatch
+
+        return dispatch(args, runtime)
+    if args.phase == "mechanism":
+        parser.error("The mechanism phase requires a pilot-v2 manifest")
     try:
         if args.prepare:
             setup(runtime)

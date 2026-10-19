@@ -147,3 +147,19 @@ Its initial deployment was queued during GitHub's October 19 Actions/Pages incid
 The W&B-hosted demo and the release download were verified without authentication.
 Agent Lens itself redirected to login in the signed-out check; the exported spans,
 screenshots, and walkthrough provide public access to the evidence.
+
+## Pilot-v2
+
+The second campaign is specified in [pilot-v2-protocol.md](pilot-v2-protocol.md) and [pilot-v2.json](pilot-v2.json). It uses isolated state, sequential `k=2` refinement, explicit completion receipts, and six fresh task families. Pilot-v1 remains available at its original release.
+
+Run from the fork with Docker and `WANDB_API_KEY` configured:
+
+```sh
+python -m harness2.showcase.cli smoke --manifest showcase/pilot-v2.json --prepare
+python -m harness2.showcase.cli adapt --manifest showcase/pilot-v2.json
+python -m harness2.showcase.cli evaluate --manifest showcase/pilot-v2.json
+python -m harness2.showcase.cli mechanism --manifest showcase/pilot-v2.json
+python -m harness2.showcase.cli report --manifest showcase/pilot-v2.json
+```
+
+`smoke` includes actual offline OpenCode tools and complete two-round JobBench qualification. `adapt` refuses to start without qualification and a cost projection that fits the remaining budget. `evaluate` requires every frozen harness and saves unavailable judgments separately. `report --publish` uploads the evidence and creates a separate W&B Report for v2. It does not overwrite pilot-v1. A failed qualification stops the campaign before fresh-task evaluation.

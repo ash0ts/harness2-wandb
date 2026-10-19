@@ -23,6 +23,19 @@ class CampaignStop(BaseException):
 def load_manifest(path):
     path = Path(path).resolve()
     manifest = json.loads(path.read_text())
+    if manifest.get("schema_version", 1) >= 2:
+        if (
+            manifest.get("k") != 2
+            or manifest.get("mode") != "seq"
+            or manifest.get("adaptation_replicates") != 2
+        ):
+            raise ValueError("Pilot-v2 implements sequential k=2 with two adaptation replicates")
+        if manifest.get("repetitions") not in (1, 2):
+            raise ValueError("Pilot-v2 supports one or two evaluation repetitions")
+        if any(f["adapt"] != "task1" for f in manifest["task_families"]) or any(
+            not t.endswith("/task1") for t in manifest["qualification_tasks"]
+        ):
+            raise ValueError("Pilot-v2 adaptation and qualification are defined on task1")
     state = (path.parent / manifest["state_dir"]).resolve()
     state.mkdir(parents=True, exist_ok=True)
     frozen = state / "manifest.json"
@@ -61,7 +74,9 @@ class Runtime:
                     "--label",
                     "harness2.showcase=true",
                     "--subnet",
-                    os.environ.get("SHOWCASE_SUBNET", "172.30.240.0/24"),
+                    os.environ.get(
+                        "SHOWCASE_SUBNET", self.manifest.get("subnet", "172.30.240.0/24")
+                    ),
                     name,
                 ]
             )
@@ -166,7 +181,7 @@ class Runtime:
         self.wait_calls(session)
         return session, response.json()
 
-    def run_agent(self, work, prompt, *, phase, role, **identity):
+    def run_agent(self, work, prompt, *, phase, role, entry_message=None, **identity):
         work = Path(work).resolve()
         if any(c["status"] == "unknown" for c in self.budget()["calls"]):
             raise CampaignStop("Unreconciled usage blocks execution")
@@ -192,7 +207,9 @@ class Runtime:
                             "id": self.manifest["models"]["actor"],
                             "name": "Fixed pilot model",
                             "limit": {
-                                "context": self.manifest["max_input_tokens"],
+                                "context": self.manifest.get(
+                                    "model_context_tokens", self.manifest["max_input_tokens"]
+                                ),
                                 "output": self.manifest["max_output_tokens"],
                             },
                             "toolcall": True,
@@ -231,6 +248,8 @@ class Runtime:
             "OPENCODE_CONFIG=/control/opencode.json",
             "--env",
             "OPENCODE_DB=/home/runner/.local/share/opencode/opencode.db",
+            "--env",
+            f"OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX={self.manifest['max_output_tokens']}",
             self.manifest["image"],
             "run",
             prompt,
@@ -251,6 +270,10 @@ class Runtime:
         directory = self.state / "executions" / session
         directory.mkdir(parents=True)
         (directory / "identity.json").write_text(json.dumps(identity, indent=2))
+        (directory / "entry-message.txt").write_text(entry_message or prompt)
+        public_config = json.loads(json.dumps(config))
+        public_config["provider"]["showcase"]["options"]["apiKey"] = "<session-token>"
+        (directory / "runtime-settings.json").write_text(json.dumps(public_config, indent=2))
         timed_out = False
         try:
             with (
@@ -282,6 +305,7 @@ class Runtime:
             "exit_code": code,
             "timed_out": timed_out,
             "provider_calls": len(rows),
+            "budget_blocked": any((r.get("error") or {}).get("http_status") == 402 for r in rows),
         }
         (directory / "execution.json").write_text(json.dumps(result, indent=2))
         event_path = directory / "events.jsonl"
@@ -305,8 +329,21 @@ class Runtime:
                 seen.add(part["callID"])
         event_path.write_text("\n".join(events) + "\n")
         (directory / "opencode-audit.json").write_text(json.dumps(audit, indent=2))
+        exits = [e for e in audit if e["type"] == "audit_exit"]
+        result["child_exit_code"] = exits[-1]["child_exit_code"] if exits else None
+        result["collection_status"] = (
+            "complete" if any(e["type"] == "audit_complete" for e in audit) else "incomplete"
+        )
+        (directory / "execution.json").write_text(json.dumps(result, indent=2))
         if not any(e["type"] == "audit_session" for e in audit):
             raise CampaignStop(f"OpenCode audit missing for {session}; preserve this attempt")
+        if (
+            self.manifest.get("schema_version", 1) >= 2
+            and result["collection_status"] != "complete"
+        ):
+            raise CampaignStop(
+                f"Collector incomplete for {session}; child exit {result['child_exit_code']}"
+            )
         return result, directory
 
 

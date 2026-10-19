@@ -1,0 +1,125 @@
+{
+  "schema_version": 2,
+  "campaign": "pilot-v2",
+  "project": "wandb/harness2-agent-lens",
+  "harness2_revision": "1cfe254e8d25b15f37048c3730134686abe60335",
+  "dataset_revision": "d43a66575635da0d3f6cb9a20976dc1a60f3ffc9",
+  "jobbench_revision": "fa03a17f9ff662f136798a274e10011c3aa00fd0",
+  "opencode_revision": "23fb5e0516c99ac04a1aa46c193efda2e1b9bb24",
+  "models": {
+    "actor": "zai-org/GLM-5.3-Flash",
+    "judge": "deepseek-ai/DeepSeek-V4-Pro-0813"
+  },
+  "prices_per_million": {
+    "zai-org/GLM-5.3-Flash": {
+      "input": "0.15",
+      "cached": "0.05",
+      "output": "0.50"
+    },
+    "deepseek-ai/DeepSeek-V4-Pro-0813": {
+      "input": "1.31",
+      "cached": "0.044",
+      "output": "3.96"
+    }
+  },
+  "price_source": "https://coreweave.com/forge-pricing/inference-agents",
+  "prices_checked": "2026-10-19",
+  "budget_usd": "90.05",
+  "qualification_budget_usd": "8.00",
+  "max_output_tokens": 32768,
+  "max_input_tokens": 1048576,
+  "max_steps": 100,
+  "timeout_seconds": 2400,
+  "domains": [
+    "computer_user_support_specialists",
+    "online_merchants",
+    "supply_chain_managers",
+    "purchasing_agents_except_wholesale_retail_and_farm_products",
+    "social_science_research_assistants",
+    "training_and_development_specialists"
+  ],
+  "repetitions": 2,
+  "k": 2,
+  "mode": "seq",
+  "seed": 42,
+  "state_dir": "state/pilot-v2",
+  "image": "harness2-showcase:pilot-v2",
+  "network": "harness2-pilot-v2",
+  "gateway_port": 18765,
+  "prior_campaign": "pilot-v1",
+  "prior_spend_usd": "9.941318",
+  "lifetime_budget_usd": "100.00",
+  "model_context_tokens": 131072,
+  "max_request_bytes": 1000000,
+  "judge_reasoning_effort": "low",
+  "adaptation_replicates": 2,
+  "subnet": "172.30.241.0/24",
+  "diagnostics_execution_bytes": 8192,
+  "diagnostics_stage_bytes": 16384,
+  "budget_buckets": {
+    "qualification": {
+      "phases": [
+        "smoke"
+      ],
+      "usd": "8.00"
+    },
+    "main": {
+      "phases": [
+        "adapt",
+        "evaluate"
+      ],
+      "usd": "67.05"
+    },
+    "mechanism": {
+      "phases": [
+        "mechanism"
+      ],
+      "usd": "5.00"
+    },
+    "retry_and_judging": {
+      "phases": [
+        "retry",
+        "judge"
+      ],
+      "usd": "10.00"
+    }
+  },
+  "task_families": [
+    {
+      "domain": "computer_user_support_specialists",
+      "adapt": "task1",
+      "heldout": "task2"
+    },
+    {
+      "domain": "online_merchants",
+      "adapt": "task1",
+      "heldout": "task2"
+    },
+    {
+      "domain": "supply_chain_managers",
+      "adapt": "task1",
+      "heldout": "task2"
+    },
+    {
+      "domain": "purchasing_agents_except_wholesale_retail_and_farm_products",
+      "adapt": "task1",
+      "heldout": "task3"
+    },
+    {
+      "domain": "social_science_research_assistants",
+      "adapt": "task1",
+      "heldout": "task3"
+    },
+    {
+      "domain": "training_and_development_specialists",
+      "adapt": "task1",
+      "heldout": "task3"
+    }
+  ],
+  "qualification_tasks": [
+    "technical_writers/task1",
+    "management_analysts/task1"
+  ],
+  "selection_rule": "Largest positive held-out task mean difference from baseline, averaging adaptation and execution repetitions; complete evidence required; ties by domain then arm.",
+  "render_date": "2026-10-19"
+}

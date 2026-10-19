@@ -77,6 +77,42 @@ def allowed_files(runtime):
     for name in exact:
         if (state / name).is_file():
             yield state / name
+    if runtime.manifest.get("schema_version", 1) >= 2:
+        for name in (
+            "tool-qualification.json",
+            "cost-projection.json",
+            "evaluation-schedule.json",
+            "transfer-executions-complete.json",
+            "mechanism-selection.json",
+            "article-gate.json",
+        ):
+            if (state / name).is_file():
+                yield state / name
+        for area in (
+            "qualification",
+            "qualification-frozen",
+            "mechanism",
+            "provenance",
+            "presentation",
+        ):
+            for path in (state / area).rglob("*"):
+                if path.is_file() and not path.is_symlink():
+                    yield path
+        for directory in (state / "executions").glob("*"):
+            for name in (
+                "entry-message.txt",
+                "runtime-settings.json",
+                "file-inventory.json",
+                "harness-record.json",
+                "mission.md",
+                "decision.json",
+            ):
+                if (directory / name).is_file():
+                    yield directory / name
+            for area in ("source-harness", "proposed-harness", "proposal-output", "diagnostics"):
+                for path in (directory / area).rglob("*"):
+                    if path.is_file() and not path.is_symlink():
+                        yield path
     for area in ("scores", "frozen", "arms", "setup-failures", "attempt-history"):
         for path in (state / area).rglob("*"):
             if path.is_file() and not path.is_symlink():
