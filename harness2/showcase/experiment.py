@@ -23,6 +23,8 @@ from harness2.substrate.opencode import render_events
 from .runtime import CampaignStop, fingerprint
 from .telemetry import diagnostics, export_session
 
+_INPUT_LOCK = threading.Lock()
+
 
 def session_cost(runtime, session):
     rows = [c for c in runtime.budget()["calls"] if c["session"] == session]
@@ -42,6 +44,10 @@ class ExperimentAdapter(JobBenchAdapter):
         self.execution_records = []
 
     def task_files(self, task_id):
+        with _INPUT_LOCK:
+            return self._materialize_task_files(task_id)
+
+    def _materialize_task_files(self, task_id):
         # An explicit mirror is the entire solver-visible input boundary.
         source = self._dataset_task(task_id)
         dest = self.runtime.state / "task-inputs" / task_id

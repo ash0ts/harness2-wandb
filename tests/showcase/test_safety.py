@@ -59,3 +59,36 @@ def test_manifest_cannot_drift_after_first_attempt(tmp_path):
     path.write_text(json.dumps({"state_dir": "state", "model": "changed"}))
     with pytest.raises(ValueError, match="Manifest changed"):
         load_manifest(path)
+
+
+def test_parallel_conditions_materialize_one_complete_input_mirror(tmp_path, monkeypatch):
+    import shutil
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    from harness2.showcase.experiment import ExperimentAdapter
+
+    source = tmp_path / "fixture"
+    (source / "task_folder").mkdir(parents=True)
+    (source / "task_folder/input.txt").write_text("public input")
+    (source / "files_required_to_search").mkdir()
+    (source / "files_required_to_search/ref.txt").write_text("public reference")
+    (source / "RUBRICS.json").write_text("never visible")
+    adapter = ExperimentAdapter.__new__(ExperimentAdapter)
+    adapter.runtime = SimpleNamespace(state=tmp_path / "state")
+    adapter._dataset_task = lambda _: source
+    original = shutil.copytree
+
+    def slower_copy(src, dst, **kwargs):
+        result = original(src, dst, **kwargs)
+        time.sleep(0.02)
+        return result
+
+    monkeypatch.setattr("harness2.showcase.experiment.shutil.copytree", slower_copy)
+    with ThreadPoolExecutor(4) as pool:
+        paths = list(pool.map(adapter.task_files, ["domain/task1"] * 4))
+    assert len(set(paths)) == 1
+    assert sorted(str(p.relative_to(paths[0])) for p in paths[0].rglob("*") if p.is_file()) == [
+        "input.txt",
+        "references/ref.txt",
+    ]
