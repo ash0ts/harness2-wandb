@@ -94,8 +94,9 @@ def test_parallel_conditions_materialize_one_complete_input_mirror(tmp_path, mon
     ]
 
 
+@pytest.mark.parametrize("second_adopted", [True, False])
 def test_resume_preserves_failed_task_and_continues_without_extra_paid_attempt(
-    tmp_path, monkeypatch
+    tmp_path, monkeypatch, second_adopted
 ):
     from harness2.showcase.cli import _adapt_domain
 
@@ -106,7 +107,10 @@ def test_resume_preserves_failed_task_and_continues_without_extra_paid_attempt(
     runtime = SimpleNamespace(state=tmp_path, manifest={"adapt_tasks": ["task1", "task2"]})
     run = Mock(
         return_value=SimpleNamespace(
-            to_dict=lambda: {"status": "ok", "selections": {"agg": {"chosen_label": "agg1"}}}
+            to_dict=lambda: {
+                "status": "ok" if second_adopted else "partial",
+                "selections": {"agg": {"chosen_label": "agg1" if second_adopted else ""}},
+            }
         )
     )
     freeze = Mock()
@@ -118,4 +122,11 @@ def test_resume_preserves_failed_task_and_continues_without_extra_paid_attempt(
     _adapt_domain(runtime, "domain", "diagnostics")
     assert [call.args[0] for call in run.call_args_list] == ["domain/task2"]
     assert json.loads(failed.read_text()) == failure
-    freeze.assert_called_once()
+    if second_adopted:
+        freeze.assert_called_once()
+    else:
+        freeze.assert_not_called()
+        unavailable = json.loads(
+            (tmp_path / "frozen/diagnostics/domain/unavailable.json").read_text()
+        )
+        assert unavailable["task"] == "domain/task2"
