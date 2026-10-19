@@ -58,7 +58,7 @@ function select(id,scroll=false){
  if(scroll){el('detail').focus({preventScroll:true});el('detail').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth'});}
 }
 el('cohort').onchange=()=>{render();};
-window.addEventListener('popstate',()=>select(location.hash.slice(1)));
-render();if(location.hash)select(location.hash.slice(1));
+window.addEventListener('popstate',()=>select(location.hash.slice(1),true));
+render();if(location.hash)select(location.hash.slice(1),true);
 </script>
 </html>

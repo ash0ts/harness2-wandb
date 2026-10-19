@@ -48,6 +48,7 @@ def audit(runtime):
     if budget["unresolved"]:
         raise RuntimeError("Cannot certify a campaign with unresolved usage")
     total, spans, sessions, maximum_input = 0, 0, 0, 0
+    collector_failures = []
     for call in budget["calls"]:
         path = runtime.state / "gateway/sessions" / call["session"] / (call["id"] + ".json")
         record = json.loads(path.read_text())
@@ -79,8 +80,37 @@ def audit(runtime):
         receipt = json.loads((execution / "trace.json").read_text())
         assert receipt["verified"]
         stored = json.loads((execution / "stored-spans.json").read_text())
-        verify_readback(stored, calls, tool_events(execution / "events.jsonl"))
+        tools = tool_events(execution / "events.jsonl")
+        verify_readback(stored, calls, tools)
         assert len(stored) == receipt["expected_spans"]
+        stderr = execution / "stderr.txt"
+        if stderr.exists() and "BlockingIOError" in stderr.read_text():
+            secondary = json.loads((execution / "opencode-audit.json").read_text())
+            children = [
+                event["session"]["id"]
+                for event in secondary
+                if event["type"] == "audit_session" and event["session"].get("parent_id")
+            ]
+            requested = {
+                tool["id"]
+                for call in calls
+                for choice in (call.get("response") or {}).get("choices", [])
+                if choice.get("finish_reason") == "tool_calls"
+                for tool in choice.get("message", {}).get("tool_calls", [])
+            }
+            observed = {tool.get("callID") for tool in tools}
+            assert not children, "Interrupted child-session audit requires separate reconciliation"
+            assert requested <= observed, "Primary tool stream lacks a completed model tool request"
+            collector_failures.append(
+                {
+                    "session": directory.name,
+                    "reason": "Post-execution audit pipe was nonblocking; secondary export truncated.",
+                    "completed_model_tool_requests": len(requested),
+                    "all_requested_tool_ids_in_primary_stream": True,
+                    "child_sessions": children,
+                    "child_exit_code": None,
+                }
+            )
         spans += len(stored)
         sessions += 1
     frozen = []
@@ -104,6 +134,7 @@ def audit(runtime):
         "unresolved_requests": budget["unresolved"],
         "frozen_harnesses": frozen,
         "rendered_harnesses": rendered_harnesses(runtime),
+        "post_execution_collector_failures": collector_failures,
         "scope": "Recorded provider requests and tool events; see pilot-notes.md for adaptation preflight-rejection coverage limits.",
     }
     (runtime.state / "validation.json").write_text(json.dumps(result, indent=2))

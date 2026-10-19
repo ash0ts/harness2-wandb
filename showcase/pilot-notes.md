@@ -30,12 +30,28 @@ The state receipts identify the revisions and affected attempts.
   qualification spans. Report costs use provider usage and the pinned cached-input
   price instead. The public cost ledger, rather than the Agent Lens display total,
   governs the spending cap.
+- Some long executions left the collector's stdout pipe nonblocking. After OpenCode
+  had exited, a large record could interrupt the redundant database audit and make the
+  wrapper return 120. The primary OpenCode event stream and generated files remain.
+  The validation receipt lists affected sessions and verifies every completed model
+  tool-call ID against that primary stream; none of those sessions has a child session.
+  The original wrapper exit codes are retained, and the child's exit code is unknown
+  for affected executions. These wrapper failures must not be described as agent failures.
+  The public collector restores blocking output after OpenCode exits. This fix is for
+  subsequent campaigns; the worker image used by this pilot was not changed mid-run.
 
 All conditions share the pinned offline worker image. Its tool environment includes
 limitations that adaptation can observe, including tool attempts that require unavailable
 internet access. The image is not repaired between conditions. The public report should
 not attribute an observed score difference to diagnostics without inspecting the
 deliverable and judge evidence.
+
+One concrete environment limitation appears in
+[this captured skill span](https://forge.coreweave.com/agent-lens/wandb/harness2-agent-lens/conversations/9135d64d8c134bbdbbcfe763b79e1378/spans/c87de62d69d0b8f7):
+OpenCode attempted to download ripgrep while loading a skill, and the offline network
+blocked that download. Similar failures occurred for its search tools. They are part
+of this pilot's fixed environment, not evidence that those tools fail in an ordinary
+networked installation.
 
 The manifest's seed controls the upstream workflow. It is not an inference sampling
 seed. Sampling parameters were omitted from model requests, retaining provider defaults;

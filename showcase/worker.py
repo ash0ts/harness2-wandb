@@ -1,6 +1,7 @@
 """Run unmodified OpenCode, then export its persisted events, including child sessions."""
 
 import json
+import os
 import signal
 import sqlite3
 import subprocess
@@ -20,6 +21,11 @@ child = subprocess.Popen(
 )
 signal.signal(signal.SIGTERM, lambda *_: child.terminate())
 code = child.wait()
+# Bun can leave the inherited pipe nonblocking. Restore it after the child exits
+# so large audit records cannot truncate the collector or replace its exit code.
+os.set_blocking(sys.stdout.fileno(), True)
+os.set_blocking(sys.stderr.fileno(), True)
+print(json.dumps({"type": "audit_exit", "child_exit_code": code}), flush=True)
 database = Path.home() / ".local/share/opencode/opencode.db"
 if not database.exists():
     print("OpenCode audit database missing", file=sys.stderr)

@@ -112,7 +112,15 @@ def bundle(runtime, destination):
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         # Make local locators portable without retaining developer home-directory paths.
-        if source.suffix.lower() in (".json", ".jsonl", ".txt", ".md", ".log", ".diff"):
+        if source.suffix.lower() in (
+            ".json",
+            ".jsonl",
+            ".txt",
+            ".md",
+            ".log",
+            ".diff",
+            ".judge_failed",
+        ):
             text = raw.decode("utf-8", errors="strict")
             text = text.replace(str(runtime.state) + "/", "evidence/").replace(
                 str(ROOT), "<checkout>"
@@ -375,6 +383,41 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
         lines.append(
             f"| {row['task']} | {row['arm']} | {row['repetition']} | {native} | {change} | [Inspect]({row['trace']['url']}) |"
         )
+    lines += [
+        "",
+        "## Inspect a gain and a regression",
+        "",
+        "These examples select the largest positive and negative paired changes across "
+        "the recorded adaptation and transfer attempts. Their stage is explicit; an "
+        "adaptation gain is not evidence of transfer. The full occurrence table remains downloadable.",
+    ]
+    pairs = [
+        row for row in data["rows"] if row["arm"] != "baseline" and row["paired_change"] is not None
+    ]
+    for label, candidates in (
+        (
+            "Gain",
+            sorted((r for r in pairs if r["paired_change"] > 0), key=lambda r: -r["paired_change"]),
+        ),
+        (
+            "Regression",
+            sorted((r for r in pairs if r["paired_change"] < 0), key=lambda r: r["paired_change"]),
+        ),
+    ):
+        if not candidates:
+            lines += ["", f"No {label.lower()} was recorded among available matched pairs."]
+            continue
+        row = candidates[0]
+        score = row["score"]
+        lines += [
+            "",
+            f"**{label}: {row['arm']} / {row['task']} / {row['cohort']} / repetition {row['repetition']}.** "
+            f"Native score {score['n_passed']:g}/{score['n_criteria']:g}; "
+            f"change {row['paired_change'] * 100:+.2f} percentage points.",
+            f"[Score, diff, and deliverables]({demo_url}#{row['session']}) · "
+            f"[Harness diff]({demo_url}{row['harness_diff']}) · "
+            f"[Agent Lens trace]({row['trace']['url']})",
+        ]
     lines += ["", "## Costs", "", "| Phase | USD |", "|---|---:|"]
     for phase, cost in data["cost_by_phase"].items():
         lines.append(f"| {phase} | ${cost:.4f} |")

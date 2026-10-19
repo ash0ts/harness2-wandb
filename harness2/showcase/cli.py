@@ -372,6 +372,10 @@ def score_run(runtime, adapter, task_id, output, cohort, repetition):
     marker = json.loads((adapter._traj_dir(task_id, label) / "showcase.json").read_text())
     score = adapter.score(output, task_id)
     _, judge = adapter._details_candidates(task_id, label)
+    if not judge.exists():
+        failed = judge.with_name(judge.name + ".judge_failed")
+        if failed.exists():
+            judge = failed
     write(
         score_path,
         {
@@ -393,6 +397,7 @@ def score_run(runtime, adapter, task_id, output, cohort, repetition):
                 else "agent_no_output"
             ),
             "execution_exit_code": marker["exit_code"],
+            "execution_exit_scope": "worker wrapper; see collector audit for post-execution failures",
         },
     )
     print(f"score {adapter.arm} {task_id} {cohort}/{repetition}: {score}", flush=True)
