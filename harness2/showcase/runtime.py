@@ -130,11 +130,12 @@ class Runtime:
 
     def calls(self, session):
         directory = self.state / "gateway/sessions" / session
-        return [
+        records = [
             json.loads(p.read_text())
             for p in sorted(directory.glob("*.json"))
             if p.name != "identity.json"
         ]
+        return sorted(records, key=lambda record: (record["started"], record["call_id"]))
 
     def wait_calls(self, session):
         for _ in range(60):

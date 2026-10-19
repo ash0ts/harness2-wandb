@@ -16,6 +16,12 @@ from pathlib import Path
 from .budget import BudgetError, Ledger
 
 
+def write_record(path, record):
+    temporary = path.with_suffix(".tmp")
+    temporary.write_text(json.dumps(record, indent=2))
+    os.replace(temporary, path)
+
+
 def merge_stream(chunks):
     result = {"choices": [{"message": {"role": "assistant", "content": ""}}]}
     message = result["choices"][0]["message"]
@@ -150,7 +156,7 @@ class Gateway:
                     "identity": identity,
                 }
                 path = directory / (call_id + ".json")
-                path.write_text(json.dumps(record))
+                write_record(path, record)
                 request = urllib.request.Request(
                     "https://api.inference.wandb.ai/v1/chat/completions",
                     data=json.dumps(body).encode(),
@@ -207,7 +213,7 @@ class Gateway:
                         call_id, (response or {}).get("usage"), rejection=rejected
                     )
                     record.update(ended=time.time(), response=response, error=error)
-                    path.write_text(json.dumps(record, indent=2))
+                    write_record(path, record)
 
         return Handler
 

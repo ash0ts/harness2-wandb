@@ -116,3 +116,13 @@ def test_stream_usage_not_summed():
     assert result["usage"]["prompt_tokens"] == 100
     assert result["usage"]["completion_tokens"] == 20
     assert result["choices"][0]["message"]["tool_calls"][0]["function"]["arguments"] == '{"x":1}'
+
+
+def test_provider_record_replacement_is_atomic(tmp_path):
+    from harness2.showcase.gateway import write_record
+
+    path = tmp_path / "request.json"
+    write_record(path, {"request": "started"})
+    write_record(path, {"request": "started", "response": "complete"})
+    assert json.loads(path.read_text())["response"] == "complete"
+    assert list(tmp_path.glob("*.tmp")) == []
