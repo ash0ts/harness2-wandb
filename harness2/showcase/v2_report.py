@@ -755,7 +755,8 @@ def publish_results(runtime, data, output):
         report.id = read(previous)["report_id"]
     report.save()
     receipt = {
-        "report_url": report.url,
+        "report_url": f"https://wandb.ai/{entity}/{project}/reports/Harness-Agent-Lens-pilot-v2--{report.id}",
+        "sdk_report_url": report.url,
         "report_id": report.id,
         "artifact_url": artifact.url,
         "campaign_url": campaign_url,
