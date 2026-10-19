@@ -123,22 +123,39 @@ class Gateway:
                     identity = gateway.sessions.get(token)
                 if not identity:
                     return self.send_json(403, {"error": "unknown session"})
+
+                def reject_call(code, reason):
+                    stamp = time.time()
+                    call_id = "rejected-" + secrets.token_hex(16)
+                    write_record(
+                        gateway.state / "sessions" / identity["session"] / (call_id + ".json"),
+                        {
+                            "call_id": call_id,
+                            "started": stamp,
+                            "ended": stamp,
+                            "request": body,
+                            "identity": identity,
+                            "response": None,
+                            "error": {"http_status": code, "body": reason},
+                            "forwarded_to_provider": False,
+                            "cost_usd": 0,
+                        },
+                    )
+                    return self.send_json(code, {"error": reason})
+
                 expected = gateway.manifest["models"][
                     "judge" if identity.get("role") == "judge" else "actor"
                 ]
                 if body.get("model") != expected:
-                    return self.send_json(400, {"error": "model differs from manifest"})
+                    return reject_call(400, "model differs from manifest")
                 # One provider request per invocation; the client owns explicit retries.
                 requested = body.pop("max_completion_tokens", None)
                 body["max_tokens"] = min(
                     requested or body.get("max_tokens") or gateway.manifest["max_output_tokens"],
                     gateway.manifest["max_output_tokens"],
                 )
-                if (
-                    len(json.dumps(body).encode()) + 4096
-                    > (gateway.manifest["max_input_tokens"])
-                ):
-                    return self.send_json(413, {"error": "conservative input limit exceeded"})
+                if len(json.dumps(body).encode()) + 4096 > (gateway.manifest["max_input_tokens"]):
+                    return reject_call(413, "conservative input limit exceeded")
                 if body.get("stream"):
                     body["stream_options"] = {"include_usage": True}
                 try:
@@ -146,7 +163,7 @@ class Gateway:
                         identity["session"], identity["phase"], expected, body["max_tokens"]
                     )
                 except BudgetError as exc:
-                    return self.send_json(402, {"error": str(exc)})
+                    return reject_call(402, str(exc))
                 directory = gateway.state / "sessions" / identity["session"]
                 started = time.time()
                 record = {
@@ -154,6 +171,7 @@ class Gateway:
                     "started": started,
                     "request": body,
                     "identity": identity,
+                    "forwarded_to_provider": True,
                 }
                 path = directory / (call_id + ".json")
                 write_record(path, record)

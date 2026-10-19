@@ -312,7 +312,18 @@ def _adapt_domain(runtime, domain, arm):
                         flush=True,
                     )
                     continue
-                raise CampaignStop(f"No adoptable harness for {arm} {task_id}; attempts preserved")
+                write(
+                    runtime.state / "frozen" / arm / domain / "unavailable.json",
+                    {
+                        "arm": arm,
+                        "domain": domain,
+                        "task": task_id,
+                        "reason": "Task2 produced no adoptable final harness; transfer was not executed.",
+                        "result": str(result_path),
+                    },
+                )
+                print(f"transfer unavailable {arm} {domain}; no task2 adoption", flush=True)
+                return
             chosen = (
                 Namespace("jb", "oc", "agg", 1, 42, arm).task_dir(root / "runs", task_id)
                 / "harnesses"
@@ -374,7 +385,14 @@ def score_run(runtime, adapter, task_id, output, cohort, repetition):
             "trace": marker["trace"],
             "output_dir": str(output),
             "judge_evidence": str(judge) if judge.exists() else None,
-            "status": "judged" if score is not None else "judgment_unavailable",
+            "status": (
+                "judgment_unavailable"
+                if score is None
+                else "judged"
+                if adapter.delivered(output)
+                else "agent_no_output"
+            ),
+            "execution_exit_code": marker["exit_code"],
         },
     )
     print(f"score {adapter.arm} {task_id} {cohort}/{repetition}: {score}", flush=True)
@@ -406,6 +424,9 @@ def _evaluate_domain(runtime, domain, arm, reps):
         score_run(runtime, adapter, task_id, output, "adapt", 0)
     adapter.phase = "evaluate"
     frozen = runtime.state / "frozen" / arm / domain
+    if (frozen / "unavailable.json").exists():
+        print(f"transfer unavailable {arm} {domain}; failed adaptation preserved", flush=True)
+        return
     expected = json.loads((frozen / "freeze.json").read_text())["fingerprint"]
     if fingerprint(frozen / "harness") != expected:
         raise CampaignStop("Frozen harness drift")

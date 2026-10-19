@@ -184,6 +184,10 @@ def dataset(runtime):
         "heldout_planned": planned,
         "heldout_judged": sum(r["fraction"] is not None for r in heldout),
         "complete": (runtime.state / "evaluate-complete.json").exists(),
+        "unavailable_conditions": [
+            json.loads(p.read_text())
+            for p in sorted((runtime.state / "frozen").glob("*/*/unavailable.json"))
+        ],
     }
     summary["task_means"] = []
     for task in sorted({r["task"] for r in heldout}):
@@ -249,6 +253,18 @@ def harness_index(runtime, destination):
 
 
 def portable_rows(runtime, data, harnesses):
+    def preview(value):
+        text = value if isinstance(value, str) else json.dumps(value)
+        return (
+            text
+            if len(text) <= 4000
+            else text[:4000] + "\n[Preview truncated; download stored spans for the full value.]"
+        )
+
+    for condition in data["unavailable_conditions"]:
+        condition["result"] = "evidence/" + str(
+            Path(condition["result"]).relative_to(runtime.state)
+        )
     for row in data["rows"]:
         row["output_path"] = "evidence/" + str(Path(row["output_dir"]).relative_to(runtime.state))
         row.pop("output_dir")
@@ -268,8 +284,8 @@ def portable_rows(runtime, data, harnesses):
                 "message": s.get("status_message", ""),
                 "start": s["started_at"],
                 "end": s["ended_at"],
-                "tool_arguments": s.get("tool_call_arguments", ""),
-                "result": s.get("tool_call_result", ""),
+                "tool_arguments": preview(s.get("tool_call_arguments", "")),
+                "result": preview(s.get("tool_call_result", "")),
             }
             for s in spans
             if s.get("tool_name") or s.get("error_type")
@@ -316,6 +332,13 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
         lines.append(
             f"| {row['task']} | {row['arm']} | {value} | {row['judged_repetitions']}/{row['planned_repetitions']} |"
         )
+    for condition in data["unavailable_conditions"]:
+        lines += [
+            "",
+            f"**Unavailable transfer condition: {condition['arm']} / {condition['domain']}.** "
+            + condition["reason"]
+            + " It is excluded from score means and paired changes, and remains in planned coverage.",
+        ]
     lines += [
         "",
         "Means average repetitions of the same task. Native earned and possible rubric weights appear below; missing judgments are excluded and shown in coverage.",
@@ -344,6 +367,7 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
     lines += [
         "",
         "Adaptation includes baseline task executions, proposals, probes, composition, reflection, and retries. Judging is separate. Costs use recorded provider usage and frozen prices; they are not a billing invoice.",
+        "Agent Lens may show a lower cost: stored span cost fields in this pilot assigned zero to cached input. This report charges cached input at the frozen provider price and uses that ledger for the budget.",
         "",
         "## Limits",
         "",
@@ -351,6 +375,7 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
         "Trace patterns describe observed operations; a score difference alone does not prove the mechanism.",
         "",
         "Automatic Agent Lens Insights clustering is outside this pilot. The portable evidence browser includes stored span excerpts and downloadable records when Agent Lens requires a login.",
+        "Implementation repairs and trace-coverage limits are documented in [pilot notes](https://github.com/ash0ts/harness2-wandb/blob/showcase/wandb-agent-lens/showcase/pilot-notes.md). No benchmark grades were available while adaptation ran.",
     ]
     if not data["complete"]:
         lines += [

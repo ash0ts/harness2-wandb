@@ -33,6 +33,7 @@ const task=x=>x.replace('technical_writers','Technical writing').replace('manage
 const url=x=>/^(https:\/\/|evidence\/)/.test(x||'')?esc(x):'#';
 el('facts').innerHTML=[['Judgments',`${data.heldout_judged} / ${data.heldout_planned}`],['Recorded inference cost',`$${data.spent_usd.toFixed(3)}`],['Adaptation cost',`$${(data.cost_by_phase.adapt||0).toFixed(3)}`],['Unresolved reservations',`$${data.reserved_usd.toFixed(3)}`]].map(([label,value])=>`<div class="fact"><strong>${esc(value)}</strong><span>${label}</span></div>`).join('');
 if(!data.complete)el('warning').innerHTML='<div class="warning"><strong>Campaign incomplete.</strong> This view preserves the available evidence. It is not a completed comparison.</div>';
+for(const condition of data.unavailable_conditions||[])el('warning').innerHTML+=`<div class="warning"><strong>Transfer unavailable: ${esc(names[condition.arm])} / ${esc(task(condition.domain))}.</strong> ${esc(condition.reason)} No substitute harness or zero score is assigned. <a href="${url(condition.result)}">Inspect adaptation record</a>.</div>`;
 function render(){
  const group=data.rows.filter(r=>r.cohort===el('cohort').value);
  el('coverage').textContent=`${group.filter(r=>r.fraction!=null).length} judged / ${group.length} recorded occurrences in this view.`;

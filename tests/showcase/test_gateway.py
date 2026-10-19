@@ -61,6 +61,12 @@ def test_observer_forwards_original_stream_and_reserves_entire_request(tmp_path,
         assert denied.status_code == 413
         assert len(captured) == 1
         assert len(gateway.ledger.snapshot()["calls"]) == 1
+        rejected = json.loads(
+            next((tmp_path / "sessions/session").glob("rejected-*.json")).read_text()
+        )
+        assert rejected["forwarded_to_provider"] is False
+        assert rejected["cost_usd"] == 0
+        assert rejected["request"]["tools"] == oversized["tools"]
     finally:
         server.shutdown()
         server.server_close()
