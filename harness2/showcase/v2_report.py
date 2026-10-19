@@ -7,6 +7,7 @@ import hashlib
 import html
 import json
 import random
+import re
 import statistics
 import zipfile
 from collections import defaultdict
@@ -753,7 +754,16 @@ def publish_results(runtime, data, output):
             )
             run.use_artifact(artifact)
     make_public(runtime, wandb.Api())
-    blocks = [wr.MarkdownBlock(text="\n".join(markdown(data, artifact.url).splitlines()[4:]))]
+    report_text = "\n".join(markdown(data, artifact.url).splitlines()[4:])
+    blocks = []
+    cursor = 0
+    for match in re.finditer(r"(?m)^!\[([^\]]*)\]\((https?://[^)]+)\)$", report_text):
+        if report_text[cursor : match.start()].strip():
+            blocks.append(wr.MarkdownBlock(text=report_text[cursor : match.start()]))
+        blocks.append(wr.Image(url=match[2], caption=match[1]))
+        cursor = match.end()
+    if report_text[cursor:].strip():
+        blocks.append(wr.MarkdownBlock(text=report_text[cursor:]))
     if (runtime.state / "presentation/walkthrough.mp4").exists():
         media = f"https://api.wandb.ai/files/{entity}/{project}/{runtime.manifest['campaign']}-presentation"
         blocks[:0] = [
@@ -762,12 +772,13 @@ def publish_results(runtime, data, output):
                     f"[Watch the 88-second walkthrough]({media}/walkthrough.mp4) · "
                     f"[Captions]({media}/walkthrough.vtt) · "
                     f"[Transcript]({media}/walkthrough-transcript.md)\n\n"
-                    "An edited sequence of recorded native browser views, with captions and no audio. "
-                    "Select the image to open the video.\n\n"
-                    f"[![Recorded Agent Lens task conversation]({media}/pilot-v2-task-first-agent-lens.png)]"
-                    f"({media}/walkthrough.mp4)"
+                    "An edited sequence of recorded native browser views, with captions and no audio."
                 )
-            )
+            ),
+            wr.Image(
+                url=f"{media}/pilot-v2-task-first-agent-lens.png",
+                caption="Recorded Agent Lens task conversation. The walkthrough follows its harness, execution and deliverable evidence.",
+            ),
         ]
     report = wr.Report(
         entity=entity,
