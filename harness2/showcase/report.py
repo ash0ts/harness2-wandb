@@ -248,7 +248,7 @@ def harness_index(runtime, destination):
                     a.read_text().splitlines(True) if a.exists() else [],
                     b.read_text().splitlines(True) if b.exists() else [],
                     fromfile="baseline/" + relative,
-                    tofile="adopted/" + relative,
+                    tofile="execution/" + relative,
                 )
             )
         (target / "harness.diff").write_text("".join(diff))
