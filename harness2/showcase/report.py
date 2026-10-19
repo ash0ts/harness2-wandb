@@ -461,6 +461,18 @@ def markdown(data, *, artifact_url="", demo_url="https://ash0ts.github.io/harnes
                 "This condition loads the same executable harness as baseline. Its score "
                 "difference is not evidence of an improved harness.",
             ]
+    lines += [
+        "",
+        "## Recorded walkthrough",
+        "",
+        f"[Watch the 75-second captioned video]({demo_url}media/walkthrough.mp4) · "
+        f"[Read the transcript]({demo_url}media/transcript.md)",
+        "This silent walkthrough is an edited sequence of recorded browser views. "
+        "It follows a small adaptation gain and a transfer regression for the same Harness² harness. "
+        "Captures and stored span records remain accessible without signing into Agent Lens.",
+        f"![Adaptation score, harness diff, and generated files]({demo_url}media/adaptation-gain-final.png)",
+        f"![Recorded Agent Lens tool failure with supporting span ID]({demo_url}media/agent-lens-gain-error.png)",
+    ]
     lines += ["", "## Costs", "", "| Phase | USD |", "|---|---:|"]
     for phase, cost in data["cost_by_phase"].items():
         lines.append(f"| {phase} | ${cost:.4f} |")
