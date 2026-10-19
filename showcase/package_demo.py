@@ -27,6 +27,11 @@ selected = {
     "results.csv",
     "report.md",
     "publication.json",
+    "public-access.json",
+    "attribution.md",
+    "harness2-LICENSE",
+    "jobbench-evaluator-LICENSE",
+    "jobbench-README.md",
     "evidence/files.json",
 }
 for row in data["rows"]:
@@ -45,7 +50,14 @@ for relative in sorted(selected):
     if path.is_symlink() or source not in path.resolve().parents:
         raise SystemExit("Unsafe public path: " + relative)
     if not path.exists():
-        if relative == "publication.json":
+        if relative in {
+            "publication.json",
+            "public-access.json",
+            "attribution.md",
+            "harness2-LICENSE",
+            "jobbench-evaluator-LICENSE",
+            "jobbench-README.md",
+        }:
             continue
         raise SystemExit("Missing public path: " + relative)
     target = destination / relative

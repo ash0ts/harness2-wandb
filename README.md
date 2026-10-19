@@ -1,4 +1,4 @@
-> **W&B + Agent Lens experiment fork:** see [the pilot guide](showcase/README.md) for the standalone runner, reproducible protocol, and evidence exports. The original Harness² documentation follows.
+> **Public Harness² + Agent Lens pilot:** [demo](https://ash0ts.github.io/harness2-wandb/) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [walkthrough](https://ash0ts.github.io/harness2-wandb/media/walkthrough.mp4) · [code and reproduction guide](showcase/README.md) · [evidence download](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1). Cost: **$9.94**; available held-out scores: **7/12**. This pilot found no evidence that diagnostics improved the execution harness. The original Harness² documentation follows.
 
 <h3 align="center">
   <img src="assets/Harness2-wordmark.png" alt="Harness²" width="360"><br>

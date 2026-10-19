@@ -8,6 +8,21 @@ provides trajectories to its improver. The treatment is how that evidence is org
 This is a **JobBench-based pilot with a frozen-harness transfer test**. Two held-out tasks
 cannot establish a general benchmark ranking. Negative results are valid results.
 
+## Published pilot
+
+[Evidence browser](https://ash0ts.github.io/harness2-wandb/) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [75-second walkthrough](https://ash0ts.github.io/harness2-wandb/media/walkthrough.mp4) · [Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1)
+
+The completed pilot cost **$9.941318** and has **7/12 available held-out scores**.
+Four planned executions were unavailable after failed adaptation; one judge failed.
+The diagnostics condition froze the same executable harness as baseline, so its score
+difference does not demonstrate harness improvement. Standard Harness² showed a small
+adaptation gain and a transfer regression. See [pilot notes](pilot-notes.md) for the
+fixed environment, collector limitations, and implementation repairs.
+
+The report was verified in a signed-out browser. The walkthrough is an edited sequence
+of recorded browser views, with captions and no audio. Screenshots, a transcript, and
+stored spans remain available without an Agent Lens login.
+
 ## Run
 
 Use Python 3.12, Docker, and a W&B account with access to the models in
@@ -95,3 +110,21 @@ started. This experiment does not silently replay uncertain trace writes.
 The gateway is a local experiment component, not a production multi-tenant service.
 Cleanup affects only this campaign's labeled containers and network; retain its state
 and budget ledger for audit before removing them.
+
+## Package the public demo
+
+After publication, use the allowlisted export under the campaign's `public/` directory.
+The archive includes request and usage records, stored spans, diagnostics, harnesses,
+diffs, outputs, judge evidence, source manifests, and validation receipts. The smaller
+static site includes the files linked from its result rows. Never upload the full state
+directory, which also contains local controls.
+
+```bash
+python showcase/render_walkthrough.py public/media/storyboard.json public/media/walkthrough.mp4
+python showcase/package_demo.py public /path/to/empty/site /path/to/pilot.zip
+```
+
+The walkthrough renderer requires ffmpeg, Pillow (included in the pinned dependencies),
+and a TrueType font. Its storyboard names recorded PNG captures, durations, and captions.
+It produces an H.264 MP4 and WebVTT captions. Raw screenshots remain unchanged.
+The release includes the complete ZIP and SHA256 checksum.

@@ -12,3 +12,4 @@ dependencies/job-bench-eval/
 dependencies/opencode/
 dependencies/tools/
 .context-*.log
+wandb/

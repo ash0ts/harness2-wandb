@@ -7,6 +7,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from PIL import Image, ImageDraw, ImageFont
+
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument("storyboard", type=Path)
 parser.add_argument("output", type=Path)
@@ -42,22 +44,27 @@ with tempfile.TemporaryDirectory(prefix="h2-walkthrough-") as temporary:
     root = Path(temporary)
     parts = []
     # Copy to simple local names so ffmpeg filter syntax cannot reinterpret paths.
-    shutil.copy2(font, root / "font.ttf")
+    shutil.copyfile(font, root / "font.ttf")
     for index, scene in enumerate(story["scenes"]):
         source = args.storyboard.parent / scene["capture"]
         if not source.is_file() or scene["seconds"] <= 0:
             raise SystemExit(f"Invalid recorded scene: {scene['capture']}")
         capture = root / f"capture-{index}.png"
         shutil.copy2(source, capture)
-        caption = root / f"caption-{index}.txt"
-        caption.write_text(scene["caption"])
+        caption = root / f"caption-{index}.png"
+        layer = Image.new("RGB", (1920, 130), "#102728")
+        draw = ImageDraw.Draw(layer)
+        face = ImageFont.truetype(str(root / "font.ttf"), 31)
+        bounds = draw.multiline_textbbox((40, 25), scene["caption"], font=face, spacing=10)
+        if bounds[2] > 1880 or bounds[3] > 120:
+            raise SystemExit(f"Caption does not fit scene {index}")
+        draw.multiline_text((40, 25), scene["caption"], font=face, fill="white", spacing=10)
+        layer.save(caption)
         output = root / f"scene-{index}.mp4"
         filters = (
-            "scale=1920:1080:force_original_aspect_ratio=decrease,"
-            "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=white,"
-            "drawbox=x=0:y=950:w=1920:h=130:color=0x102728@0.97:t=fill,"
-            f"drawtext=fontfile=font.ttf:textfile={caption.name}:expansion=none:"
-            "fontcolor=white:fontsize=31:line_spacing=10:x=40:y=975"
+            "[0:v]scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,"
+            "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=white[screen];"
+            "[screen][1:v]overlay=0:950,scale=1920:1080,setsar=1"
         )
         subprocess.run(
             [
@@ -70,9 +77,13 @@ with tempfile.TemporaryDirectory(prefix="h2-walkthrough-") as temporary:
                 "1",
                 "-i",
                 str(capture),
+                "-loop",
+                "1",
+                "-i",
+                str(caption),
                 "-t",
                 str(scene["seconds"]),
-                "-vf",
+                "-filter_complex",
                 filters,
                 "-r",
                 "24",
