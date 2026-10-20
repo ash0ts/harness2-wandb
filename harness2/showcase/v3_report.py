@@ -67,6 +67,10 @@ def comparison_rows(data):
             )
         row["paired"] = row["harness2"] is not None and row["diagnostics"] is not None
         row["complete"] = row["paired"] and row["baseline"] is not None
+        row["evidence_complete"] = row["complete"] and all(
+            actual.get((task, arm), {}).get("adaptation_trace_complete", True)
+            for arm in ("baseline", "harness2", "diagnostics")
+        )
         row["difference_pp"] = (
             (row["diagnostics"] - row["harness2"]) * 100 if row["paired"] else None
         )
@@ -104,7 +108,7 @@ def primary_result(comparison):
 
 
 def choose_examples(comparison):
-    candidates = [r for r in comparison if r["complete"]]
+    candidates = [r for r in comparison if r["complete"] and r.get("evidence_complete", True)]
     positives = [r for r in candidates if r["difference_pp"] > 1e-12]
     example = (
         sorted(positives, key=lambda r: (-round(r["difference_pp"], 12), r["task"]))[0]
@@ -113,7 +117,7 @@ def choose_examples(comparison):
         if candidates
         else None
     )
-    negatives = [r for r in candidates if r["difference_pp"] < -1e-12]
+    negatives = [r for r in comparison if r["complete"] and r["difference_pp"] < -1e-12]
     regression = (
         sorted(negatives, key=lambda r: (round(r["difference_pp"], 12), r["task"]))[0]
         if negatives
@@ -147,6 +151,10 @@ def dataset(runtime):
     data = base_dataset(runtime, include_ungraded=True)
     project = runtime.manifest["project"]
     for row in data["rows"]:
+        row["adaptation_trace_complete"] = not any(
+            gap["task"].split("/")[0] == row["domain"] and gap["arm"] == row["arm"]
+            for gap in data.get("partial_collection_sessions", [])
+        )
         directory = runtime.state / "executions" / row["session"]
         row.update(execution_metrics(read(directory / "stored-spans.json")))
         row["readable_output"] = (
@@ -375,13 +383,17 @@ def markdown(data, artifact_url=""):
             f"**Partial trace:** {DOMAINS[partial['task'].split('/')[0]]} / "
             f"{CONDITIONS[partial['arm']]} had an interrupted final composition. "
             "Both composition stages lacked valid completion decisions, so the declared "
-            "failed-adaptation rule retained the original harness before grading. "
+            "failed-adaptation rule retained the original harness. Recovery applied this "
+            "fallback after the collector stopped the runner, before any held-out execution. "
+            "The qualified engine and model settings were unchanged. "
             f"All {partial['provider_requests']} model requests and usage records survive, "
             f"but only {partial['observed_tool_completions']} of "
             f"{partial['requested_tool_calls']} requested tool calls have preserved execution "
             f"events. [Preserved partial trace]({partial['trace_url']}). "
             "Missing tool events and timings are not reconstructed. The failed adaptation "
-            "remains in the score comparison; full tool-trace coverage was not achieved.",
+            "remains in the score comparison; full tool-trace coverage was not achieved. "
+            "This task is ineligible for the walkthrough's complete-evidence example. "
+            "The largest negative score contrast is still reported when present.",
             "",
         ]
     lines += ["## Follow the evidence", ""]

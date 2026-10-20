@@ -64,6 +64,19 @@ def test_missing_judgment_remains_missing_and_is_not_a_win():
     assert len(comparison) == 2
 
 
+def test_partial_adaptation_trace_stays_in_primary_result_but_not_complete_evidence_example():
+    value = data()
+    for row in value["rows"]:
+        if row["task"] == "supply_chain_managers/task2" and row["arm"] == "diagnostics":
+            row["adaptation_trace_complete"] = False
+    comparison = comparison_rows(value)
+    assert primary_result(comparison)["diagnostics_complete_pairs"] == 2
+    assert comparison[1]["complete"] and not comparison[1]["evidence_complete"]
+    chosen = choose_examples(comparison)
+    assert chosen["example"]["task"] == "online_merchants/task2"
+    assert chosen["regression"]["task"] == "online_merchants/task2"
+
+
 @pytest.mark.parametrize("reverse", [False, True])
 def test_equal_native_differences_break_ties_by_task_despite_float_rounding(reverse):
     value = data()
