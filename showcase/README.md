@@ -30,6 +30,17 @@ There is no additional mechanism study. The Report preserves native scores, miss
 judgments, failed attempts, executable harness changes, and their Agent Lens records.
 One execution per setup does not establish repeatability.
 
+After execution, create the four native conversation views before publishing:
+
+```sh
+python showcase/configure_views.py --manifest showcase/pilot-v3.json
+```
+
+The helper saves qualification, adaptation, held-out execution, and native judging
+views, excludes auxiliary title calls, and reads the saved settings back from Agent
+Lens. It uses `WANDB_API_KEY`; `--dry-run` prints the proposed settings. Screenshot
+and browser checks remain separate from configuration verification.
+
 ## Published pilot
 
 [Evidence browser](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [75-second walkthrough](https://github.com/ash0ts/harness2-wandb/releases/download/pilot-v1/walkthrough.mp4) · [Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1)
