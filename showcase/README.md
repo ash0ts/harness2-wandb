@@ -57,6 +57,12 @@ browser context and saves its URL, authentication mode, and visible text beside 
 PNG. It does not use the existing desktop browser's cookies. Capture helpers never
 modify the recorded conversations or experiment inputs.
 
+Add `--video-dir /path/to/recordings` to record the browser. For a conversation,
+`--tabs Thread,Spans,Timeline` records those native tab changes, holding each for
+five seconds (`--hold-seconds` adjusts this). The receipt identifies when content
+became ready so loading frames can be trimmed. If the recording encoder is missing,
+install it with `showcase/browser/node_modules/.bin/playwright install ffmpeg`.
+
 ## Published pilot
 
 [Evidence browser](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [75-second walkthrough](https://github.com/ash0ts/harness2-wandb/releases/download/pilot-v1/walkthrough.mp4) · [Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1)

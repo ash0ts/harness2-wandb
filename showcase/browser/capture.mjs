@@ -14,6 +14,9 @@ const {values} = parseArgs({
     authenticated: {type: 'boolean', default: false},
     chrome: {type: 'boolean', default: false},
     'full-page': {type: 'boolean', default: false},
+    'video-dir': {type: 'string'},
+    'hold-seconds': {type: 'string', default: '5'},
+    tabs: {type: 'string'},
     help: {type: 'boolean', default: false},
   },
 });
@@ -24,6 +27,13 @@ if (values.help) {
 if (!values.output || (!values.view && !values.url) || (values.view && values.url)) {
   throw new Error('Supply --output and exactly one of --view or --url');
 }
+const holdSeconds = Number(values['hold-seconds']);
+const tabs = values.tabs ? values.tabs.split(',') : [];
+if (!Number.isFinite(holdSeconds) || holdSeconds < 1 || holdSeconds > 30
+  || tabs.some(tab => !['Thread', 'Spans', 'Timeline'].includes(tab))) {
+  throw new Error('Use a 1–30 second hold and Thread,Spans,Timeline tab names');
+}
+if (tabs.length && !values['video-dir']) throw new Error('--tabs requires --video-dir');
 const manifestPath = path.resolve(values.manifest || fileURLToPath(new URL('../pilot-v3.json', import.meta.url)));
 const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
 const state = path.resolve(path.dirname(manifestPath), manifest.state_dir);
@@ -35,6 +45,9 @@ if (!url) throw new Error('Run showcase/configure_views.py before capturing a sa
 const target = new URL(url);
 if (target.protocol !== 'https:' || !['forge.coreweave.com', 'wandb.ai'].includes(target.hostname)) {
   throw new Error('Capture supports HTTPS Agent Lens and W&B pages');
+}
+if (tabs.length && (values.view || !target.pathname.includes('/conversations/') || target.pathname.includes('/views/'))) {
+  throw new Error('--tabs requires an Agent Lens conversation URL');
 }
 if (values.authenticated && (
   target.hostname !== 'forge.coreweave.com'
@@ -52,6 +65,9 @@ try {
   const context = await browser.newContext({
     viewport: {width: 1600, height: 1000},
     reducedMotion: 'reduce',
+    ...(values['video-dir'] ? {
+      recordVideo: {dir: path.resolve(values['video-dir']), size: {width: 1600, height: 1000}},
+    } : {}),
   });
   const initialCookies = (await context.cookies()).length;
   if (values.authenticated) {
@@ -70,6 +86,7 @@ try {
     );
   }
   const page = await context.newPage();
+  const openedAt = Date.now();
   const response = await page.goto(url, {waitUntil: 'domcontentloaded', timeout: 60000});
   if (!response?.ok()) throw new Error(`Page returned HTTP ${response?.status()}`);
   if (values.view) {
@@ -89,6 +106,7 @@ try {
     await cookieClose.waitFor({state: 'hidden', timeout: 3000});
   }
   await page.screenshot({path: output, fullPage: values['full-page']});
+  const readySeconds = (Date.now() - openedAt) / 1000;
   const metadata = {
     captured_at: new Date().toISOString(),
     url: page.url(),
@@ -101,9 +119,25 @@ try {
     viewport: {width: 1600, height: 1000},
     visible_text: await page.locator('body').innerText(),
   };
+  if (values['video-dir']) {
+    const actions = [{seconds: readySeconds, action: 'Initial content ready', url: page.url()}];
+    await page.waitForTimeout(holdSeconds * 1000);
+    for (const tab of tabs) {
+      await page.getByRole('tab', {name: tab, exact: true}).click();
+      actions.push({seconds: (Date.now() - openedAt) / 1000, action: tab, url: page.url()});
+      await page.waitForTimeout(holdSeconds * 1000);
+    }
+    metadata.recording = {
+      file: await page.video().path(),
+      content_ready_seconds: readySeconds,
+      actions,
+      timing_reference: 'Approximate elapsed seconds since newPage completed; inspect frames when editing.',
+      description: 'Continuous native browser recording; loading frames precede content_ready_seconds.',
+    };
+  }
+  await context.close();
   await fs.writeFile(output + '.json', JSON.stringify(metadata, null, 2) + '\n');
   console.log(JSON.stringify({output, title: metadata.title, authenticated: metadata.authenticated}));
-  await context.close();
 } finally {
   await browser.close();
 }
