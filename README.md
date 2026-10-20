@@ -1,8 +1,28 @@
-> **Pilot-v3 — in progress:** [six-job protocol](showcase/pilot-v3-protocol.md) · [reproduction guide](showcase/README.md#six-job-comparison). Does adding Agent Lens diagnostics improve Harness² beyond raw execution feedback? The planned comparison has three setups, six held-out jobs, and one execution per setup. Qualification and the complete-campaign cost projection must pass before launch.
+# Do Agent Lens summaries help Harness²?
 
-> **Pilot-v2:** [qualification report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-pilot-v2--VmlldzoxODE0NTEwMw==) · [evidence notes](showcase/pilot-v2-notes.md). The agent wrote and executed harness changes, including a checker with a false positive. Qualification and cost gates stopped the controlled comparison. New spend: **$5.18**; no held-out v2 results.
+This fork tests whether structured Agent Lens diagnostics help an agent improve
+its harness beyond raw execution feedback alone. The model stays fixed while the
+agent edits instructions, skills, and scripts.
 
-> **Public Harness² + Agent Lens pilot:** [demo](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [walkthrough](https://github.com/ash0ts/harness2-wandb/releases/download/pilot-v1/walkthrough.mp4) · [code and reproduction guide](showcase/README.md) · [evidence download](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1). Cost: **$9.94**; available held-out scores: **7/12**. This pilot found no evidence that diagnostics improved the execution harness. The original Harness² documentation follows.
+**Pilot-v3 is running.** Runtime qualification and the campaign cost gate passed.
+The planned comparison uses six held-out JobBench tasks and three setups:
+the original harness, Harness² with raw feedback, and Harness² with diagnostics.
+Each setup runs once per task, for eighteen final evaluations. There is no result yet.
+
+[Experiment protocol](showcase/pilot-v3-protocol.md) ·
+[Reproduce the experiment](showcase/README.md#six-job-comparison) ·
+[Frozen manifest](showcase/pilot-v3.json)
+
+<details>
+<summary>Earlier pilots</summary>
+
+**Pilot-v2:** [qualification report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-pilot-v2--VmlldzoxODE0NTEwMw==) · [evidence notes](showcase/pilot-v2-notes.md). The agent wrote and executed harness changes, including a checker with a false positive. Qualification and cost gates stopped the controlled comparison. New spend: **$5.18**; no held-out v2 results.
+
+**Pilot-v1:** [demo](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [walkthrough](https://github.com/ash0ts/harness2-wandb/releases/download/pilot-v1/walkthrough.mp4) · [evidence download](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1). Cost: **$9.94**; available held-out scores: **7/12**. This pilot found no evidence that diagnostics improved the execution harness.
+
+</details>
+
+The original Harness² documentation and upstream benchmark results follow.
 
 <h3 align="center">
   <img src="assets/Harness2-wordmark.png" alt="Harness²" width="360"><br>
