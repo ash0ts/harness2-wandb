@@ -350,6 +350,26 @@ def markdown(data, artifact_url=""):
                 "This is an observed-usage forecast with contingency, not actual spending.",
                 "",
             ]
+    adaptations = [f for f in data["frozen"] if f["arm"] != "baseline"]
+    if adaptations:
+        changed = sum(f["executable_change"] for f in adaptations)
+        completed = sum(f["adaptation_complete"] for f in adaptations)
+        fallbacks = sum(len(f["fallback_stages"]) for f in adaptations)
+        lines += [
+            f"Of {len(adaptations)} frozen adaptive harnesses, {changed} changed the "
+            f"executable harness. {completed}/{len(adaptations)} adaptations completed "
+            f"all six editing stages; {fallbacks} stages used fallback. "
+            "All remain in the comparison.",
+            "",
+        ]
+        unchanged = [f for f in adaptations if not f["executable_change"]]
+        if unchanged:
+            lines += [
+                "Unchanged at execution: "
+                + "; ".join(f"{DOMAINS[f['domain']]} / {CONDITIONS[f['arm']]}" for f in unchanged)
+                + ". These rows compare executions of the same executable harness as the original.",
+                "",
+            ]
     lines += ["## Follow the evidence", ""]
     for label, example in (
         ("Selected comparison", data["example"]),
