@@ -47,15 +47,19 @@ def configuration(project, cohort, start, end):
             "agent agent_version provider model error_type tool_name status_code "
             "intent_category intent_topic_id failure_topic_id intent_sentiment "
             "failure_category failure_severity input_tokens output_tokens total_tokens "
-            "first_message last_message tags turns spans started last_activity"
+            "first_message last_message tags turns spans started last_activity cost"
         ).split(),
         False,
     )
-    columns.update(dict.fromkeys(("conversation_id", "duration", "cost", "errors"), True))
-    for name in ("condition", "stage_name", "task"):
+    columns.update(dict.fromkeys(("conversation_id", "duration", "errors"), True))
+    for name in ("condition", "task"):
         columns[f"custom_attribute:custom_attrs_string:harness2.{name}"] = True
-    for name in ("attempt", "round"):
-        columns[f"custom_attribute:custom_attrs_int:harness2.{name}"] = True
+    if cohort in ("adaptation", "qualification"):
+        columns["custom_attribute:custom_attrs_string:harness2.stage_name"] = True
+        for name in ("attempt", "round"):
+            columns[f"custom_attribute:custom_attrs_int:harness2.{name}"] = True
+    if cohort == "qualification":
+        columns["custom_attribute:custom_attrs_int:harness2.qualification_attempt"] = True
     filters = [
         {
             "id": f"custom_attribute:custom_attrs_string:harness2.{name}",
