@@ -211,6 +211,20 @@ complete native screen. The renderer rejects clips shorter than the requested sc
 It produces an H.264 MP4 and WebVTT captions. Raw screenshots remain unchanged.
 The release includes the complete ZIP and SHA256 checksum.
 
+The pilot-v3 release can be checked offline with Python's standard library:
+
+```sh
+python showcase/verify_v3_evidence.py --archive /path/to/pilot-v3-evidence.zip
+```
+
+This checks the file index, native-score arithmetic, all eighteen planned result
+keys, fixed example selection, harness and output fingerprints, usage-priced costs,
+and publication review receipts. It writes a validation JSON and ZIP checksum beside
+the archive. No API key or inference is required. Optional `--secret-env` and
+`--secret-file` arguments check for locally configured credentials without printing
+their values. Matching records do not establish that a judge's interpretation is
+correct; that still requires inspecting the task, deliverable, and grading reasons.
+
 Upload selected media with paths relative to the campaign's `presentation/` directory:
 
 ```sh
