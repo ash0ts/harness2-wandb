@@ -216,6 +216,8 @@ def dataset(runtime):
         if (runtime.state / "presentation/views.json").exists()
         else {}
     )
+    capture = runtime.state / "presentation/capture-status.json"
+    data["capture_status"] = read(capture) if capture.exists() else {}
     if (runtime.state / "presentation/walkthrough.mp4").exists():
         data["walkthrough"] = (
             "https://github.com/ash0ts/harness2-wandb/releases/download/"
@@ -445,10 +447,17 @@ def markdown(data, artifact_url=""):
         lines += [f"[Complete W&B evidence artifact]({artifact_url})", ""]
     if data.get("walkthrough"):
         lines += [f"[Recorded walkthrough]({data['walkthrough']})", ""]
+    if data.get("capture_status", {}).get("status") == "blocked":
+        lines += [
+            "Native screenshots and the recorded walkthrough remain unavailable: the "
+            "capture environment returns a solid gray image. Trace links and exported "
+            "records remain available. No simulated product screens are substituted.",
+            "",
+        ]
     lines += [
         "Qualification and auxiliary title calls are retained separately from the comparison. "
-        "Agent Lens may require authentication; public captures and the downloaded records "
-        "provide another route to the evidence.",
+        "Agent Lens may require authentication; downloaded records provide another route "
+        "to the evidence.",
         "",
         "Six selected tasks and one run per setup support a bounded pilot observation. "
         "The study does not estimate run-to-run variability or establish a general ranking.",
