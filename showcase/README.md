@@ -63,7 +63,7 @@ five seconds (`--hold-seconds` adjusts this). The receipt identifies when conten
 became ready so loading frames can be trimmed. If the recording encoder is missing,
 install it with `showcase/browser/node_modules/.bin/playwright install ffmpeg`.
 
-## Published pilot
+## Pilot-v1
 
 [Evidence browser](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [75-second walkthrough](https://github.com/ash0ts/harness2-wandb/releases/download/pilot-v1/walkthrough.mp4) · [Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1)
 
@@ -142,11 +142,13 @@ only into judge containers, after all improvement and reflection has ended.
 
 ## Protocol and validation
 
-See the [research contract](research-contract.md), [manifest](pilot.json), and generated
-`showcase/state/pilot-v1/` receipts. The baseline harness files and the upstream
-Propose–Probe–Compose algorithm are unchanged. Shared deployment constraints differ
-from upstream defaults: the model provider, offline references, 60 agent steps, 16,384
-output-token ceiling, 30-minute session timeout, and a budgeted inference gateway.
+Each campaign has its own frozen protocol: [v1](research-contract.md),
+[v2](pilot-v2-protocol.md), and [v3](pilot-v3-protocol.md). The baseline harness files
+and the upstream Propose–Probe–Compose algorithm are unchanged. Deployment settings
+differ from upstream defaults and are recorded in each manifest. For v3, use
+[pilot-v3.json](pilot-v3.json): 100 agent steps, a 32,768 output-token ceiling,
+a 40-minute session timeout, offline references, and a budgeted inference gateway.
+The older v1 limits were 60 steps, 16,384 output tokens, and 30 minutes.
 
 Run the upstream workflow and showcase safety tests with:
 
@@ -205,7 +207,7 @@ screenshots, and walkthrough provide public access to the evidence.
 
 ## Pilot-v2
 
-The [v2 qualification report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-pilot-v2--VmlldzoxODE0NTEwMw==) records executable changes, a false-positive checker and a failed completion gate. New spending was $5.181534. The reduced comparison projected $132.30 before judging against $67.05, so no fresh-task comparison ran. See [v2 notes](pilot-v2-notes.md) and the [evidence and walkthrough](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v2). The final runtime repairs need live qualification.
+The [v2 qualification report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-pilot-v2--VmlldzoxODE0NTEwMw==) records executable changes, a false-positive checker and a failed completion gate. New spending was $5.181534. The reduced comparison projected $132.30 before judging against $67.05, so no fresh-task comparison ran. See [v2 notes](pilot-v2-notes.md) and the [evidence and walkthrough](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v2). At the v2 stop, the final runtime repairs still needed live qualification; v3 performs that qualification under its own identity.
 
 The second campaign is specified in [pilot-v2-protocol.md](pilot-v2-protocol.md) and [pilot-v2.json](pilot-v2.json). It uses isolated state, sequential `k=2` refinement, explicit completion receipts, and six fresh task families. Pilot-v1 remains available at its original release.
 
