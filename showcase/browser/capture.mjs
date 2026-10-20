@@ -86,6 +86,21 @@ try {
     );
   }
   const page = await context.newPage();
+  async function fitTimeline() {
+    const tab = page.getByRole('tab', {name: 'Timeline', exact: true});
+    if (!await tab.count() || await tab.getAttribute('aria-selected') !== 'true') return null;
+    const root = page.getByRole('button', {name: /^invoke_agent /}).first();
+    await root.waitFor({state: 'visible', timeout: 15000});
+    const zoomOut = page.getByRole('button', {name: 'Zoom out', exact: true});
+    for (let clicks = 0; clicks <= 40; clicks++) {
+      const bounds = await root.boundingBox();
+      if (bounds && bounds.x + bounds.width <= page.viewportSize().width - 24) return clicks;
+      if (clicks === 40 || await zoomOut.isDisabled()) break;
+      await zoomOut.click();
+      await page.waitForTimeout(80);
+    }
+    throw new Error('The native timeline did not fit after bounded zoom adjustments');
+  }
   const openedAt = Date.now();
   const response = await page.goto(url, {waitUntil: 'domcontentloaded', timeout: 60000});
   if (!response?.ok()) throw new Error(`Page returned HTTP ${response?.status()}`);
@@ -105,6 +120,7 @@ try {
     await cookieClose.click({timeout: 3000, force: true});
     await cookieClose.waitFor({state: 'hidden', timeout: 3000});
   }
+  const timelineZoom = await fitTimeline();
   await page.screenshot({path: output, fullPage: values['full-page']});
   const readySeconds = (Date.now() - openedAt) / 1000;
   const metadata = {
@@ -117,6 +133,7 @@ try {
     credentials_injected: values.authenticated,
     capture: 'Playwright headless browser, native product UI',
     viewport: {width: 1600, height: 1000},
+    timeline_zoom_out_clicks: timelineZoom,
     visible_text: await page.locator('body').innerText(),
   };
   if (values['video-dir']) {
@@ -124,7 +141,14 @@ try {
     await page.waitForTimeout(holdSeconds * 1000);
     for (const tab of tabs) {
       await page.getByRole('tab', {name: tab, exact: true}).click();
-      actions.push({seconds: (Date.now() - openedAt) / 1000, action: tab, url: page.url()});
+      await page.getByRole('tab', {name: tab, exact: true, selected: true}).waitFor({timeout: 15000});
+      const zoomClicks = await fitTimeline();
+      actions.push({
+        seconds: (Date.now() - openedAt) / 1000,
+        action: tab,
+        timeline_zoom_out_clicks: zoomClicks,
+        url: page.url(),
+      });
       await page.waitForTimeout(holdSeconds * 1000);
     }
     metadata.recording = {

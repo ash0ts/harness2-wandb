@@ -60,7 +60,9 @@ modify the recorded conversations or experiment inputs.
 Add `--video-dir /path/to/recordings` to record the browser. For a conversation,
 `--tabs Thread,Spans,Timeline` records those native tab changes, holding each for
 five seconds (`--hold-seconds` adjusts this). The receipt identifies when content
-became ready so loading frames can be trimmed. If the recording encoder is missing,
+became ready so loading frames can be trimmed. Timeline captures use the native
+zoom controls to fit the full execution and record the number of zoom clicks.
+If the recording encoder is missing,
 install it with `showcase/browser/node_modules/.bin/playwright install ffmpeg`.
 
 ## Pilot-v1
