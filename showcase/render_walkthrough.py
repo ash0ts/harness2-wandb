@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import math
 import shutil
 import subprocess
 import tempfile
@@ -47,9 +48,40 @@ with tempfile.TemporaryDirectory(prefix="h2-walkthrough-") as temporary:
     shutil.copyfile(font, root / "font.ttf")
     for index, scene in enumerate(story["scenes"]):
         source = args.storyboard.parent / scene["capture"]
-        if not source.is_file() or scene["seconds"] <= 0:
+        seconds = float(scene["seconds"])
+        start = float(scene.get("start_seconds", 0))
+        if (
+            not source.is_file()
+            or not math.isfinite(seconds)
+            or seconds <= 0
+            or not math.isfinite(start)
+            or start < 0
+        ):
             raise SystemExit(f"Invalid recorded scene: {scene['capture']}")
-        capture = root / f"capture-{index}.png"
+        video = source.suffix.lower() in (".webm", ".mp4", ".mov")
+        if video:
+            if not shutil.which("ffprobe"):
+                raise SystemExit("Install ffprobe to validate recorded video scenes")
+            duration = float(
+                subprocess.check_output(
+                    [
+                        "ffprobe",
+                        "-v",
+                        "error",
+                        "-show_entries",
+                        "format=duration",
+                        "-of",
+                        "default=noprint_wrappers=1:nokey=1",
+                        str(source),
+                    ],
+                    text=True,
+                ).strip()
+            )
+            if not math.isfinite(duration) or start + seconds > duration:
+                raise SystemExit(f"Scene {index} exceeds its recorded video duration")
+        elif source.suffix.lower() != ".png" or start:
+            raise SystemExit("Use PNG captures or WebM/MP4/MOV recordings; only video can seek")
+        capture = root / f"capture-{index}{source.suffix.lower()}"
         shutil.copy2(source, capture)
         caption = root / f"caption-{index}.png"
         layer = Image.new("RGB", (1920, 130), "#102728")
@@ -62,9 +94,9 @@ with tempfile.TemporaryDirectory(prefix="h2-walkthrough-") as temporary:
         layer.save(caption)
         output = root / f"scene-{index}.mp4"
         filters = (
-            "[0:v]scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,"
-            "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=white[screen];"
-            "[screen][1:v]overlay=0:950,"
+            "[0:v]scale=1920:950:force_original_aspect_ratio=decrease:force_divisible_by=2,"
+            "pad=1920:1080:(ow-iw)/2:(950-ih)/2:color=white[screen];"
+            "[screen][1:v]overlay=0:950:format=rgb,"
             "scale=1920:1080:out_range=tv:out_color_matrix=bt709,format=yuv420p,setsar=1"
         )
         subprocess.run(
@@ -74,8 +106,7 @@ with tempfile.TemporaryDirectory(prefix="h2-walkthrough-") as temporary:
                 "-loglevel",
                 "error",
                 "-y",
-                "-loop",
-                "1",
+                *(["-ss", str(start)] if video else ["-loop", "1"]),
                 "-i",
                 str(capture),
                 "-loop",
@@ -83,9 +114,10 @@ with tempfile.TemporaryDirectory(prefix="h2-walkthrough-") as temporary:
                 "-i",
                 str(caption),
                 "-t",
-                str(scene["seconds"]),
+                str(seconds),
                 "-filter_complex",
                 filters,
+                "-an",
                 "-r",
                 "24",
                 "-c:v",
@@ -118,12 +150,12 @@ with tempfile.TemporaryDirectory(prefix="h2-walkthrough-") as temporary:
         parts.append(f"file '{output.name}'")
         captions.extend(
             [
-                f"{timestamp(elapsed)} --> {timestamp(elapsed + scene['seconds'])}",
+                f"{timestamp(elapsed)} --> {timestamp(elapsed + seconds)}",
                 scene["caption"],
                 "",
             ]
         )
-        elapsed += scene["seconds"]
+        elapsed += seconds
     (root / "parts.txt").write_text("\n".join(parts))
     subprocess.run(
         [

@@ -184,7 +184,10 @@ python showcase/package_demo.py public /path/to/empty/site /path/to/pilot.zip
 ```
 
 The walkthrough renderer requires ffmpeg, Pillow (included in the pinned dependencies),
-and a TrueType font. Its storyboard names recorded PNG captures, durations, and captions.
+and a TrueType font. Its storyboard names recorded PNG captures or WebM/MP4/MOV clips,
+durations, and captions. Video scenes also require ffprobe and can specify
+`start_seconds` to trim loading frames. Captions occupy a separate strip below the
+complete native screen. The renderer rejects clips shorter than the requested scene.
 It produces an H.264 MP4 and WebVTT captions. Raw screenshots remain unchanged.
 The release includes the complete ZIP and SHA256 checksum.
 
