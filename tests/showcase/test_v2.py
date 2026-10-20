@@ -71,6 +71,48 @@ def test_saved_explicit_noop_is_valid(tmp_path):
     assert got["decision"] == "keep"
 
 
+@pytest.mark.parametrize("prefix", ["", "context/harness/"])
+def test_receipt_file_aliases_preserve_exact_changed_set(tmp_path, prefix):
+    result = completed(tmp_path)
+    before = tree_hashes(tmp_path / "context/harness")
+    (tmp_path / "context/harness/systemprompt.md").write_text("Verify the written files.")
+    path = tmp_path / "output/completion.json"
+    receipt = json.loads(path.read_text())
+    receipt.update(decision="change", affected_files=[prefix + "systemprompt.md"])
+    write_json(path, receipt)
+    saved = path.read_bytes()
+    validated = validate_completion(
+        tmp_path, before, result, tmp_path / "events.jsonl", editing=True
+    )
+    assert validated["affected_files"] == ["systemprompt.md"]
+    assert path.read_bytes() == saved
+    if prefix:
+        assert validated["supplied_affected_files"] == receipt["affected_files"]
+
+
+@pytest.mark.parametrize(
+    "affected",
+    [
+        [],
+        ["context/harness/../systemprompt.md"],
+        ["/work/context/harness/systemprompt.md"],
+        ["systemprompt.md", "context/harness/systemprompt.md"],
+        ["context/harness/guardrails.md"],
+        [None],
+    ],
+)
+def test_receipt_aliases_do_not_accept_omitted_extra_or_escaping_files(tmp_path, affected):
+    result = completed(tmp_path)
+    before = tree_hashes(tmp_path / "context/harness")
+    (tmp_path / "context/harness/systemprompt.md").write_text("Verify the written files.")
+    path = tmp_path / "output/completion.json"
+    receipt = json.loads(path.read_text())
+    receipt.update(decision="change", affected_files=affected)
+    write_json(path, receipt)
+    with pytest.raises(ValueError):
+        validate_completion(tmp_path, before, result, tmp_path / "events.jsonl", editing=True)
+
+
 @pytest.mark.parametrize(
     "failure", ["narration", "timeout", "exit", "collector", "length", "false_keep"]
 )

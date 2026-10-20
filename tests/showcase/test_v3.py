@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -5,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from harness2.showcase.identity import conversation_name, identity_fields
+from harness2.showcase.qualification import area, restart
 from harness2.showcase.runtime import CampaignStop, load_manifest
 from harness2.showcase.v2 import allocation, provenance, schedule
 
@@ -96,6 +98,45 @@ def test_main_engine_must_match_live_qualification(tmp_path, monkeypatch):
     qualified.write_text(json.dumps(value))
     with pytest.raises(CampaignStop, match="live-qualified"):
         provenance(runtime, "evaluate")
+
+
+def test_requalification_preserves_failed_work_and_one_budget(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    source.mkdir()
+    (source / "validator.py").write_text("repaired")
+    monkeypatch.setattr("harness2.showcase.qualification.ROOT", source)
+    state = tmp_path / "state"
+    provenance_dir = state / "provenance"
+    provenance_dir.mkdir(parents=True)
+    old = {"execution_engine": {"validator.py": hashlib.sha256(b"original").hexdigest()}}
+    (provenance_dir / "qualification.json").write_text(json.dumps(old))
+    snapshot = provenance_dir / "qualification-source"
+    snapshot.mkdir()
+    (snapshot / "validator.py").write_text("original")
+    (state / "stopped.json").write_text(json.dumps({"phase": "smoke", "reason": "path alias"}))
+    baseline = state / "qualification/baseline/rep1/result.txt"
+    baseline.parent.mkdir(parents=True)
+    baseline.write_text("retained execution")
+    runtime = SimpleNamespace(
+        state=state,
+        manifest=manifest(),
+        budget=lambda: {"spent_usd": 2.27, "reserved_usd": 0, "unresolved": 0},
+    )
+    value = restart(runtime, "Accept the workspace prefix for the same affected file")
+    assert value["attempt"] == 2 and value["spent_before_usd"] == 2.27
+    assert baseline.read_text() == "retained execution"
+    assert (state / "qualification-attempts/1/source/validator.py").read_text() == "original"
+    assert not (state / "stopped.json").exists()
+    assert area(runtime, "qualification") == state / "qualification/attempt-2"
+    assert area(runtime, "qualification", number=1) == state / "qualification"
+    (state / "stopped.json").write_text(json.dumps({"phase": "smoke", "reason": "another stop"}))
+    old["execution_engine"]["validator.py"] = hashlib.sha256(b"repaired").hexdigest()
+    (provenance_dir / "qualification.json").write_text(json.dumps(old))
+    with pytest.raises(CampaignStop, match="engine repair"):
+        restart(runtime, "Same engine cannot be retried until it passes")
+    runtime.budget = lambda: {"spent_usd": 2.27, "reserved_usd": 0.1, "unresolved": 0}
+    with pytest.raises(CampaignStop, match="in-flight"):
+        restart(runtime, "Never repeat an uncertain call")
 
 
 def test_allocation_counts_shared_evidence_once_without_a_mechanism_reserve(tmp_path, monkeypatch):

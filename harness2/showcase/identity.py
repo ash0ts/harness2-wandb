@@ -71,7 +71,8 @@ def conversation_name(identity, auxiliary=False):
         CONDITIONS.get(identity.get("condition", ""), identity.get("arm", "Qualification")),
     ]
     if identity.get("cohort") == "qualification":
-        parts.append("Qualification")
+        number = identity.get("qualification_attempt", 1)
+        parts.append("Qualification" if number == 1 else f"Qualification {number}")
     elif identity.get("task_id"):
         parts.append(identity["task_id"])
     if identity.get("round"):

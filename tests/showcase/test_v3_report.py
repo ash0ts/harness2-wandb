@@ -1,9 +1,13 @@
+import json
 from copy import deepcopy
+from types import SimpleNamespace
 
 import pytest
 
+from harness2.showcase.v2_report import evaluation_records
 from harness2.showcase.v3_report import (
     choose_examples,
+    cited_evidence,
     comparison_rows,
     execution_metrics,
     primary_result,
@@ -79,3 +83,54 @@ def test_recurrence_counts_identical_errors_with_supporting_spans():
     assert result["tool_error_rate"] == 0.75
     assert result["repeated_error_occurrences"] == 1
     assert {"a", "b"} in [set(s["span_ids"]) for s in result["error_signatures"]]
+
+
+def test_span_links_require_readback_and_preserve_child_session_boundaries(tmp_path):
+    path = tmp_path / "executions/source"
+    path.mkdir(parents=True)
+    (path / "stored-spans.json").write_text(
+        json.dumps([{"span_id": "0123456789abcdef", "conversation_id": "actual-child-session"}])
+    )
+    runtime = SimpleNamespace(state=tmp_path, manifest={"project": "wandb/harness2-agent-lens-v3"})
+    decision = {
+        "decision": {
+            "source_sessions": ["source"],
+            "receipt": {"cited_span_ids": ["0123456789abcdef", "ffffffffffffffff"]},
+        }
+    }
+    found, missing = cited_evidence(runtime, decision)
+    assert len(found) == 1
+    assert found[0]["url"].endswith("/conversations/actual-child-session/spans/0123456789abcdef")
+    assert missing == ["ffffffffffffffff"]
+
+
+def test_completed_transfer_stays_in_results_when_judging_stops(tmp_path):
+    path = tmp_path / "arms/diagnostics/rep1/dataset/job/task2/model_traj/evaluate"
+    path.mkdir(parents=True)
+    marker = {
+        "session": "completed-transfer",
+        "identity": {
+            "phase": "evaluate",
+            "arm": "diagnostics",
+            "domain": "job",
+            "task": "job/task2",
+            "adaptation_replicate": 1,
+            "repetition": 1,
+            "harness_fingerprint": "source",
+            "rendered_fingerprint": "rendered",
+        },
+        "trace": {"url": "https://example.com/actual-execution"},
+        "output_dir": str(tmp_path / "output"),
+        "child_exit_code": 0,
+        "collection_status": "complete",
+    }
+    (path / "showcase.json").write_text(json.dumps(marker))
+    runtime = SimpleNamespace(state=tmp_path)
+    rows = evaluation_records(runtime, include_ungraded=True)
+    assert len(rows) == 1
+    assert rows[0]["status"] == "not_judged" and rows[0]["fraction"] is None
+    score = {**rows[0], "status": "judged", "score": {"n_passed": 4, "n_criteria": 10}}
+    (tmp_path / "scores").mkdir()
+    (tmp_path / "scores/score.json").write_text(json.dumps(score))
+    rows = evaluation_records(runtime, include_ungraded=True)
+    assert len(rows) == 1 and rows[0]["fraction"] == 0.4

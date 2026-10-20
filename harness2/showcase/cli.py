@@ -470,6 +470,11 @@ def main():
     parser.add_argument(
         "--publish", action="store_true", help="Upload allowlisted results and save a W&B Report"
     )
+    parser.add_argument(
+        "--restart-qualification",
+        metavar="REPAIR_REASON",
+        help="Preserve a failed qualification and test a repaired engine under the same budget",
+    )
     args = parser.parse_args()
     manifest, state = load_manifest(args.manifest)
     tmp = state / "tmp"

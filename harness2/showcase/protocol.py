@@ -67,6 +67,19 @@ def completed_session(result, events_path):
     return bool(finishes) and finishes[-1].get("part", {}).get("reason") == "stop"
 
 
+def canonical_affected_files(paths):
+    """Accept the explicit workspace prefix without weakening the exact-file check."""
+    if not isinstance(paths, list) or any(not isinstance(p, str) for p in paths):
+        raise ValueError("affected_files must be a list of harness file paths")
+    normalized = []
+    for path in paths:
+        relative = path.removeprefix("context/harness/")
+        if not relative or any(p in ("", ".", "..") for p in relative.split("/")):
+            raise ValueError("affected_files must name files within context/harness")
+        normalized.append(relative)
+    return normalized
+
+
 def validate_completion(cwd, before, result, events_path, *, editing):
     """A final response is insufficient: a completed session must save its decision."""
     if not completed_session(result, events_path):
@@ -91,17 +104,16 @@ def validate_completion(cwd, before, result, events_path, *, editing):
             raise ValueError("Improvement receipt must declare change or keep")
         if (receipt["decision"] == "change") != bool(changed):
             raise ValueError("Receipt decision disagrees with the actual source changes")
-        affected = receipt.get("affected_files")
-        if (
-            not isinstance(affected, list)
-            or any(not isinstance(p, str) for p in affected)
-            or sorted(affected) != changed
-        ):
+        supplied = receipt.get("affected_files")
+        affected = canonical_affected_files(supplied)
+        if sorted(affected) != changed:
             raise ValueError(
                 "Receipt affected_files must exactly match paths changed under context/harness. "
                 f"Observed changed paths: {json.dumps(changed)}. "
                 "Remove incidental compiler caches before completion; only intended harness files should remain."
             )
+        if affected != supplied:
+            receipt = {**receipt, "supplied_affected_files": supplied, "affected_files": affected}
     cited = receipt.get("cited_span_ids", [])
     if not isinstance(cited, list) or any(
         not isinstance(s, str) or not re.fullmatch(r"[a-f0-9]{16}", s) for s in cited

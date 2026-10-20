@@ -72,6 +72,20 @@ the existing 1.5 contingency before launch. If qualification or affordability
 fails, retain and report the stop; never shrink or retune the campaign after
 seeing held-out results.
 
+The first qualification stopped after its round-2 domain proposal used
+`context/harness/skills/api-doc-set/SKILL.md` in its completion receipt where the
+validator expected `skills/api-doc-set/SKILL.md`. Its bounded retry reached the
+100-step limit without saving its completion files. The validator now accepts
+either path spelling and still requires the exact changed-file set. The original
+decisions remain rejected in the record. A fresh qualification uses isolated
+workspaces and the same model settings, tasks, and $8 budget. All attempts count
+toward spending and cost projections.
+
+`smoke --restart-qualification "repair reason"` records a new qualification
+attempt only after a stopped qualification and a changed execution engine. It
+preserves prior work, source snapshots, trace IDs, and the shared cost ledger.
+It refuses in-flight usage and any restart after main execution has begun.
+
 ## Public interface
 
 Use `harness2-showcase {smoke,adapt,evaluate,report} --manifest showcase/pilot-v3.json`;

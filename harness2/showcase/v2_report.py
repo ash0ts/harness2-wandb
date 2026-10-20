@@ -218,8 +218,47 @@ def audit(runtime):
     return value
 
 
-def dataset(runtime):
-    rows = reconcile([read(p) for p in sorted((runtime.state / "scores").rglob("*.json"))])
+def evaluation_records(runtime, *, include_ungraded=False):
+    rows = [read(p) for p in sorted((runtime.state / "scores").rglob("*.json"))]
+    if include_ungraded:
+        recorded = {r["session"] for r in rows}
+        for path in sorted((runtime.state / "arms").rglob("showcase.json")):
+            marker = read(path)
+            identity = marker["identity"]
+            if identity.get("phase") != "evaluate" or marker["session"] in recorded:
+                continue
+            rows.append(
+                {
+                    **{
+                        key: identity[key]
+                        for key in (
+                            "arm",
+                            "domain",
+                            "task",
+                            "adaptation_replicate",
+                            "repetition",
+                            "harness_fingerprint",
+                            "rendered_fingerprint",
+                        )
+                    },
+                    "cohort": "heldout",
+                    "score": None,
+                    "status": "not_judged",
+                    "session": marker["session"],
+                    "trace": marker["trace"],
+                    "output_dir": marker["output_dir"],
+                    "child_exit_code": marker["child_exit_code"],
+                    "collection_status": marker["collection_status"],
+                    "judge_evidence": None,
+                    "judge_trace": None,
+                }
+            )
+            recorded.add(marker["session"])
+    return reconcile(rows)
+
+
+def dataset(runtime, *, include_ungraded=False):
+    rows = evaluation_records(runtime, include_ungraded=include_ungraded)
     allocation = (
         read(runtime.state / "allocation.json")
         if (runtime.state / "allocation.json").exists()
@@ -283,7 +322,11 @@ def dataset(runtime):
         from .v2 import V2Adapter
 
         adapter = V2Adapter(
-            runtime, frozen_case["arm"], frozen_case["adaptation_replicate"], qualification=True
+            runtime,
+            frozen_case["arm"],
+            frozen_case["adaptation_replicate"],
+            qualification=True,
+            qualification_attempt=frozen_case.get("qualification_attempt", 1),
         )
         task = frozen_case["domain"] + "/task1"
         marker = read(adapter._traj_dir(task, out.name) / "showcase.json")

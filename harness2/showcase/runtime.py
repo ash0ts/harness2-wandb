@@ -146,6 +146,10 @@ class Runtime:
         raise RuntimeError("Gateway failed to become healthy")
 
     def register(self, identity):
+        if identity.get("phase") == "smoke":
+            from .qualification import attempt
+
+            identity["qualification_attempt"] = attempt(self)
         if self.manifest.get("schema_version", 1) >= 3:
             from .identity import identity_fields
 
@@ -203,6 +207,10 @@ class Runtime:
             raise CampaignStop("Unreconciled usage blocks execution")
         session = uuid.uuid4().hex
         identity.update(session=session, phase=phase, role=role, campaign=self.manifest["campaign"])
+        if phase == "smoke":
+            from .qualification import attempt
+
+            identity["qualification_attempt"] = attempt(self)
         if self.manifest.get("schema_version", 1) >= 3:
             from .identity import identity_fields
 

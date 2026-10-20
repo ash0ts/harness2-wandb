@@ -80,6 +80,7 @@ def allowed_files(runtime):
     if runtime.manifest.get("schema_version", 1) >= 2:
         for name in (
             "tool-qualification.json",
+            "qualification-attempt.json",
             "cost-projection.json",
             "evaluation-schedule.json",
             "transfer-executions-complete.json",
@@ -91,6 +92,7 @@ def allowed_files(runtime):
         for area in (
             "qualification",
             "qualification-frozen",
+            "qualification-attempts",
             "mechanism",
             "provenance",
             "presentation",
@@ -98,6 +100,9 @@ def allowed_files(runtime):
             for path in (state / area).rglob("*"):
                 if path.is_file() and not path.is_symlink():
                     yield path
+        for path in (state / "qualification-tools").rglob("receipt.json"):
+            if not path.is_symlink():
+                yield path
         for directory in (state / "executions").glob("*"):
             for name in (
                 "entry-message.txt",

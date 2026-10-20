@@ -120,8 +120,29 @@ def choose_examples(comparison):
     return {"example": example, "regression": regression}
 
 
+def cited_evidence(runtime, decision):
+    if not decision:
+        return [], []
+    record = decision["decision"]
+    requested = set((record.get("receipt") or {}).get("cited_span_ids", []))
+    found = {}
+    for session in record.get("source_sessions", []):
+        for span in read(runtime.state / "executions" / session / "stored-spans.json"):
+            if span["span_id"] in requested:
+                conversation = span["conversation_id"]
+                found[span["span_id"]] = {
+                    "span_id": span["span_id"],
+                    "session": session,
+                    "conversation": conversation,
+                    "url": f"https://forge.coreweave.com/agent-lens/"
+                    f"{runtime.manifest['project']}/conversations/{conversation}"
+                    f"/spans/{span['span_id']}",
+                }
+    return [found[key] for key in sorted(found)], sorted(requested - found.keys())
+
+
 def dataset(runtime):
-    data = base_dataset(runtime)
+    data = base_dataset(runtime, include_ungraded=True)
     project = runtime.manifest["project"]
     for row in data["rows"]:
         directory = runtime.state / "executions" / row["session"]
@@ -170,6 +191,9 @@ def dataset(runtime):
         row["adoption_decision"] = decisions[0] if decisions else None
         row["decision_evidence_url"] = (
             files_url + "/improvement-decision.json" if decisions else None
+        )
+        row["cited_spans"], row["unverified_cited_span_ids"] = cited_evidence(
+            runtime, row["adoption_decision"]
         )
     data["comparison"] = comparison_rows(data)
     data["primary_result"] = primary_result(data["comparison"])
@@ -353,6 +377,19 @@ def markdown(data, artifact_url=""):
                 lines += [
                     "Generated files: "
                     + " · ".join(f"[{f['path']}]({f['url']})" for f in row["deliverables"]),
+                    "",
+                ]
+            if row["cited_spans"]:
+                lines += [
+                    "Decision citations: "
+                    + " · ".join(f"[{s['span_id']}]({s['url']})" for s in row["cited_spans"]),
+                    "",
+                ]
+            if row["unverified_cited_span_ids"]:
+                lines += [
+                    "Unverified decision citations: "
+                    + ", ".join(f"`{s}`" for s in row["unverified_cited_span_ids"])
+                    + ". These IDs were not found in the supplied execution records.",
                     "",
                 ]
         lines += [

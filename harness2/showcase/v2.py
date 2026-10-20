@@ -62,11 +62,19 @@ def read(path):
 
 
 class V2Adapter(ExperimentAdapter):
-    def __init__(self, runtime, arm, replicate, *, qualification=False):
+    def __init__(self, runtime, arm, replicate, *, qualification=False, qualification_attempt=None):
+        from .qualification import area
+
         super().__init__(runtime, arm)
         self.replicate, self.qualification = replicate, qualification
         self.root = (
-            runtime.state / ("qualification" if qualification else "arms") / arm / f"rep{replicate}"
+            (
+                area(runtime, "qualification", number=qualification_attempt)
+                if qualification
+                else runtime.state / "arms"
+            )
+            / arm
+            / f"rep{replicate}"
         )
         self.store = self.root / "dataset"
         self.phase = "smoke" if qualification else "adapt"
@@ -242,9 +250,14 @@ class V2Proposer(ExperimentProposer):
 
 
 def freeze(runtime, adapter, domain, harness, result, chosen_label):
+    from .qualification import area, attempt
+
     dest = (
-        runtime.state
-        / ("qualification-frozen" if adapter.qualification else "frozen")
+        (
+            area(runtime, "qualification-frozen")
+            if adapter.qualification
+            else runtime.state / "frozen"
+        )
         / adapter.arm
         / f"rep{adapter.replicate}"
         / domain
@@ -280,6 +293,7 @@ def freeze(runtime, adapter, domain, harness, result, chosen_label):
             "arm": adapter.arm,
             "domain": domain,
             "adaptation_replicate": adapter.replicate,
+            "qualification_attempt": attempt(runtime) if adapter.qualification else None,
             "chosen_label": chosen_label,
             "adoption": "baseline"
             if adapter.arm == "baseline"
@@ -339,6 +353,8 @@ def adapt_one(runtime, domain, arm, replicate, *, qualification=False):
 
 
 def provenance(runtime, phase):
+    from .qualification import attempt
+
     source = {
         str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
         for folder in (ROOT / "harness2/showcase", ROOT / "showcase")
@@ -354,7 +370,9 @@ def provenance(runtime, phase):
             for name in (runtime.manifest["image"], runtime.manifest["image"] + "-judge")
         },
     }
-    path = runtime.state / "provenance" / f"{phase}.json"
+    number = attempt(runtime)
+    label = f"qualification-attempt-{number}" if phase == "qualification" and number > 1 else phase
+    path = runtime.state / "provenance" / f"{label}.json"
     qualified = runtime.state / "provenance/qualification.json"
     engine = {
         key: sha
@@ -389,18 +407,31 @@ def provenance(runtime, phase):
             "Source/image drift within a phase; preserve and start a distinct attempt"
         )
     write_json(path, value)
-    snapshot = runtime.state / "provenance" / (phase + "-source")
+    snapshot = runtime.state / "provenance" / (label + "-source")
     for relative in source:
         target = snapshot / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes((ROOT / relative).read_bytes())
+    if phase == "qualification" and number > 1:
+        write_json(qualified, value)
+        shutil.copytree(
+            snapshot, runtime.state / "provenance/qualification-source", dirs_exist_ok=True
+        )
 
 
 def qualify_tools(runtime):
-    receipt = runtime.state / "tool-qualification.json"
+    from .qualification import area
+
+    work = area(runtime, "qualification-tools")
+    receipt = work / "receipt.json"
+    if (
+        not receipt.exists()
+        and (runtime.state / "tool-qualification.json").exists()
+        and work == runtime.state / "qualification-tools"
+    ):
+        return read(runtime.state / "tool-qualification.json")
     if receipt.exists():
         return read(receipt)
-    work = runtime.state / "qualification-tools"
     work.mkdir(parents=True, exist_ok=True)
     (work / "input.txt").write_text("qualification: 2 3 5\n")
     skill = work / ".opencode/skills/qualification/SKILL.md"
@@ -448,6 +479,8 @@ def qualify_tools(runtime):
 
 
 def smoke(runtime):
+    from .qualification import attempt
+
     if (runtime.state / "qualification.json").exists():
         return read(runtime.state / "qualification.json")
     provenance(runtime, "qualification")
@@ -484,6 +517,7 @@ def smoke(runtime):
         raise CampaignStop("Qualification usage is unresolved")
     value = {
         "passed": True,
+        "qualification_attempt": attempt(runtime),
         "cases": cases,
         "spent_usd": budget["spent_usd"],
         "settings": {
@@ -576,7 +610,9 @@ def allocation(runtime):
             if identity["role"] == "solver"
             else re.sub(r"\.a\d+$", "", identity["stage"])
         )
-        by_case[identity["task"]][identity["role"] + "/" + label] += cost
+        by_case[(identity["task"], identity.get("qualification_attempt", 1))][
+            identity["role"] + "/" + label
+        ] += cost
     stage_keys = set().union(*(case.keys() for case in by_case.values()))
     if any(set(case) != stage_keys for case in by_case.values()):
         raise CampaignStop(
@@ -853,6 +889,12 @@ def dispatch(args, runtime):
         if args.prepare:
             setup(runtime)
         runtime.start()
+        if getattr(args, "restart_qualification", None):
+            from .qualification import restart
+
+            if args.phase != "smoke":
+                raise CampaignStop("--restart-qualification applies only to smoke")
+            print(json.dumps(restart(runtime, args.restart_qualification), indent=2))
         if args.phase == "mechanism":
             if runtime.manifest.get("schema_version", 1) >= 3:
                 raise CampaignStop("This campaign has no mechanism phase or budget")
