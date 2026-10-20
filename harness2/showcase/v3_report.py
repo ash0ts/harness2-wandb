@@ -407,7 +407,7 @@ def markdown(data, artifact_url=""):
     lines += ["## Execution behavior and cost", ""]
     if data["rows"]:
         lines += [
-            "| Job | Setup | Tool errors / calls | Repeated errors | Readable output | Seconds | Inference USD |",
+            "| Job | Setup | Tool errors / calls | Repeated errors | Readable output | Wall time (s) | Inference USD |",
             "|---|---|---:|---:|---|---:|---:|",
         ]
         for row in sorted(data["rows"], key=lambda r: (r["task"], r["arm"])):
@@ -421,7 +421,8 @@ def markdown(data, artifact_url=""):
             "",
             "Repeated errors count additional occurrences of the same tool, normalized "
             "arguments, error type, and exact error message within an execution. "
-            "Readable output is a file check, not confirmation that every requirement was met.",
+            "Readable output is a file check, not confirmation that every requirement was met. "
+            "Wall time measures the local execution session before trace export.",
             "",
         ]
     costs = data["adaptation_costs_usd"]
