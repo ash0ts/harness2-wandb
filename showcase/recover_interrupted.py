@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,10 +14,68 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from harness2.showcase.protocol import write_json
-from harness2.showcase.runtime import ROOT, Runtime, load_manifest
+from harness2.showcase.runtime import ROOT, Runtime, command, load_manifest
 from harness2.showcase.telemetry import export_session
 from harness2.showcase.v2 import V2Adapter, freeze
 from harness2.showcase.v2_report import interrupted_attempt, read
+
+
+def preserve_adaptation_provenance(runtime):
+    """Keep each reporting-source snapshot while enforcing the same qualified engine."""
+    state = runtime.state
+    old = state / "provenance/adapt.json"
+    if not old.exists():
+        return None
+    prior = read(old)
+    report_only = {"report.py", "v2_report.py", "v3_report.py", "audit.py", "mechanism.py"}
+    engine_files = [
+        p for p in (ROOT / "harness2/showcase").glob("*.py") if p.name not in report_only
+    ] + [ROOT / "showcase" / name for name in ("worker.py", "Dockerfile", "Dockerfile.judge")]
+    engine = {
+        str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in engine_files
+    }
+    if engine != prior["execution_engine"] or engine != read(
+        state / "provenance/frozen-engine.json"
+    ):
+        raise ValueError("Execution-engine drift cannot be resumed within this campaign")
+    images = {
+        name: json.loads(command(["docker", "image", "inspect", name]).stdout)[0]["Id"]
+        for name in prior["images"]
+    }
+    if (
+        images != prior["images"]
+        or images != read(state / "provenance/qualification.json")["images"]
+    ):
+        raise ValueError("Image drift cannot be resumed within this campaign")
+    number = 1
+    while (state / f"provenance/adapt-attempt-{number}.json").exists():
+        number += 1
+    preserved = state / f"provenance/adapt-attempt-{number}.json"
+    snapshot = state / f"provenance/adapt-attempt-{number}-source"
+    if snapshot.exists():
+        raise ValueError("An unmatched adaptation source snapshot already exists")
+    shutil.copy2(old, preserved)
+    shutil.copytree(state / "provenance/adapt-source", snapshot)
+    for relative, sha in prior["source_hashes"].items():
+        if hashlib.sha256((snapshot / relative).read_bytes()).hexdigest() != sha:
+            raise ValueError("The preserved source snapshot does not match its manifest")
+    receipt = state / f"provenance/adapt-resumption-{number}.json"
+    write_json(
+        receipt,
+        {
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "reason": "Resume unstarted work after declared failed-adaptation fallback; "
+            "reporting and capture code have separate source snapshots.",
+            "previous_snapshot": str(preserved.relative_to(state)),
+            "previous_source": str(snapshot.relative_to(state)),
+            "execution_engine_unchanged": True,
+            "images_unchanged": True,
+            "current_commit": command(["git", "rev-parse", "HEAD"], cwd=ROOT).stdout.strip(),
+        },
+    )
+    old.unlink()
+    shutil.rmtree(state / "provenance/adapt-source")
+    return str(receipt.relative_to(state))
 
 
 def main():
@@ -144,6 +203,8 @@ def main():
         str(result_path),
         None,
     )
+    record["resumption"] = preserve_adaptation_provenance(runtime)
+    write_json(record_path, record)
     stopped.rename(state / "provenance" / f"stop-before-recovery-{session}.json")
     print(json.dumps({"session": session, "fallback": "baseline", "trace": trace["url"]}))
 
