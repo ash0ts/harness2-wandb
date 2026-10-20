@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import math
 
 import matplotlib
 
@@ -19,6 +20,9 @@ colors = {"baseline": "#70777d", "harness2": "#1768ac", "diagnostics": "#c25816"
 shapes = {"baseline": "^", "harness2": "s", "diagnostics": "o"}
 labels = {"baseline": "Original", "harness2": "Raw feedback", "diagnostics": "Diagnostics"}
 offsets = {"baseline": 0.16, "harness2": 0, "diagnostics": -0.16}
+observed = [100 * row[arm] for row in rows for arm in colors if row[arm] is not None]
+lower = 20 * math.floor(min([0, *observed]) / 20)
+upper = 20 * math.ceil(max([100, *observed]) / 20)
 for y, row in enumerate(rows):
     if row["paired"]:
         ax.plot(
@@ -39,15 +43,15 @@ for y, row in enumerate(rows):
                 zorder=3,
             )
     if not row["paired"]:
-        ax.text(104, y, "Unavailable", va="center", fontsize=10)
+        ax.text(upper + 4, y, "Unavailable", va="center", fontsize=10)
     else:
-        ax.text(104, y, f"{row['difference_pp']:+.2f} pp", va="center", fontsize=10)
+        ax.text(upper + 4, y, f"{row['difference_pp']:+.2f} pp", va="center", fontsize=10)
 for arm in colors:
     ax.scatter([], [], c=colors[arm], marker=shapes[arm], s=65, label=labels[arm])
 ax.set_yticks(range(len(rows)), [r["job"] for r in rows], fontsize=11)
 ax.invert_yaxis()
-ax.set_xlim(-2, 122)
-ax.set_xticks([0, 20, 40, 60, 80, 100])
+ax.set_xlim(lower - 2, upper + 22)
+ax.set_xticks(range(lower, upper + 1, 20))
 ax.set_xlabel("Native held-out quality (%)", fontsize=11)
 ax.grid(axis="x", color="#e6e8eb")
 ax.set_axisbelow(True)
