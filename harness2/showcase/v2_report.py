@@ -8,6 +8,7 @@ import html
 import json
 import random
 import re
+import shutil
 import statistics
 import zipfile
 from collections import defaultdict
@@ -622,6 +623,14 @@ def publish_results(runtime, data, output, *, formatters=None):
             "harness_fingerprint",
             "trace_url",
         ]
+        if formatters:
+            cols += [
+                "judge_evidence_url",
+                "judge_trace_url",
+                "harness_diff_url",
+                "decision_evidence_url",
+                "run_url",
+            ]
         table = wandb.Table(columns=cols)
         for row in data["rows"]:
             table.add_data(
@@ -780,6 +789,32 @@ def publish_results(runtime, data, output, *, formatters=None):
             )
             deliverable = run.log_artifact(deliverable)
             deliverable.wait()
+            if formatters and row["cohort"] == "heldout":
+                linked = output / "run-files" / row["session"][:12]
+                linked.mkdir(parents=True, exist_ok=True)
+                frozen_dir = (
+                    output
+                    / "evidence/frozen"
+                    / row["arm"]
+                    / f"rep{row['adaptation_replicate']}"
+                    / row["domain"]
+                )
+                shutil.copyfile(frozen_dir / "harness.diff", linked / "harness-diff.txt")
+                if row.get("judge_evidence"):
+                    source = (
+                        output / "evidence" / Path(row["judge_evidence"]).relative_to(runtime.state)
+                    )
+                    shutil.copyfile(source, linked / "judge-evidence.txt")
+                decision = row.get("adoption_decision")
+                if decision:
+                    shutil.copyfile(
+                        output / "evidence/executions" / decision["session"] / "decision.json",
+                        linked / "improvement-decision.json",
+                    )
+                shutil.copytree(public_output, linked / "deliverables", dirs_exist_ok=True)
+                for file in sorted(linked.rglob("*")):
+                    if file.is_file():
+                        run.save(str(file.resolve()), base_path=str(linked.resolve()), policy="now")
             run.summary.update(
                 {
                     "score": row["fraction"],
@@ -793,6 +828,9 @@ def publish_results(runtime, data, output, *, formatters=None):
                     "harness_artifact": harness.url,
                     "deliverable_artifact": deliverable.url,
                     "judge_trace_url": (row.get("judge_trace") or {}).get("url"),
+                    "judge_evidence_url": row.get("judge_evidence_url"),
+                    "harness_diff_url": row.get("harness_diff_url"),
+                    "decision_evidence_url": row.get("decision_evidence_url"),
                     "diagnostics_increment": row.get("diagnostics_increment"),
                     **{
                         k: row[k]
@@ -932,6 +970,15 @@ def report(runtime, *, publish=False, formatters=None):
             "harness_fingerprint",
             "rendered_fingerprint",
         ]
+        if formatters:
+            cols += [
+                "execution_url",
+                "judge_evidence_url",
+                "judge_trace_url",
+                "harness_diff_url",
+                "decision_evidence_url",
+                "run_url",
+            ]
         writer = csv.DictWriter(stream, fieldnames=cols, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(portable["rows"])

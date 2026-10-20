@@ -8,6 +8,7 @@ import json
 import os
 import statistics
 from collections import defaultdict
+from urllib.parse import quote
 
 from .identity import CONDITIONS, DOMAINS
 from .protocol import write_json
@@ -129,7 +130,17 @@ def dataset(runtime):
             row["readable_files"] > 0 and row["readable_files"] == row["produced_files"]
         )
         row["run_url"] = f"https://wandb.ai/{project}/runs/{row['session'][:12]}"
+        files_url = f"https://api.wandb.ai/files/{project}/{row['session'][:12]}"
+        row["execution_url"] = row["trace"]["url"]
+        row["harness_diff_url"] = files_url + "/harness-diff.txt"
+        row["judge_evidence_url"] = (
+            files_url + "/judge-evidence.txt" if row.get("judge_evidence") else None
+        )
         row["judge_trace_url"] = (row.get("judge_trace") or {}).get("url")
+        row["deliverables"] = [
+            {**f, "url": files_url + "/deliverables/" + quote(f["path"], safe="/")}
+            for f in read(directory / "file-inventory.json")
+        ]
         frozen = next(
             f
             for f in data["frozen"]
@@ -157,6 +168,9 @@ def dataset(runtime):
             )
         )
         row["adoption_decision"] = decisions[0] if decisions else None
+        row["decision_evidence_url"] = (
+            files_url + "/improvement-decision.json" if decisions else None
+        )
     data["comparison"] = comparison_rows(data)
     data["primary_result"] = primary_result(data["comparison"])
     data.update(choose_examples(data["comparison"]))
@@ -319,6 +333,7 @@ def markdown(data, artifact_url=""):
             row = next(r for r in data["rows"] if r["task"] == example["task"] and r["arm"] == arm)
             links = [
                 f"[Result and artifacts]({row['run_url']})",
+                f"[Harness diff]({row['harness_diff_url']})",
                 f"[Execution]({row['trace']['url']})",
             ]
             decision = row.get("adoption_decision")
@@ -326,12 +341,20 @@ def markdown(data, artifact_url=""):
                 links.append(f"[Improvement decision]({decision['trace']['url']})")
             if row.get("judge_trace_url"):
                 links.append(f"[Native judging]({row['judge_trace_url']})")
+            if row.get("judge_evidence_url"):
+                links.append(f"[Judge reasons]({row['judge_evidence_url']})")
             lines += [
                 f"**{CONDITIONS[arm]}:** " + " · ".join(links),
                 f"Executed harness `{row['rendered_fingerprint'][:16]}`; "
                 f"executable change from baseline: {'yes' if row['executable_change'] else 'no'}.",
                 "",
             ]
+            if row["deliverables"]:
+                lines += [
+                    "Generated files: "
+                    + " · ".join(f"[{f['path']}]({f['url']})" for f in row["deliverables"]),
+                    "",
+                ]
         lines += [
             "The trace records what happened. Summary reads, cited spans, and checker "
             "passes alone do not establish a quality gain.",
