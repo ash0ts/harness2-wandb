@@ -449,11 +449,13 @@ def markdown(data, artifact_url=""):
         lines += [f"[Complete W&B evidence artifact]({artifact_url})", ""]
     if data.get("walkthrough"):
         lines += [f"[Recorded walkthrough]({data['walkthrough']})", ""]
-    if data.get("capture_status", {}).get("status") == "blocked":
+    capture = data.get("capture_status", {})
+    if capture.get("status") in ("blocked", "partial"):
         lines += [
-            "Native screenshots and the recorded walkthrough remain unavailable: the "
-            "capture environment returns a solid gray image. Trace links and exported "
-            "records remain available. No simulated product screens are substituted.",
+            "Native capture is incomplete: "
+            + capture.get("observation", "The capture environment is unavailable.")
+            + " Trace links and exported records remain available. "
+            "No simulated product screens are substituted.",
             "",
         ]
     lines += [
