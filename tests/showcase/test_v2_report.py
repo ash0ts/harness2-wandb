@@ -3,7 +3,13 @@ from copy import deepcopy
 
 import pytest
 
-from harness2.showcase.v2_report import choose_case, reconcile, task_means, task_uncertainty
+from harness2.showcase.v2_report import (
+    choose_case,
+    harness_version_key,
+    reconcile,
+    task_means,
+    task_uncertainty,
+)
 
 
 def rows():
@@ -76,3 +82,32 @@ def test_stored_message_parts_decode_without_losing_quotes_or_newlines():
     entry = 'Mission:\nRead "context/harness" and inspect the evidence.'
     stored = [{"role": "user", "content": json.dumps([{"type": "text", "content": entry}])}]
     assert message_texts(stored) == [entry]
+
+
+def test_harness_artifact_lookup_preserves_qualification_attempt_and_actual_version():
+    frozen = {
+        "arm": "diagnostics",
+        "domain": "domain",
+        "adaptation_replicate": 1,
+        "source_fingerprint": "same-keep-harness",
+        "rendered_fingerprint": "rendered",
+    }
+    second = {**frozen, "qualification_attempt": 2}
+    versions = {
+        harness_version_key(frozen, qualification=True): "first-attempt-artifact",
+        harness_version_key(second, qualification=True): "second-attempt-artifact",
+        harness_version_key(second): "heldout-artifact",
+    }
+    row = {
+        "arm": "diagnostics",
+        "task": "domain/task1",
+        "adaptation_replicate": 1,
+        "qualification_attempt": 2,
+        "harness_fingerprint": "same-keep-harness",
+        "rendered_fingerprint": "rendered",
+    }
+    assert len(versions) == 3
+    assert versions[harness_version_key(row, qualification=True)] == "second-attempt-artifact"
+    assert versions[harness_version_key(row)] == "heldout-artifact"
+    row["harness_fingerprint"] = "different-harness"
+    assert harness_version_key(row, qualification=True) not in versions

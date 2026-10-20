@@ -49,6 +49,17 @@ def row_key(row):
     return row["task"], row["adaptation_replicate"], row["repetition"]
 
 
+def harness_version_key(record, *, qualification=False):
+    return (
+        record["arm"],
+        record.get("domain") or record["task"].split("/")[0],
+        record["adaptation_replicate"],
+        (record.get("qualification_attempt") or 1) if qualification else None,
+        record.get("source_fingerprint") or record["harness_fingerprint"],
+        record["rendered_fingerprint"],
+    )
+
+
 def reconcile(rows):
     seen = set()
     for row in rows:
@@ -339,6 +350,7 @@ def dataset(runtime, *, include_ungraded=False):
                 "arm": frozen_case["arm"],
                 "task": task,
                 "adaptation_replicate": frozen_case["adaptation_replicate"],
+                "qualification_attempt": frozen_case.get("qualification_attempt") or 1,
                 "repetition": 0,
                 "session": marker["session"],
                 "trace": marker["trace"],
@@ -656,6 +668,7 @@ def publish_results(runtime, data, output, *, formatters=None):
             "arm",
             "task",
             "adaptation_replicate",
+            "qualification_attempt",
             "repetition",
             "earned_weight",
             "possible_weight",
@@ -765,8 +778,12 @@ def publish_results(runtime, data, output, *, formatters=None):
             ]
         ):
             frozen = read(path)
+            qualification = path.relative_to(runtime.state).parts[0] == "qualification-frozen"
+            suffix = (
+                f"-qualification{frozen.get('qualification_attempt') or 1}" if qualification else ""
+            )
             version = wandb.Artifact(
-                f"{runtime.manifest['campaign']}-{frozen['arm']}-{frozen['domain']}-rep{frozen['adaptation_replicate']}",
+                f"{runtime.manifest['campaign']}-{frozen['arm']}-{frozen['domain']}-rep{frozen['adaptation_replicate']}{suffix}",
                 type="harness",
                 metadata={
                     k: frozen[k]
@@ -785,20 +802,22 @@ def publish_results(runtime, data, output, *, formatters=None):
             )
             version = run.log_artifact(version)
             version.wait()
-            harness_artifacts[(frozen["arm"], frozen["domain"], frozen["adaptation_replicate"])] = (
-                version
-            )
+            harness_artifacts[harness_version_key(frozen, qualification=qualification)] = version
         campaign_url = run.url
     for row in data["rows"] + data["qualification_runs"]:
+        cohort = row["cohort"]
+        if cohort == "qualification":
+            cohort += f" {row['qualification_attempt']}"
         with wandb.init(
             entity=entity,
             project=project,
             id=row["session"][:12],
             resume="allow",
             job_type=row["cohort"],
-            name=f"{runtime.manifest['campaign']} {row['cohort']} / {row['arm']} / {row['task']} / a{row['adaptation_replicate']} e{row['repetition']}",
+            name=f"{runtime.manifest['campaign']} {cohort} / {row['arm']} / {row['task']} / a{row['adaptation_replicate']} e{row['repetition']}",
             config={
                 "campaign": runtime.manifest["campaign"],
+                "qualification_attempt": row.get("qualification_attempt"),
                 **{
                     k: row[k]
                     for k in (
@@ -814,7 +833,7 @@ def publish_results(runtime, data, output, *, formatters=None):
             settings=settings,
         ) as run:
             harness = harness_artifacts[
-                (row["arm"], row["task"].split("/")[0], row["adaptation_replicate"])
+                harness_version_key(row, qualification=row["cohort"] == "qualification")
             ]
             run.use_artifact(harness)
             deliverable = wandb.Artifact(
@@ -1003,6 +1022,7 @@ def report(runtime, *, publish=False, formatters=None):
             "arm",
             "task",
             "adaptation_replicate",
+            "qualification_attempt",
             "repetition",
             "earned_weight",
             "possible_weight",
