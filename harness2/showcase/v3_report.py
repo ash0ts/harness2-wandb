@@ -262,7 +262,7 @@ def narrative(data):
     primary = data["primary_result"]
     if not data["complete"]:
         return (
-            f"The comparison is incomplete: {data['heldout_judged']}/18 judgments and "
+            f"The comparison is incomplete: {data['heldout_judged']}/18 available results and "
             f"{primary['diagnostics_complete_pairs']}/6 paired task results. "
             "The experiment has not answered whether diagnostics help."
         )
@@ -319,7 +319,8 @@ def markdown(data, artifact_url=""):
         "",
         "Cells preserve native earned/possible weight and its percentage. The primary "
         "contrast is diagnostics minus raw feedback, averaged equally across tasks. "
-        "Unavailable judgments are missing, not zero. The 18 executions represent six jobs.",
+        "Executions without output receive the native zero without a judge request. "
+        "Unavailable judgments remain missing. The 18 executions represent six jobs.",
         "",
     ]
     if data["complete"]:
@@ -430,7 +431,8 @@ def markdown(data, artifact_url=""):
         f"diagnostics ${costs.get('diagnostics', 0):.4f}. Shared executions are counted once.",
         f"New spending: **${data['spent_usd']:.6f}**. Lifetime spending: "
         f"**${data['lifetime_spent_usd']:.6f} / $100**. Qualification, retries, "
-        "reflection, and judging are included in the complete ledger.",
+        "reflection, and judging are included in the complete ledger. "
+        "Costs are calculated from recorded usage and the manifest's pinned prices.",
         "",
         "## Conversations and reproduction",
         "",
