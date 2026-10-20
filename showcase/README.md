@@ -196,6 +196,18 @@ complete native screen. The renderer rejects clips shorter than the requested sc
 It produces an H.264 MP4 and WebVTT captions. Raw screenshots remain unchanged.
 The release includes the complete ZIP and SHA256 checksum.
 
+Upload selected media with paths relative to the campaign's `presentation/` directory:
+
+```sh
+python showcase/publish_media.py --manifest showcase/pilot-v3.json \
+  walkthrough.mp4 walkthrough.vtt walkthrough-transcript.md
+```
+
+Add the selected PNG filenames to the same command. `--dry-run` checks the files
+without uploading. The helper writes `media-publication.json` with file URLs and
+SHA256 hashes. The Report publisher controls project visibility; verify public
+downloads separately after publication.
+
 The evidence browser is also hosted as public W&B HTML media and embedded in the
 Report. Publish that view after `report --publish` with:
 
