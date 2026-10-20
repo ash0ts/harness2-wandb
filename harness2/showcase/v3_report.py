@@ -435,12 +435,18 @@ def markdown(data, artifact_url=""):
         "## Conversations and reproduction",
         "",
     ]
-    for label, view in data["views"].items():
+    for label in ("Held-out execution", "Adaptation", "Judging", "Qualification"):
+        view = data["views"].get(label)
         if isinstance(view, dict) and view.get("url"):
             lines.append(f"- [{label}]({view['url']})")
+    results_view = (
+        data["views"]
+        .get("Held-out execution", {})
+        .get("url", f"https://forge.coreweave.com/agent-lens/{project}/conversations")
+    )
     lines += [
         "",
-        f"[Agent Lens conversations](https://forge.coreweave.com/agent-lens/{project}/conversations) · "
+        f"[Agent Lens results view]({results_view}) · "
         f"[Reproducible code](https://github.com/ash0ts/harness2-wandb/tree/{campaign}) · "
         f"[Downloads](https://github.com/ash0ts/harness2-wandb/releases/tag/{campaign})",
         "",
