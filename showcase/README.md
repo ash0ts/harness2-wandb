@@ -57,6 +57,11 @@ browser context and saves its URL, authentication mode, and visible text beside 
 PNG. It does not use the existing desktop browser's cookies. Capture helpers never
 modify the recorded conversations or experiment inputs.
 
+For a span close-up, `--expand-output` opens its native collapsed output and
+`--focus-text "text visible in the span"` scrolls that text into view. Use
+`--viewport 1280x800` for a smaller recording viewport. The capture receipt records
+these choices; the product content is unchanged.
+
 Add `--video-dir /path/to/recordings` to record the browser. For a conversation,
 `--tabs Thread,Spans,Timeline` records those native tab changes, holding each for
 five seconds (`--hold-seconds` adjusts this). The receipt identifies when content

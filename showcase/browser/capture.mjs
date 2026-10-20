@@ -11,6 +11,9 @@ const {values} = parseArgs({
     url: {type: 'string'},
     output: {type: 'string'},
     'wait-text': {type: 'string'},
+    'focus-text': {type: 'string'},
+    viewport: {type: 'string', default: '1600x1000'},
+    'expand-output': {type: 'boolean', default: false},
     authenticated: {type: 'boolean', default: false},
     chrome: {type: 'boolean', default: false},
     'full-page': {type: 'boolean', default: false},
@@ -29,6 +32,11 @@ if (!values.output || (!values.view && !values.url) || (values.view && values.ur
 }
 const holdSeconds = Number(values['hold-seconds']);
 const tabs = values.tabs ? values.tabs.split(',') : [];
+const [width, height] = values.viewport.split('x').map(Number);
+if (!/^\d{3,4}x\d{3,4}$/.test(values.viewport) || width < 320 || width > 2560 || height < 400 || height > 2160) {
+  throw new Error('Use a viewport such as 1600x1000, between 320x400 and 2560x2160');
+}
+const viewport = {width, height};
 if (!Number.isFinite(holdSeconds) || holdSeconds < 1 || holdSeconds > 30
   || tabs.some(tab => !['Thread', 'Spans', 'Timeline'].includes(tab))) {
   throw new Error('Use a 1–30 second hold and Thread,Spans,Timeline tab names');
@@ -49,6 +57,9 @@ if (target.protocol !== 'https:' || !['forge.coreweave.com', 'wandb.ai'].include
 if (tabs.length && (values.view || !target.pathname.includes('/conversations/') || target.pathname.includes('/views/'))) {
   throw new Error('--tabs requires an Agent Lens conversation URL');
 }
+if (values['expand-output'] && !target.pathname.includes('/spans/')) {
+  throw new Error('--expand-output requires an Agent Lens span URL');
+}
 if (values.authenticated && (
   target.hostname !== 'forge.coreweave.com'
   || !target.pathname.startsWith(`/agent-lens/${manifest.project}/`)
@@ -63,10 +74,10 @@ await fs.mkdir(path.dirname(output), {recursive: true});
 const browser = await chromium.launch({headless: true, ...(values.chrome ? {channel: 'chrome'} : {})});
 try {
   const context = await browser.newContext({
-    viewport: {width: 1600, height: 1000},
+    viewport,
     reducedMotion: 'reduce',
     ...(values['video-dir'] ? {
-      recordVideo: {dir: path.resolve(values['video-dir']), size: {width: 1600, height: 1000}},
+      recordVideo: {dir: path.resolve(values['video-dir']), size: viewport},
     } : {}),
   });
   const initialCookies = (await context.cookies()).length;
@@ -120,6 +131,22 @@ try {
     await cookieClose.click({timeout: 3000, force: true});
     await cookieClose.waitFor({state: 'hidden', timeout: 3000});
   }
+  let expandedOutput = false;
+  if (values['expand-output']) {
+    const section = page.getByText('Output', {exact: true}).locator('..').locator('..');
+    await section.waitFor({timeout: 15000});
+    const expander = section.locator('[role="button"].hover-reveal-scope');
+    if (await expander.count()) {
+      await expander.click();
+      await page.waitForTimeout(250);
+      expandedOutput = true;
+    }
+  }
+  if (values['focus-text']) {
+    const focus = page.getByText(values['focus-text'], {exact: false}).first();
+    await focus.waitFor({timeout: 15000});
+    await focus.evaluate(node => node.scrollIntoView({block: 'center'}));
+  }
   const timelineZoom = await fitTimeline();
   await page.screenshot({path: output, fullPage: values['full-page']});
   const readySeconds = (Date.now() - openedAt) / 1000;
@@ -132,7 +159,9 @@ try {
     initial_cookies: initialCookies,
     credentials_injected: values.authenticated,
     capture: 'Playwright headless browser, native product UI',
-    viewport: {width: 1600, height: 1000},
+    viewport,
+    expanded_output: expandedOutput,
+    focused_text: values['focus-text'] || null,
     timeline_zoom_out_clicks: timelineZoom,
     visible_text: await page.locator('body').innerText(),
   };
