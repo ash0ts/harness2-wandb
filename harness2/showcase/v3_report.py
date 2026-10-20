@@ -107,15 +107,17 @@ def choose_examples(comparison):
     candidates = [r for r in comparison if r["complete"]]
     positives = [r for r in candidates if r["difference_pp"] > 1e-12]
     example = (
-        sorted(positives, key=lambda r: (-r["difference_pp"], r["task"]))[0]
+        sorted(positives, key=lambda r: (-round(r["difference_pp"], 12), r["task"]))[0]
         if positives
-        else sorted(candidates, key=lambda r: (-abs(r["difference_pp"]), r["task"]))[0]
+        else sorted(candidates, key=lambda r: (-round(abs(r["difference_pp"]), 12), r["task"]))[0]
         if candidates
         else None
     )
     negatives = [r for r in candidates if r["difference_pp"] < -1e-12]
     regression = (
-        sorted(negatives, key=lambda r: (r["difference_pp"], r["task"]))[0] if negatives else None
+        sorted(negatives, key=lambda r: (round(r["difference_pp"], 12), r["task"]))[0]
+        if negatives
+        else None
     )
     return {"example": example, "regression": regression}
 

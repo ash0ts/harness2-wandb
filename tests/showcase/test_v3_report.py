@@ -64,6 +64,21 @@ def test_missing_judgment_remains_missing_and_is_not_a_win():
     assert len(comparison) == 2
 
 
+@pytest.mark.parametrize("reverse", [False, True])
+def test_equal_native_differences_break_ties_by_task_despite_float_rounding(reverse):
+    value = data()
+    for row in value["rows"]:
+        start = 2 if row["task"].startswith("online_merchants/") else 6
+        if row["arm"] in ("harness2", "diagnostics"):
+            higher = row["arm"] == ("harness2" if reverse else "diagnostics")
+            row["earned_weight"] = start + 2 * higher
+            row["fraction"] = row["earned_weight"] / row["possible_weight"]
+    chosen = choose_examples(comparison_rows(value))
+    assert chosen["example"]["task"] == "online_merchants/task2"
+    if reverse:
+        assert chosen["regression"]["task"] == "online_merchants/task2"
+
+
 def test_recurrence_counts_identical_errors_with_supporting_spans():
     failure = {
         "tool_name": "bash",
