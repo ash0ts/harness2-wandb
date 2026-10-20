@@ -6,6 +6,7 @@ import json
 
 from opentelemetry import trace as otel_trace
 
+from .identity import conversation_name
 from .telemetry import (
     dt,
     message,
@@ -99,8 +100,12 @@ def export_grouped(runtime, session, execution, directory):
                 )
                 with tracing.Conversation(
                     conversation_id=conversation,
-                    conversation_name=f"{identity.get('arm', 'qualification')} / {identity.get('task', '')} / {identity['role']}"
-                    + (" / auxiliary title generation" if kind != "execution" else ""),
+                    conversation_name=(
+                        conversation_name(identity, auxiliary=kind != "execution")
+                        if runtime.manifest.get("schema_version", 1) >= 3
+                        else f"{identity.get('arm', 'qualification')} / {identity.get('task', '')} / {identity['role']}"
+                        + (" / auxiliary title generation" if kind != "execution" else "")
+                    ),
                     attributes={
                         **{
                             "harness2." + k: v

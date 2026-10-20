@@ -569,11 +569,13 @@ def markdown(data, artifact_url=""):
     return "\n".join(text) + "\n"
 
 
-def publish_results(runtime, data, output):
+def publish_results(runtime, data, output, *, formatters=None):
     import wandb
     import wandb_workspaces.reports.v2 as wr
 
     entity, project = runtime.manifest["project"].split("/")
+    markdown_fn = formatters["markdown"] if formatters else markdown
+    narrative_fn = formatters["narrative"] if formatters else narrative
     settings = wandb.Settings(disable_git=True)
     harness_artifacts = {}
     with wandb.init(
@@ -590,7 +592,18 @@ def publish_results(runtime, data, output):
             type="evidence",
             metadata={"complete": data["complete"], "new_spend_usd": data["spent_usd"]},
         )
-        for name in ("results.json", "results.csv", "qualification.csv", "report.md"):
+        for name in (
+            "results.json",
+            "results.csv",
+            "qualification.csv",
+            "report.md",
+            "comparison.csv",
+            "evaluation-status.csv",
+            "paired-scores.png",
+            "paired-scores.svg",
+        ):
+            if not (output / name).exists():
+                continue
             artifact.add_file(str(output / name))
         artifact.add_dir(str(output / "evidence"))
         artifact = run.log_artifact(artifact)
@@ -620,6 +633,35 @@ def publish_results(runtime, data, output):
                 *[(row["trace"]["url"] if c == "trace_url" else row.get(c)) for c in cols]
             )
         run.log({"heldout_results": table, "qualification_results": qualification_table})
+        if formatters:
+            compare_cols = [
+                "task",
+                "baseline",
+                "harness2",
+                "diagnostics",
+                "difference_pp",
+                "complete",
+                "baseline_run",
+                "harness2_run",
+                "diagnostics_run",
+            ]
+            run.log(
+                {
+                    "six_job_comparison": wandb.Table(
+                        columns=compare_cols,
+                        data=[[row.get(c) for c in compare_cols] for row in data["comparison"]],
+                    )
+                }
+            )
+            if (output / "paired-scores.png").exists():
+                run.log({"paired_scores": wandb.Image(str(output / "paired-scores.png"))})
+                for name in ("paired-scores.png", "paired-scores.svg", "comparison.csv"):
+                    run.save(
+                        str((output / name).resolve()),
+                        base_path=str(output.resolve()),
+                        policy="now",
+                    )
+            run.summary.update(data["primary_result"])
         run.summary.update(
             {
                 k: data[k]
@@ -702,7 +744,7 @@ def publish_results(runtime, data, output):
             id=row["session"][:12],
             resume="allow",
             job_type=row["cohort"],
-            name=f"v2 {row['cohort']} / {row['arm']} / {row['task']} / a{row['adaptation_replicate']} e{row['repetition']}",
+            name=f"{runtime.manifest['campaign']} {row['cohort']} / {row['arm']} / {row['task']} / a{row['adaptation_replicate']} e{row['repetition']}",
             config={
                 "campaign": runtime.manifest["campaign"],
                 **{
@@ -750,11 +792,25 @@ def publish_results(runtime, data, output):
                     "evidence_artifact": artifact.url,
                     "harness_artifact": harness.url,
                     "deliverable_artifact": deliverable.url,
+                    "judge_trace_url": (row.get("judge_trace") or {}).get("url"),
+                    "diagnostics_increment": row.get("diagnostics_increment"),
+                    **{
+                        k: row[k]
+                        for k in (
+                            "latency_seconds",
+                            "inference_cost_usd",
+                            "tool_calls",
+                            "tool_errors",
+                            "repeated_error_occurrences",
+                            "readable_output",
+                        )
+                        if k in row
+                    },
                 }
             )
             run.use_artifact(artifact)
     make_public(runtime, wandb.Api())
-    report_text = "\n".join(markdown(data, artifact.url).splitlines()[4:])
+    report_text = "\n".join(markdown_fn(data, artifact.url).splitlines()[4:])
     blocks = []
     cursor = 0
     for match in re.finditer(r"(?m)^!\[([^\]]*)\]\((https?://[^)]+)\)$", report_text):
@@ -764,7 +820,7 @@ def publish_results(runtime, data, output):
         cursor = match.end()
     if report_text[cursor:].strip():
         blocks.append(wr.MarkdownBlock(text=report_text[cursor:]))
-    if (runtime.state / "presentation/walkthrough.mp4").exists():
+    if not formatters and (runtime.state / "presentation/walkthrough.mp4").exists():
         media = f"https://api.wandb.ai/files/{entity}/{project}/{runtime.manifest['campaign']}-presentation"
         blocks[:0] = [
             wr.MarkdownBlock(
@@ -783,8 +839,10 @@ def publish_results(runtime, data, output):
     report = wr.Report(
         entity=entity,
         project=project,
-        title="Harness² + Agent Lens: pilot-v2",
-        description=narrative(data),
+        title="Do Agent Lens summaries help Harness²? Six-job test"
+        if formatters
+        else "Harness² + Agent Lens: pilot-v2",
+        description=narrative_fn(data),
         blocks=blocks,
     )
     previous = runtime.state / "publication.json"
@@ -792,7 +850,7 @@ def publish_results(runtime, data, output):
         report.id = read(previous)["report_id"]
     report.save()
     receipt = {
-        "report_url": f"https://wandb.ai/{entity}/{project}/reports/Harness-Agent-Lens-pilot-v2--{report.id}",
+        "report_url": f"https://wandb.ai/{entity}/{project}/reports/Harness-Agent-Lens-{runtime.manifest['campaign']}--{report.id}",
         "sdk_report_url": report.url,
         "report_id": report.id,
         "artifact_url": artifact.url,
@@ -803,7 +861,7 @@ def publish_results(runtime, data, output):
     return receipt
 
 
-def report(runtime, *, publish=False):
+def report(runtime, *, publish=False, formatters=None):
     validation = audit(runtime)
     if (runtime.state / "stopped.json").exists() and not (
         runtime.state / "allocation.json"
@@ -811,11 +869,18 @@ def report(runtime, *, publish=False):
         from .v2 import stopped_cost_floor
 
         stopped_cost_floor(runtime)
-    data = dataset(runtime)
-    if publish and not data["complete"] and not data["stopped"]:
+    data = formatters["dataset"](runtime) if formatters else dataset(runtime)
+    if (
+        publish
+        and not data["complete"]
+        and not data.get("executions_complete")
+        and not data["stopped"]
+    ):
         raise ValueError("Only a complete or explicitly stopped campaign can be published")
     output = runtime.state / "public"
     output.mkdir(exist_ok=True)
+    if formatters:
+        formatters["prepare_output"](runtime, data, output)
     gate_path = runtime.state / "article-gate.json"
     prior_gate = read(gate_path) if gate_path.exists() else {}
     review_hash = hashlib.sha256((data.get("evidence_review") or "").encode()).hexdigest()
@@ -835,6 +900,8 @@ def report(runtime, *, publish=False):
             "article_ready": bool(reviewed),
             "remaining_review": None
             if reviewed
+            else "Inspect selected deliverable and native criteria; capture native product screens before writing."
+            if formatters
             else "Inspect selected deliverable and native criteria; capture native product screens and follow-up evidence before writing.",
         },
     )
@@ -872,19 +939,21 @@ def report(runtime, *, publish=False):
         writer = csv.DictWriter(stream, fieldnames=cols, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(portable["qualification_runs"])
-    text = markdown(data)
+    text = formatters["markdown"](data) if formatters else markdown(data)
     (output / "report.md").write_text(text)
     # A portable readable fallback, while the walkthrough uses native product screens.
     body = html.escape(text)
     (output / "index.html").write_text(
-        '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Harness² pilot-v2 evidence</title><style>body{max-width:1100px;margin:3rem auto;padding:0 1.5rem;font:16px/1.6 system-ui;background:#f4f1eb;color:#19242c}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>Harness² + Agent Lens</h1><p><a href="results.csv">Complete results CSV</a> · <a href="results.json">Machine-readable evidence index</a> · <a href="evidence/manifest.json">Frozen protocol</a></p><pre>'
+        '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Harness² '
+        + html.escape(runtime.manifest["campaign"])
+        + ' evidence</title><style>body{max-width:1100px;margin:3rem auto;padding:0 1.5rem;font:16px/1.6 system-ui;background:#f4f1eb;color:#19242c}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>Harness² + Agent Lens</h1><p><a href="results.csv">Complete results CSV</a> · <a href="results.json">Machine-readable evidence index</a> · <a href="evidence/manifest.json">Frozen protocol</a></p><pre>'
         + body
         + "</pre></html>"
     )
     if publish:
-        receipt = publish_results(runtime, data, output)
+        receipt = publish_results(runtime, data, output, formatters=formatters)
         print(json.dumps(receipt, indent=2))
-    archive = runtime.state / "pilot-v2-evidence.zip"
+    archive = runtime.state / (runtime.manifest["campaign"] + "-evidence.zip")
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as z:
         for p in sorted(output.rglob("*")):
             if p.is_file():

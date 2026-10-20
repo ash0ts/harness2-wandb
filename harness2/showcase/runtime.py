@@ -27,15 +27,27 @@ def load_manifest(path):
         if (
             manifest.get("k") != 2
             or manifest.get("mode") != "seq"
-            or manifest.get("adaptation_replicates") != 2
+            or manifest.get("adaptation_replicates") not in (1, 2)
         ):
-            raise ValueError("Pilot-v2 implements sequential k=2 with two adaptation replicates")
+            raise ValueError(
+                "Sequential campaigns require k=2 and one or two adaptation replicates"
+            )
         if manifest.get("repetitions") not in (1, 2):
             raise ValueError("Pilot-v2 supports one or two evaluation repetitions")
         if any(f["adapt"] != "task1" for f in manifest["task_families"]) or any(
             not t.endswith("/task1") for t in manifest["qualification_tasks"]
         ):
             raise ValueError("Pilot-v2 adaptation and qualification are defined on task1")
+    if manifest.get("schema_version", 1) >= 3:
+        if (
+            len(manifest["task_families"]) != 6
+            or manifest["adaptation_replicates"] != 1
+            or manifest["repetitions"] != 1
+            or "mechanism" in manifest["budget_buckets"]
+        ):
+            raise ValueError(
+                "Pilot-v3 requires six families, one adaptation/run, no mechanism phase"
+            )
     state = (path.parent / manifest["state_dir"]).resolve()
     state.mkdir(parents=True, exist_ok=True)
     frozen = state / "manifest.json"
@@ -134,6 +146,10 @@ class Runtime:
         raise RuntimeError("Gateway failed to become healthy")
 
     def register(self, identity):
+        if self.manifest.get("schema_version", 1) >= 3:
+            from .identity import identity_fields
+
+            identity = identity_fields(identity, self.manifest)
         response = httpx.post(self.url + "/register", json=identity, headers=self.headers)
         response.raise_for_status()
         return response.json()["token"]
@@ -187,6 +203,10 @@ class Runtime:
             raise CampaignStop("Unreconciled usage blocks execution")
         session = uuid.uuid4().hex
         identity.update(session=session, phase=phase, role=role, campaign=self.manifest["campaign"])
+        if self.manifest.get("schema_version", 1) >= 3:
+            from .identity import identity_fields
+
+            identity = identity_fields(identity, self.manifest)
         token = self.register(identity)
         control = self.state / "controls" / session
         control.mkdir(parents=True)

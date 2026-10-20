@@ -182,6 +182,7 @@ class V2Proposer(ExperimentProposer):
             proposal_attempt=self.local.attempt,
             input_fingerprint=fingerprint(cwd),
             harness_fingerprint=fingerprint(cwd / "context/harness"),
+            rendered_fingerprint=old["rendered_fingerprint"] if old else "",
         )
         # Preserve decisions and evidence before upstream removes its temporary workspace.
         shutil.copytree(cwd / "output", directory / "proposal-output")
@@ -342,7 +343,7 @@ def provenance(runtime, phase):
         str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
         for folder in (ROOT / "harness2/showcase", ROOT / "showcase")
         for p in folder.glob("*")
-        if p.is_file() and p.suffix in (".py", ".json")
+        if p.is_file() and (p.suffix in (".py", ".json") or p.name.startswith("Dockerfile"))
     }
     value = {
         "phase": phase,
@@ -355,6 +356,23 @@ def provenance(runtime, phase):
     }
     path = runtime.state / "provenance" / f"{phase}.json"
     qualified = runtime.state / "provenance/qualification.json"
+    engine = {
+        key: sha
+        for key, sha in source.items()
+        if (
+            key.startswith("harness2/showcase/")
+            and Path(key).name
+            not in ("report.py", "v2_report.py", "v3_report.py", "audit.py", "mechanism.py")
+        )
+        or key in ("showcase/worker.py", "showcase/Dockerfile", "showcase/Dockerfile.judge")
+    }
+    value["execution_engine"] = engine
+    if (
+        runtime.manifest.get("schema_version", 1) >= 3
+        and phase in ("adapt", "evaluate")
+        and (not qualified.exists() or read(qualified).get("execution_engine") != engine)
+    ):
+        raise CampaignStop("Execution engine differs from the live-qualified source")
     if (
         phase != "qualification"
         and qualified.exists()
@@ -362,12 +380,6 @@ def provenance(runtime, phase):
     ):
         raise CampaignStop("Worker or judge image differs from the qualified environment")
     if phase in ("adapt", "evaluate", "mechanism"):
-        engine = {
-            key: sha
-            for key, sha in source.items()
-            if key.startswith("harness2/showcase/")
-            and Path(key).name not in ("report.py", "v2_report.py", "audit.py", "mechanism.py")
-        }
         engine_path = runtime.state / "provenance/frozen-engine.json"
         if engine_path.exists() and read(engine_path) != engine:
             raise CampaignStop("Execution engine changed after the main campaign froze")
@@ -575,7 +587,10 @@ def allocation(runtime):
     independent = sum(stage_maxima.values()) - shared
     adapt = n * (shared + 2 * independent) * 1.5
     projections = []
-    for reps in (runtime.manifest["repetitions"], 1):
+    followup_reserve = float(
+        runtime.manifest.get("budget_buckets", {}).get("mechanism", {}).get("usd", 0)
+    )
+    for reps in dict.fromkeys((runtime.manifest["repetitions"], 1)):
         evaluations = n * 3 * reps
         main = adapt + evaluations * maxima["solver"] * 1.5
         judges = (
@@ -613,7 +628,8 @@ def allocation(runtime):
         if (
             main <= float(runtime.manifest["budget_buckets"]["main"]["usd"])
             and judges <= float(runtime.manifest["budget_buckets"]["retry_and_judging"]["usd"])
-            and main + judges + 5 + budget["spent_usd"] <= float(runtime.manifest["budget_usd"])
+            and main + judges + followup_reserve + budget["spent_usd"]
+            <= float(runtime.manifest["budget_usd"])
         ):
             value = {
                 "repetitions": reps,
@@ -743,7 +759,7 @@ def adapt(runtime):
         for family in runtime.manifest["task_families"]
         for replicate in range(1, runtime.manifest["adaptation_replicates"] + 1)
     ]
-    bounded_parallel(jobs, group, 4)
+    bounded_parallel(jobs, group, runtime.manifest.get("adaptation_concurrency", 4))
     freezes = list((runtime.state / "frozen").glob("*/*/*/freeze.json"))
     if (
         len(freezes)
@@ -803,6 +819,8 @@ def evaluate(runtime):
             continue
         score = adapter.score(out, job["task"])
         _, evidence = adapter._details_candidates(job["task"], out.name)
+        judge_trace_path = evidence.with_name(evidence.name + ".trace.json")
+        judge_trace = read(judge_trace_path) if judge_trace_path.exists() else None
         if not evidence.exists():
             evidence = evidence.with_name(evidence.name + ".judge_failed")
         write_json(
@@ -822,6 +840,7 @@ def evaluate(runtime):
                 if adapter.delivered(out)
                 else "agent_no_output",
                 "judge_evidence": str(evidence) if evidence.exists() else None,
+                "judge_trace": judge_trace,
                 "child_exit_code": marker["child_exit_code"],
                 "collection_status": marker["collection_status"],
             },
@@ -835,11 +854,16 @@ def dispatch(args, runtime):
             setup(runtime)
         runtime.start()
         if args.phase == "mechanism":
+            if runtime.manifest.get("schema_version", 1) >= 3:
+                raise CampaignStop("This campaign has no mechanism phase or budget")
             from .mechanism import run
 
             return run(runtime)
         if args.phase == "report":
-            from .v2_report import report
+            if runtime.manifest.get("schema_version", 1) >= 3:
+                from .v3_report import report
+            else:
+                from .v2_report import report
 
             return report(runtime, publish=args.publish)
         result = globals()[args.phase](runtime)

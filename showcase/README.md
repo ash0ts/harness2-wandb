@@ -5,8 +5,30 @@ This fork compares the upstream baseline, Harness² refinement, and the same ref
 with deterministic diagnostics retrieved from Agent Lens. The original Harness² already
 provides trajectories to its improver. The treatment is how that evidence is organized.
 
-This is a **JobBench-based pilot with a frozen-harness transfer test**. Two held-out tasks
-cannot establish a general benchmark ranking. Negative results are valid results.
+These are **JobBench-based pilots with frozen-harness transfer tests**. Their small task
+sets cannot establish a general benchmark ranking. Negative results are valid results.
+
+## Six-job comparison
+
+[Pilot-v3](pilot-v3-protocol.md) asks whether summaries improve held-out quality beyond
+raw execution feedback. Its [manifest](pilot-v3.json) specifies six task pairs, one
+adaptation per condition, two refinement rounds, and eighteen final evaluations.
+The original harness is the reference; diagnostics minus raw feedback is the primary
+contrast. The new project is `wandb/harness2-agent-lens-v3`.
+
+```sh
+harness2-showcase smoke --manifest showcase/pilot-v3.json --prepare
+harness2-showcase adapt --manifest showcase/pilot-v3.json
+harness2-showcase evaluate --manifest showcase/pilot-v3.json
+harness2-showcase report --manifest showcase/pilot-v3.json --publish
+```
+
+The complete runtime must pass live qualification and the complete cost projection
+before adaptation starts. New spending cannot exceed $84.87, including $8 qualification
+and $10 judging/retries. Earlier campaigns consumed $15.122852 of the $100 lifetime cap.
+There is no additional mechanism study. The Report preserves native scores, missing
+judgments, failed attempts, executable harness changes, and their Agent Lens records.
+One execution per setup does not establish repeatability.
 
 ## Published pilot
 

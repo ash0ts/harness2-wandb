@@ -9,7 +9,7 @@ RUN git init /opt/opencode && cd /opt/opencode && git remote add origin https://
 COPY third_party/patches/opencode-compat.diff /tmp/opencode-compat.diff
 RUN cd /opt/opencode && git apply /tmp/opencode-compat.diff && PYTHON=/usr/bin/python3 bun install --frozen-lockfile
 RUN cp /root/.bun/bin/bun /usr/local/bin/bun && chmod -R a+rX /opt/opencode && useradd -m -u 10001 runner
-ENV OPENCODE_DISABLE_MODELS_FETCH=1 OPENCODE_DISABLE_AUTOUPDATE=1 OPENCODE_DISABLE_SHARE=1
+ENV OPENCODE_DISABLE_MODELS_FETCH=1 OPENCODE_DISABLE_AUTOUPDATE=1 OPENCODE_DISABLE_SHARE=1 PYTHONDONTWRITEBYTECODE=1
 COPY showcase/worker.py /opt/showcase-worker.py
 USER runner
 WORKDIR /work

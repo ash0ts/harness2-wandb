@@ -261,7 +261,10 @@ class ExperimentAdapter(JobBenchAdapter):
             raise CampaignStop(f"Judge timed out for {session}; preserve the attempt")
         if self.runtime.calls(session):
             rows = self.runtime.wait_calls(session)
-            export_session(self.runtime, session, directory=directory)
+            trace = export_session(self.runtime, session, directory=directory)
+            own.with_name(own.name + ".trace.json").write_text(
+                json.dumps({"session": session, **trace}, indent=2)
+            )
             if any((r.get("error") or {}).get("http_status") == 402 for r in rows):
                 raise CampaignStop(
                     f"Judge budget denied requests in {session}; preserve the incomplete judgment"
