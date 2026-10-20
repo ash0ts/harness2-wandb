@@ -370,6 +370,20 @@ def markdown(data, artifact_url=""):
                 + ". These rows compare executions of the same executable harness as the original.",
                 "",
             ]
+    for partial in data.get("partial_collection_sessions", []):
+        lines += [
+            f"**Partial trace:** {DOMAINS[partial['task'].split('/')[0]]} / "
+            f"{CONDITIONS[partial['arm']]} had an interrupted final composition. "
+            "Both composition stages lacked valid completion decisions, so the declared "
+            "failed-adaptation rule retained the original harness before grading. "
+            f"All {partial['provider_requests']} model requests and usage records survive, "
+            f"but only {partial['observed_tool_completions']} of "
+            f"{partial['requested_tool_calls']} requested tool calls have preserved execution "
+            f"events. [Preserved partial trace]({partial['trace_url']}). "
+            "Missing tool events and timings are not reconstructed. The failed adaptation "
+            "remains in the score comparison; full tool-trace coverage was not achieved.",
+            "",
+        ]
     lines += ["## Follow the evidence", ""]
     for label, example in (
         ("Selected comparison", data["example"]),

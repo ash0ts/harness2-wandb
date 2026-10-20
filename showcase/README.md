@@ -171,6 +171,21 @@ receives the native no-output score. Failed and interrupted attempts remain in t
 state and exports. Resume only completed, verified attempts or work proven not to have
 started. This experiment does not silently replay uncertain trace writes.
 
+An interrupted final composition can leave model requests intact while losing
+the worker's final child-tool export. For the narrow case where both composition
+stages have no valid completion decision, `showcase/recover_interrupted.py`
+records the loss, exports only preserved events with a partial-coverage label,
+and freezes the original harness under the declared failed-adaptation rule.
+It requires a stopped campaign, settled usage, an unchanged qualified engine,
+and no held-out execution or judging. It makes no inference requests and does
+not replay the failed proposal. The Report discloses the missing tool coverage.
+
+```sh
+python showcase/recover_interrupted.py --manifest showcase/pilot-v3.json \
+  --session INTERRUPTED_SESSION_ID
+python -m harness2.showcase.cli adapt --manifest showcase/pilot-v3.json
+```
+
 The gateway is a local experiment component, not a production multi-tenant service.
 Cleanup affects only this campaign's labeled containers and network; retain its state
 and budget ledger for audit before removing them.

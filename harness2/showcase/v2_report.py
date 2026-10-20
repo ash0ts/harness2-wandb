@@ -154,6 +154,78 @@ def task_uncertainty(means, seed):
     }
 
 
+def interrupted_attempt(runtime, session):
+    """Describe preserved records without inventing missing child-tool events."""
+    directory = runtime.state / "executions" / session
+    execution = read(directory / "execution.json")
+    identity = execution["identity"]
+    if not (
+        execution.get("timed_out")
+        and execution.get("collection_status") == "incomplete"
+        and identity.get("role") == "improver"
+        and identity.get("phase") in ("adapt", "retry")
+    ):
+        raise ValueError("Only a timed-out adaptation proposal can use partial-trace recovery")
+    decision = directory / "decision.json"
+    if decision.exists() and read(decision).get("accepted"):
+        raise ValueError("An accepted proposal cannot be recovered as an interrupted attempt")
+    calls = runtime.calls(session)
+    if not calls or any((c.get("response") or {}).get("usage") is None for c in calls):
+        raise ValueError("Every interrupted-attempt request must have recorded usage")
+    requested = {
+        t["id"]
+        for call in calls
+        for choice in call["response"].get("choices", [])
+        for t in choice.get("message", {}).get("tool_calls", [])
+    }
+    observed = {part["callID"] for part in tool_events(directory / "events.jsonl")}
+    if not observed <= requested:
+        raise ValueError("Primary tool events are not covered by the recorded requests")
+    paths = [
+        directory / name
+        for name in ("execution.json", "events.jsonl", "opencode-audit.json", "entry-message.txt")
+    ] + list((runtime.state / "gateway/sessions" / session).glob("*.json"))
+    return {
+        "session": session,
+        "task": identity["task"],
+        "arm": identity["arm"],
+        "adaptation_replicate": identity["adaptation_replicate"],
+        "provider_requests": len(calls),
+        "requested_tool_calls": len(requested),
+        "observed_tool_completions": len(observed),
+        "unobserved_tool_call_ids": sorted(requested - observed),
+        "source_hashes": {
+            str(p.relative_to(runtime.state)): hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in sorted(paths)
+        },
+        "scope": "Provider requests and primary-stream tool events only. Final child-session "
+        "collection did not complete; missing tool events and timings are not reconstructed.",
+    }
+
+
+def verify_interrupted_attempt(runtime, session, trace):
+    record = read(runtime.state / "provenance" / f"interrupted-{session}.json")
+    if record.get("facts") != interrupted_attempt(runtime, session):
+        raise ValueError("Interrupted-attempt records differ from the preserved sources")
+    if record.get("action") != "baseline_fallback_after_interrupted_adaptation":
+        raise ValueError("Interrupted adaptation requires an explicit fallback record")
+    if trace.get("coverage") != "partial":
+        raise ValueError("Interrupted trace must be labelled partial")
+    fact = record["facts"]
+    domain = fact["task"].split("/")[0]
+    frozen = runtime.state / "frozen"
+    rep = f"rep{fact['adaptation_replicate']}"
+    fallback = read(frozen / fact["arm"] / rep / domain / "freeze.json")
+    baseline = read(frozen / "baseline" / rep / domain / "freeze.json")
+    if (
+        fallback["source_fingerprint"] != baseline["source_fingerprint"]
+        or fallback["adoption"] != "baseline_fallback"
+        or fallback["adaptation_complete"]
+    ):
+        raise ValueError("Interrupted adaptation must retain the declared original harness")
+    return {**fact, "trace_url": trace["url"]}
+
+
 def audit(runtime):
     from decimal import Decimal
 
@@ -178,7 +250,7 @@ def audit(runtime):
             + usage["completion_tokens"] * Decimal(price["output"])
         ) / 1_000_000
         assert micros(cost) == call["spent"] <= call["reserved"]
-    sessions, spans, outputs, decisions = 0, 0, 0, []
+    sessions, spans, outputs, decisions, partial = 0, 0, 0, [], []
     for directory in sorted((runtime.state / "gateway/sessions").glob("*")):
         if not directory.is_dir() or not runtime.calls(directory.name):
             continue
@@ -192,7 +264,8 @@ def audit(runtime):
         assert len(stored) == trace["expected_spans"]
         if (execution / "execution.json").exists():
             result = read(execution / "execution.json")
-            assert result["collection_status"] == "complete"
+            if result["collection_status"] != "complete":
+                partial.append(verify_interrupted_attempt(runtime, directory.name, trace))
             # Check the public Turn input is the actual task/mission, not title generation.
             entry = (execution / "entry-message.txt").read_text()
             roots = [r for r in stored if not r.get("parent_span_id")]
@@ -222,6 +295,8 @@ def audit(runtime):
         "accepted_executable_changes": sum(
             d["accepted"] and d.get("executable_change", False) for d in decisions
         ),
+        "complete_collection_sessions": sessions - len(partial),
+        "partial_collection_sessions": partial,
         "new_spend_usd": budget["spent_usd"],
         "lifetime_spend_usd": float(runtime.manifest["prior_spend_usd"]) + budget["spent_usd"],
     }
@@ -391,6 +466,9 @@ def dataset(runtime, *, include_ungraded=False):
         "evidence_review": (runtime.state / "presentation/evidence-review.md").read_text()
         if (runtime.state / "presentation/evidence-review.md").exists()
         else None,
+        "partial_collection_sessions": read(runtime.state / "validation.json").get(
+            "partial_collection_sessions", []
+        ),
         "allocation": allocation,
         "cost_projection": read(runtime.state / "cost-projection.json")
         if (runtime.state / "cost-projection.json").exists()
