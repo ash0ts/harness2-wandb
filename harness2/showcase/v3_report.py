@@ -432,7 +432,7 @@ def markdown(data, artifact_url=""):
         f"New spending: **${data['spent_usd']:.6f}**. Lifetime spending: "
         f"**${data['lifetime_spent_usd']:.6f} / $100**. Qualification, retries, "
         "reflection, and judging are included in the complete ledger. "
-        "Costs are calculated from recorded usage and the manifest's pinned prices.",
+        "Costs are calculated from recorded usage and the manifest's pinned prices, including cached input. Agent Lens displays its own cost estimate.",
         "",
         "## Conversations and reproduction",
         "",
