@@ -41,6 +41,22 @@ views, excludes auxiliary title calls, and reads the saved settings back from Ag
 Lens. It uses `WANDB_API_KEY`; `--dry-run` prints the proposed settings. Screenshot
 and browser checks remain separate from configuration verification.
 
+Native screenshots can be captured independently of the desktop display with
+Node 20 or later and Chrome:
+
+```sh
+npm ci --prefix showcase/browser
+node showcase/browser/capture.mjs --manifest showcase/pilot-v3.json \
+  --view Adaptation --authenticated --chrome \
+  --output showcase/state/pilot-v3/presentation/adaptation-view.png
+```
+
+For a signed-out Report check, omit `--authenticated`, pass its `--url`, and provide
+`--wait-text` with a phrase from the published Report. Each capture uses a fresh
+browser context and saves its URL, authentication mode, and visible text beside the
+PNG. It does not use the existing desktop browser's cookies. Capture helpers never
+modify the recorded conversations or experiment inputs.
+
 ## Published pilot
 
 [Evidence browser](https://api.wandb.ai/files/wandb/harness2-agent-lens/pilot-v1-presentation/media/html/evidence_browser_2_0884d9a81d0b7bd08982.html) · [W&B Report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-frozen-harness-pilot--VmlldzoxODE0MzU2Mw==) · [75-second walkthrough](https://github.com/ash0ts/harness2-wandb/releases/download/pilot-v1/walkthrough.mp4) · [Download all evidence](https://github.com/ash0ts/harness2-wandb/releases/tag/pilot-v1)
