@@ -59,22 +59,22 @@ stored spans remain available without an Agent Lens login.
 ## Run
 
 Use Python 3.12, Docker, and a W&B account with access to the models in
-[pilot.json](pilot.json). Credentials stay in the environment. The default project is
-`wandb/harness2-agent-lens`; change it and the campaign/state directory before the first
-request when reproducing under another account. Never put credentials in a manifest.
+[pilot-v3.json](pilot-v3.json). Credentials stay in the environment. For a new run,
+copy the manifest and set your own project, campaign identity, state directory, and
+spending limits before the first request. If another campaign is running locally,
+also choose separate image, network, gateway-port, and subnet values. Keep the published
+manifests as records of their original campaigns. Never put credentials in a manifest.
 
 ```bash
 uv venv --python 3.12
 uv pip install --require-hashes -r showcase/requirements.lock
 uv pip install --no-deps -e .
 export WANDB_API_KEY=...  # obtain this from your W&B account
-harness2-showcase smoke --prepare
-harness2-showcase adapt
-harness2-showcase evaluate
-harness2-showcase report
-# Review the local export, then upload the results and save the W&B Report:
-harness2-showcase report --publish
 ```
+
+Run the phases listed in [Six-job comparison](#six-job-comparison), passing the path
+to your manifest with `--manifest` each time. Omit `--publish` to inspect the local
+Report and evidence export before uploading them.
 
 The runner resolves state paths relative to the manifest. It refuses a changed manifest
 in an existing campaign. `--prepare` downloads only the declared public task files and
@@ -86,11 +86,11 @@ Set `SHOWCASE_SUBNET` before preparation if the default subnet conflicts locally
 `smoke` qualifies both requested and returned model IDs, actual OpenCode tool use,
 child-session capture, stored span coverage, native grading, and unchanged work files
 after export. No fallback model is selected. `adapt` computes and saves the campaign
-allocation before it starts. It uses two evaluation repetitions when the projection
-fits, otherwise one for every condition. It stops if the complete comparison cannot fit.
+allocation before it starts. Pilot-v3 requires all eighteen planned transfer executions
+to fit; it stops if the complete comparison cannot fit.
 
-The gateway reserves each in-flight request against $100 total and $10 qualification.
-It includes retries, child agents, reflection, and judges. Missing usage keeps its
+The gateway reserves each in-flight request against the manifest's total and phase
+limits. It includes retries, child agents, reflection, and judges. Missing usage keeps its
 reservation and blocks further spending, including after a restart. A gateway crash
 with pending requests requires independent billing reconciliation; do not delete the
 ledger or rerun the attempt to bypass it. Prices are fixed in the manifest, and reported
