@@ -8,6 +8,7 @@ from opentelemetry import trace as otel_trace
 
 from .identity import conversation_name
 from .telemetry import (
+    complete_usage,
     dt,
     message,
     readback,
@@ -64,6 +65,12 @@ def export_grouped(runtime, session, execution, directory):
                 ],
             )
         )
+    if runtime.manifest.get("schema_version") == 4:
+        from .telemetry_v4 import session_groups
+
+        audit_path = directory / "opencode-audit.json"
+        audit = json.loads(audit_path.read_text()) if audit_path.exists() else []
+        groups = session_groups(session, calls, tools, primary_messages, audit)
     if saved.exists():
         receipt = json.loads(saved.read_text())
         if receipt["verified"]:
@@ -101,7 +108,12 @@ def export_grouped(runtime, session, execution, directory):
                 with tracing.Conversation(
                     conversation_id=conversation,
                     conversation_name=(
-                        conversation_name(identity, auxiliary=kind != "execution")
+                        conversation_name(identity, auxiliary=kind == "auxiliary_title")
+                        + (
+                            " / Child session " + conversation.removeprefix(session + "-")
+                            if kind == "child_execution"
+                            else ""
+                        )
                         if runtime.manifest.get("schema_version", 1) >= 3
                         else f"{identity.get('arm', 'qualification')} / {identity.get('task', '')} / {identity['role']}"
                         + (" / auxiliary title generation" if kind != "execution" else "")
@@ -118,7 +130,7 @@ def export_grouped(runtime, session, execution, directory):
                 ):
                     with tracing.Turn(
                         agent_name="harness2-" + identity["role"]
-                        if kind == "execution"
+                        if kind != "auxiliary_title"
                         else "opencode-auxiliary-title",
                         agent_version=identity.get("harness_fingerprint", "unversioned"),
                         messages=[message(m) for m in inputs],
@@ -144,10 +156,22 @@ def export_grouped(runtime, session, execution, directory):
                                 span.set_attributes(
                                     {
                                         "harness2.provider_call_id": record["call_id"],
-                                        "harness2.usage_available": bool(
+                                        "harness2.usage_available": complete_usage(
                                             (record.get("response") or {}).get("usage")
                                         ),
-                                        "harness2.auxiliary": kind != "execution",
+                                        "harness2.provider_usage_json": json.dumps(
+                                            (record.get("response") or {}).get("usage")
+                                        ),
+                                        "harness2.auxiliary": kind == "auxiliary_title",
+                                        **(
+                                            {
+                                                "harness2.provider_request_id": record[
+                                                    "provider_request_id"
+                                                ]
+                                            }
+                                            if record.get("provider_request_id")
+                                            else {}
+                                        ),
                                     }
                                 )
                                 if record.get("error"):

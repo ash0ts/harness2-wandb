@@ -1,0 +1,8 @@
+ARG BASE_IMAGE=harness2-showcase:study-v4-base
+FROM ${BASE_IMAGE}
+USER root
+RUN install -d -o runner -g runner /home/runner/.local /home/runner/.local/state /home/runner/.local/share /home/runner/.local/share/opencode /home/runner/.cache
+COPY showcase/patch-runtime-v4.py /opt/patch-runtime-v4.py
+RUN python /opt/patch-runtime-v4.py
+COPY showcase/worker_v4.py /opt/showcase-worker.py
+USER runner

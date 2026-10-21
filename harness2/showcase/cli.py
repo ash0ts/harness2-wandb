@@ -460,7 +460,10 @@ def evaluate(runtime):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("phase", choices=("smoke", "adapt", "evaluate", "mechanism", "report"))
+    parser.add_argument(
+        "phase", choices=("smoke", "adapt", "evaluate", "mechanism", "report", "status")
+    )
+    parser.add_argument("--study", choices=("code", "jobbench", "all"), default="all")
     parser.add_argument("--manifest", type=Path, default=ROOT / "showcase/pilot.json")
     parser.add_argument(
         "--prepare",
@@ -476,7 +479,17 @@ def main():
         help="Preserve a failed qualification and test a repaired engine under the same budget",
     )
     args = parser.parse_args()
+    if args.phase == "status":
+        from .study import read_manifest, status
+
+        manifest, state = read_manifest(args.manifest)
+        print(json.dumps(status(manifest, state, args.study), indent=2))
+        return
     manifest, state = load_manifest(args.manifest)
+    if manifest.get("schema_version") == 4:
+        from .v4 import dispatch
+
+        return dispatch(args, manifest, state)
     tmp = state / "tmp"
     tmp.mkdir(exist_ok=True)
     tempfile.tempdir = str(tmp)

@@ -28,31 +28,49 @@ def render_context(domain, manifest):
     return {**_render_ctx(domain), "date": manifest["render_date"]}
 
 
-def tree_hashes(path):
+def tree_hashes(path, *, executable_modes=False):
     path = Path(path)
     result = {}
     for p in sorted(path.rglob("*")):
         if p.is_symlink():
             raise ValueError("Symlinks are outside the public harness surface")
         if p.is_file():
-            result[str(p.relative_to(path))] = hashlib.sha256(p.read_bytes()).hexdigest()
+            content = p.read_bytes()
+            if executable_modes:
+                content = (b"executable\0" if p.stat().st_mode & 0o111 else b"data\0") + content
+            result[str(p.relative_to(path))] = hashlib.sha256(content).hexdigest()
     return result
 
 
 def harness_record(path, domain, manifest):
+    modes = manifest.get("schema_version") == 4
     with tempfile.TemporaryDirectory(prefix="render-audit-") as tmp:
         dest = Path(tmp) / "rendered"
-        render_opencode_tree(path, dest, render_context(domain, manifest))
+        if manifest.get("schema_version") == 4 and manifest.get("active_study") == "code":
+            from .code_study import render_code
+
+            render_code(Path(path), dest)
+        else:
+            render_opencode_tree(path, dest, render_context(domain, manifest))
         return {
-            "source_fingerprint": fingerprint(path),
-            "source_files": tree_hashes(path),
-            "rendered_fingerprint": fingerprint(dest),
-            "rendered_files": tree_hashes(dest),
+            "source_fingerprint": fingerprint(path, executable_modes=modes),
+            "source_files": tree_hashes(path, executable_modes=modes),
+            "rendered_fingerprint": fingerprint(dest, executable_modes=modes),
+            "rendered_files": tree_hashes(dest, executable_modes=modes),
         }
 
 
 def changed_files(before, after):
     return sorted(k for k in before.keys() | after.keys() if before.get(k) != after.get(k))
+
+
+def verify_executed_harness(result, record):
+    identity = result["identity"]
+    if (
+        identity.get("source_fingerprint") != record["source_fingerprint"]
+        or identity.get("rendered_fingerprint") != record["rendered_fingerprint"]
+    ):
+        raise CampaignStop("Source or rendered harness differs from the recorded execution")
 
 
 def completed_session(result, events_path):
@@ -67,20 +85,25 @@ def completed_session(result, events_path):
     return bool(finishes) and finishes[-1].get("part", {}).get("reason") == "stop"
 
 
-def canonical_affected_files(paths):
+def canonical_affected_files(paths, *, v4=False):
     """Accept the explicit workspace prefix without weakening the exact-file check."""
     if not isinstance(paths, list) or any(not isinstance(p, str) for p in paths):
         raise ValueError("affected_files must be a list of harness file paths")
     normalized = []
     for path in paths:
+        if v4:
+            path = path.removeprefix("/work/")
+            while path.startswith("./"):
+                path = path[2:]
         relative = path.removeprefix("context/harness/")
         if not relative or any(p in ("", ".", "..") for p in relative.split("/")):
             raise ValueError("affected_files must name files within context/harness")
-        normalized.append(relative)
+        if not v4 or not is_generated_cache(Path(relative)):
+            normalized.append(relative)
     return normalized
 
 
-def validate_completion(cwd, before, result, events_path, *, editing):
+def validate_completion(cwd, before, result, events_path, *, editing, v4=False):
     """A final response is insufficient: a completed session must save its decision."""
     if not completed_session(result, events_path):
         raise ValueError("Session did not complete normally; partial narration is not a decision")
@@ -98,14 +121,14 @@ def validate_completion(cwd, before, result, events_path, *, editing):
     ):
         raise ValueError("Receipt must declare status=complete and explain its rationale")
     if editing:
-        after = tree_hashes(cwd / "context/harness")
+        after = tree_hashes(cwd / "context/harness", executable_modes=v4)
         changed = changed_files(before, after)
         if receipt.get("decision") not in ("change", "keep"):
             raise ValueError("Improvement receipt must declare change or keep")
         if (receipt["decision"] == "change") != bool(changed):
             raise ValueError("Receipt decision disagrees with the actual source changes")
         supplied = receipt.get("affected_files")
-        affected = canonical_affected_files(supplied)
+        affected = canonical_affected_files(supplied, v4=v4)
         if sorted(affected) != changed:
             raise ValueError(
                 "Receipt affected_files must exactly match paths changed under context/harness. "
@@ -120,6 +143,21 @@ def validate_completion(cwd, before, result, events_path, *, editing):
     ):
         raise ValueError("cited_span_ids must contain stored 16-character hexadecimal span IDs")
     return receipt
+
+
+def is_generated_cache(path):
+    return bool(
+        set(path.parts) & {"__pycache__", ".pytest_cache", ".ruff_cache", ".mypy_cache"}
+    ) or path.suffix in (".pyc", ".pyo")
+
+
+def remove_generated_caches(root):
+    for path in sorted(Path(root).rglob("*"), key=lambda p: len(p.parts), reverse=True):
+        if is_generated_cache(path.relative_to(root)):
+            if path.is_dir() and not path.is_symlink():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
 
 
 def inventory(output):
@@ -156,7 +194,18 @@ def inventory(output):
                     if not len(pdf.pages):
                         raise ValueError("PDF contains no pages")
                     row["pages"] = len(pdf.pages)
-            elif suffix in (".txt", ".md", ".csv", ".json", ".html", ".py", ".log"):
+            elif suffix in (
+                ".txt",
+                ".md",
+                ".csv",
+                ".json",
+                ".html",
+                ".py",
+                ".log",
+                ".patch",
+                ".diff",
+                ".sh",
+            ):
                 text = path.read_text(encoding="utf-8-sig")
                 if suffix == ".json":
                     json.loads(text)
@@ -175,7 +224,7 @@ def _bounded(value, limit):
     """Drop tail entries in a fixed order, reporting omissions; never truncate JSON."""
     value["omitted"] = {}
     lists = [k for k, v in value.items() if isinstance(v, list)]
-    while len(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()) > limit:
+    while len(json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()) + 1 > limit:
         eligible = [k for k in lists if value[k]]
         if not eligible:
             raise ValueError("Diagnostic header exceeds its bound")
@@ -185,7 +234,7 @@ def _bounded(value, limit):
     return json.dumps(value, ensure_ascii=False, separators=(",", ":")) + "\n"
 
 
-def summarize(rows, files, trace_url, *, limit=8192):
+def summarize(rows, files, trace_url, *, limit=8192, nonempty_deliverables=False):
     errors, repeats, limits, operations = [], [], [], []
     signatures, totals, previous_errors = defaultdict(list), defaultdict(lambda: Counter()), {}
     recoveries = []
@@ -286,7 +335,9 @@ def summarize(rows, files, trace_url, *, limit=8192):
         "operation_totals": [{"operation": k, **v} for k, v in sorted(totals.items())],
         "operations": operations,
         "produced_files": files,
-        "deliverable_present": bool(files),
+        "deliverable_present": any(f.get("bytes", 0) > 0 for f in files)
+        if nonempty_deliverables
+        else bool(files),
         "readable_files": sum(f["readable"] is True for f in files),
         "note": "Readability and tool status are observations, not benchmark grades.",
     }
@@ -303,7 +354,14 @@ def materialize_evidence(cwd, runtime, *, diagnostics, task, arm, replicate):
     index, summaries = [], []
     for session in sorted(sessions):
         source = runtime.state / "executions" / session
+        if runtime.manifest.get("schema_version") == 4 and not all(
+            (source / name).exists()
+            for name in ("identity.json", "stored-spans.json", "trace.json")
+        ):
+            raise CampaignStop("Completed stored-span export is required before improvement")
         identity = json.loads((source / "identity.json").read_text())
+        if runtime.manifest.get("schema_version") == 4 and identity.get("study") != runtime.study:
+            raise CampaignStop("Improvement evidence crosses study boundaries")
         if identity["role"] != "solver" or identity["phase"] not in ("adapt", "smoke"):
             raise CampaignStop("Improvement context requested non-adaptation execution evidence")
         if (
@@ -333,6 +391,10 @@ def materialize_evidence(cwd, runtime, *, diagnostics, task, arm, replicate):
             )
         )
         trace = json.loads((source / "trace.json").read_text())
+        if runtime.manifest.get("schema_version") == 4 and (
+            not trace.get("verified") or not stored
+        ):
+            raise CampaignStop("Verified stored spans are required before treatment generation")
         index.append(
             {
                 "session": session,
@@ -351,6 +413,7 @@ def materialize_evidence(cwd, runtime, *, diagnostics, task, arm, replicate):
                     files,
                     trace["url"],
                     limit=runtime.manifest["diagnostics_execution_bytes"],
+                    nonempty_deliverables=runtime.manifest.get("schema_version") == 4,
                 )
             )
             summaries.append(

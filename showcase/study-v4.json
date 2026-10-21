@@ -1,0 +1,167 @@
+{
+  "schema_version": 4,
+  "campaign": "study-v4",
+  "project": "wandb/harness2-agent-lens-v4",
+  "harness2_revision": "1cfe254e8d25b15f37048c3730134686abe60335",
+  "dataset_revision": "d43a66575635da0d3f6cb9a20976dc1a60f3ffc9",
+  "jobbench_revision": "fa03a17f9ff662f136798a274e10011c3aa00fd0",
+  "opencode_revision": "23fb5e0516c99ac04a1aa46c193efda2e1b9bb24",
+  "models": {
+    "actor": "zai-org/GLM-5.3-Flash",
+    "judge": "deepseek-ai/DeepSeek-V4-Pro-0813"
+  },
+  "prices_per_million": {
+    "zai-org/GLM-5.3-Flash": {
+      "input": "0.15",
+      "cached": "0.05",
+      "output": "0.50"
+    },
+    "deepseek-ai/DeepSeek-V4-Pro-0813": {
+      "input": "1.31",
+      "cached": "0.044",
+      "output": "3.96"
+    }
+  },
+  "price_source": "https://coreweave.com/forge-pricing/inference-agents",
+  "prices_checked": "2026-10-21",
+  "budget_usd": "500.00",
+  "qualification_budget_usd": "40.00",
+  "max_output_tokens": 32768,
+  "max_input_tokens": 1048576,
+  "max_steps": 100,
+  "timeout_seconds": 2400,
+  "k": 2,
+  "mode": "seq",
+  "seed": 42,
+  "state_dir": "state/study-v4",
+  "image": "harness2-showcase:study-v4",
+  "network": "harness2-study-v4",
+  "gateway_port": 18768,
+  "model_context_tokens": 131072,
+  "max_request_bytes": 1000000,
+  "judge_reasoning_effort": "low",
+  "subnet": "172.30.243.0/24",
+  "diagnostics_execution_bytes": 8192,
+  "diagnostics_stage_bytes": 16384,
+  "budget_buckets": {
+    "qualification": {
+      "phases": [
+        "smoke"
+      ],
+      "usd": "40.00"
+    },
+    "main": {
+      "phases": [
+        "adapt",
+        "evaluate",
+        "judge"
+      ],
+      "usd": "410.00"
+    },
+    "recovery": {
+      "phases": [
+        "retry"
+      ],
+      "usd": "50.00"
+    }
+  },
+  "render_date": "2026-10-21",
+  "forge_sdk": "coreweave==0.1.0b0",
+  "worker_concurrency": 2,
+  "accounting": {
+    "missing_usage": "charge_proven_reservation",
+    "max_transport_retries": 2,
+    "circuit_breaker_failures": 3,
+    "circuit_breaker_cooldown_seconds": 60,
+    "forecast_contingency": 0.25,
+    "reserve_usd": "50.00"
+  },
+  "analysis": {
+    "seed": 20261022,
+    "bootstrap_draws": 10000,
+    "confidence_level": 0.95,
+    "equivalence_pp": 5,
+    "jobbench_judge_repeat_fraction": 0.2
+  },
+  "studies": {
+    "code": {
+      "adapter": "workbuddy-code",
+      "code_revision": "b516950be5b56eb3be406c2f76ee1c5111dcb57f",
+      "dataset_revision": "3e8ad839685c589d83a1dd60fe2d15eabb75f27a",
+      "archive_sha256": "f60394e44341f45f66af17ba69efc51ceadc61f17c08aa89e4af35b51f6f34e1",
+      "selection_seed": 20261021,
+      "categories": [
+        "api-contract",
+        "bug-fix",
+        "feature",
+        "performance",
+        "refactor",
+        "reliability",
+        "security-hardening",
+        "testing"
+      ],
+      "adaptation_trials": 3,
+      "heldout_per_group": 3,
+      "final_executions": 216,
+      "qualification_reservations": {
+        "bug-fix": 2,
+        "feature": 2
+      },
+      "selection_record": "preflight/selection.json"
+    },
+    "jobbench": {
+      "adapter": "jobbench",
+      "adaptation_trials": 2,
+      "heldout_per_group": 1,
+      "final_executions": 36,
+      "groups": [
+        {
+          "group": "computer_user_support_specialists",
+          "adapt": "computer_user_support_specialists/task1",
+          "heldout": [
+            "computer_user_support_specialists/task2"
+          ]
+        },
+        {
+          "group": "online_merchants",
+          "adapt": "online_merchants/task1",
+          "heldout": [
+            "online_merchants/task2"
+          ]
+        },
+        {
+          "group": "supply_chain_managers",
+          "adapt": "supply_chain_managers/task1",
+          "heldout": [
+            "supply_chain_managers/task2"
+          ]
+        },
+        {
+          "group": "purchasing_agents_except_wholesale_retail_and_farm_products",
+          "adapt": "purchasing_agents_except_wholesale_retail_and_farm_products/task1",
+          "heldout": [
+            "purchasing_agents_except_wholesale_retail_and_farm_products/task3"
+          ]
+        },
+        {
+          "group": "social_science_research_assistants",
+          "adapt": "social_science_research_assistants/task1",
+          "heldout": [
+            "social_science_research_assistants/task3"
+          ]
+        },
+        {
+          "group": "training_and_development_specialists",
+          "adapt": "training_and_development_specialists/task1",
+          "heldout": [
+            "training_and_development_specialists/task3"
+          ]
+        }
+      ],
+      "qualification_tasks": [
+        "technical_writers/task1",
+        "management_analysts/task1"
+      ]
+    }
+  }
+}

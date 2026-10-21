@@ -18,10 +18,45 @@ def micros(value):
     return int((Decimal(str(value)) * 1_000_000).to_integral_value(rounding="ROUND_CEILING"))
 
 
+def usage_within_limits(usage, input_limit, output_limit):
+    """Every supplied counter must be consistent, even when others are absent."""
+    if usage is None:
+        return True
+    if not isinstance(usage, dict):
+        return False
+    limits = {
+        "prompt_tokens": input_limit,
+        "completion_tokens": output_limit,
+        "total_tokens": input_limit + output_limit,
+    }
+    for key, limit in limits.items():
+        value = usage.get(key)
+        if value is not None and (type(value) is not int or not 0 <= value <= limit):
+            return False
+    for parent, key, count, maximum in (
+        ("prompt_tokens_details", "cached_tokens", "prompt_tokens", input_limit),
+        ("completion_tokens_details", "reasoning_tokens", "completion_tokens", output_limit),
+    ):
+        details = usage.get(parent)
+        if details is None:
+            continue
+        if not isinstance(details, dict):
+            return False
+        value = details.get(key)
+        ceiling = usage[count] if usage.get(count) is not None else maximum
+        if value is not None and (type(value) is not int or not 0 <= value <= ceiling):
+            return False
+    return True
+
+
 class Ledger:
     def __init__(self, path: Path, manifest: dict):
         self.path = path
         self.manifest = manifest
+        self.bounded_missing = (
+            manifest.get("schema_version") == 4
+            and manifest.get("accounting", {}).get("missing_usage") == "charge_proven_reservation"
+        )
         if micros(manifest.get("prior_spend_usd", 0)) + micros(manifest["budget_usd"]) > micros(
             manifest.get("lifetime_budget_usd", manifest["budget_usd"])
         ):
@@ -134,6 +169,10 @@ class Ledger:
             try:
                 if not isinstance(usage, dict):
                     raise ValueError("provider did not return usage")
+                if self.bounded_missing and not usage_within_limits(
+                    usage, row["input_limit"], row["output_limit"]
+                ):
+                    raise ValueError("contradictory usage or usage beyond reserved limits")
                 inp, out = usage["prompt_tokens"], usage["completion_tokens"]
                 cache = (usage.get("prompt_tokens_details") or {}).get("cached_tokens", 0)
                 if any(type(v) is not int or v < 0 for v in (inp, out, cache)):
@@ -152,9 +191,26 @@ class Ledger:
                 if spent > row["reserved"]:
                     raise ValueError("cost exceeds reservation")
             except (KeyError, TypeError, ValueError) as exc:
+                status = "unknown"
+                # The complete request limits were reserved before forwarding. Missing
+                # counters may retain that proven maximum; contradictory counters may not.
+                missing = (
+                    usage is None
+                    or isinstance(usage, dict)
+                    and any(
+                        usage.get(key) is None for key in ("prompt_tokens", "completion_tokens")
+                    )
+                )
+                safe_partial = (
+                    usage_within_limits(usage, row["input_limit"], row["output_limit"])
+                    if self.bounded_missing
+                    else False
+                )
+                if self.bounded_missing and missing and safe_partial:
+                    status = "bounded_unknown"
                 db.execute(
-                    "UPDATE calls SET status='unknown',usage=?,reason=? WHERE id=?",
-                    (json.dumps(usage), str(exc), call_id),
+                    "UPDATE calls SET status=?,usage=?,reason=? WHERE id=?",
+                    (status, json.dumps(usage), str(exc), call_id),
                 )
                 return
             db.execute(
@@ -165,17 +221,35 @@ class Ledger:
     def snapshot(self):
         with self.connect() as db:
             rows = [dict(r) for r in db.execute("SELECT * FROM calls ORDER BY rowid")]
-        return {
+        snapshot = {
             "spent_usd": sum(r["spent"] or 0 for r in rows) / 1_000_000,
             "reserved_usd": sum(r["reserved"] for r in rows if r["spent"] is None) / 1_000_000,
             "unresolved": sum(r["status"] in ("unknown", "pending") for r in rows),
             "calls": rows,
         }
+        if self.bounded_missing:
+            snapshot.update(
+                observed_cost_usd=snapshot["spent_usd"],
+                bounded_unknown_cost_usd=sum(
+                    r["reserved"] for r in rows if r["status"] == "bounded_unknown"
+                )
+                / 1_000_000,
+                in_flight_reservations_usd=sum(
+                    r["reserved"] for r in rows if r["status"] == "pending"
+                )
+                / 1_000_000,
+                charged_upper_bound_usd=sum(
+                    r["spent"] if r["spent"] is not None else r["reserved"] for r in rows
+                )
+                / 1_000_000,
+                bounded_unknown_requests=sum(r["status"] == "bounded_unknown" for r in rows),
+            )
+        return snapshot
 
     def interrupt_pending(self):
         """Call once at gateway startup, before accepting new requests."""
         with self.connect() as db:
             db.execute(
-                "UPDATE calls SET status='unknown',reason='gateway interrupted' "
-                "WHERE status='pending'"
+                "UPDATE calls SET status=?,reason='gateway interrupted' WHERE status='pending'",
+                ("bounded_unknown" if self.bounded_missing else "unknown",),
             )

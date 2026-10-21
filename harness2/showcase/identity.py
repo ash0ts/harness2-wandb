@@ -62,6 +62,11 @@ def identity_fields(identity, manifest):
         source_fingerprint=value.get("harness_fingerprint", ""),
         rendered_fingerprint=value.get("rendered_fingerprint", ""),
     )
+    if manifest.get("schema_version") == 4:
+        value["study"] = value.get("study", manifest.get("active_study", "jobbench"))
+        value["trial"] = value.get("adaptation_replicate", 0)
+        if value["study"] == "code":
+            value["task_id"] = task
     return value
 
 
@@ -70,6 +75,9 @@ def conversation_name(identity, auxiliary=False):
         DOMAINS.get(identity.get("domain", ""), identity.get("task", "Infrastructure")),
         CONDITIONS.get(identity.get("condition", ""), identity.get("arm", "Qualification")),
     ]
+    if identity.get("study"):
+        parts.insert(0, "Code" if identity["study"] == "code" else "JobBench")
+        parts.append(f"Trial {identity.get('trial', identity.get('adaptation_replicate', 0))}")
     if identity.get("cohort") == "qualification":
         number = identity.get("qualification_attempt", 1)
         parts.append("Qualification" if number == 1 else f"Qualification {number}")

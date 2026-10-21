@@ -1,0 +1,86 @@
+{
+  "groups": [
+    {
+      "adapt": "api_contract-hard-validation_errors",
+      "group": "api-contract",
+      "heldout": [
+        "api_contract-hard-token_errors",
+        "api_contract-hard-markup_errors",
+        "api_contract-hard-openapi_params"
+      ]
+    },
+    {
+      "adapt": "bug_fix-medium-properly_render_double_braces",
+      "group": "bug-fix",
+      "heldout": [
+        "bug_fix-medium-use_correct_runtime_dir",
+        "bug_fix-medium-permission_error_skip_continue",
+        "bug_fix-medium-matching_absolute_paths"
+      ]
+    },
+    {
+      "adapt": "feature-medium-validation_to_eliminate_uriref",
+      "group": "feature",
+      "heldout": [
+        "feature-easy-lru_caching_to_tzoffset",
+        "feature-medium-install_and_run_script",
+        "feature-medium-humanize_metric_for_converting"
+      ]
+    },
+    {
+      "adapt": "performance-hard-selector_cache",
+      "group": "performance",
+      "heldout": [
+        "performance-hard-help_format_cache",
+        "performance-hard-validator_cache",
+        "performance-hard-template_cache"
+      ]
+    },
+    {
+      "adapt": "refactor-hard-validation_error_paths",
+      "group": "refactor",
+      "heldout": [
+        "refactor-medium-request_merge_path",
+        "refactor-hard-sync_async_bridge",
+        "refactor-medium-config_validation_errors"
+      ]
+    },
+    {
+      "adapt": "reliability-hard-stream_release",
+      "group": "reliability",
+      "heldout": [
+        "reliability-medium-pool_release",
+        "reliability-hard-pipeline_reconnect",
+        "reliability-hard-ack_after_success"
+      ]
+    },
+    {
+      "adapt": "security_hardening-hard-archive_path_traversal",
+      "group": "security-hardening",
+      "heldout": [
+        "security_hardening-hard-proxy_auth_header_leak",
+        "security_hardening-medium-header_injection",
+        "security_hardening-hard-redirect_validation"
+      ]
+    },
+    {
+      "adapt": "testing-medium-request_builder",
+      "group": "testing",
+      "heldout": [
+        "testing-hard-router_matching",
+        "testing-medium-option_resolution",
+        "testing-medium-format_errors"
+      ]
+    }
+  ],
+  "ordering": "sha256(UTF-8(str(seed) + ':' + task_id)), then task_id",
+  "qualification": [
+    "bug_fix-medium-errors_from_earlier_indices",
+    "bug_fix-medium-error_key_uses_data_key",
+    "feature-medium-envless_file_load",
+    "feature-medium-etag_header_for_static"
+  ],
+  "ready": true,
+  "seed": 20261021,
+  "shortfalls": {}
+}

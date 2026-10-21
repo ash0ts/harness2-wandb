@@ -23,7 +23,7 @@ class CampaignStop(BaseException):
 def load_manifest(path):
     path = Path(path).resolve()
     manifest = json.loads(path.read_text())
-    if manifest.get("schema_version", 1) >= 2:
+    if manifest.get("schema_version", 1) in (2, 3):
         if (
             manifest.get("k") != 2
             or manifest.get("mode") != "seq"
@@ -38,7 +38,7 @@ def load_manifest(path):
             not t.endswith("/task1") for t in manifest["qualification_tasks"]
         ):
             raise ValueError("Pilot-v2 adaptation and qualification are defined on task1")
-    if manifest.get("schema_version", 1) >= 3:
+    if manifest.get("schema_version", 1) == 3:
         if (
             len(manifest["task_families"]) != 6
             or manifest["adaptation_replicates"] != 1
@@ -48,6 +48,10 @@ def load_manifest(path):
             raise ValueError(
                 "Pilot-v3 requires six families, one adaptation/run, no mechanism phase"
             )
+    if manifest.get("schema_version") == 4:
+        from .study import validate_manifest
+
+        validate_manifest(manifest)
     state = (path.parent / manifest["state_dir"]).resolve()
     state.mkdir(parents=True, exist_ok=True)
     frozen = state / "manifest.json"
@@ -60,6 +64,17 @@ def load_manifest(path):
 
 def command(argv, **kwargs):
     return subprocess.run(argv, check=True, text=True, capture_output=True, **kwargs)
+
+
+def prepare_worker_permissions(work, *, v4=False):
+    work = Path(work).resolve()
+    for path in [work, *work.rglob("*")]:
+        if path.is_symlink():
+            if v4 and not path.readlink().is_absolute() and path.resolve().is_relative_to(work):
+                continue
+            raise RuntimeError("Symlink escapes worker inputs")
+        executable = v4 and bool(path.stat().st_mode & 0o111)
+        path.chmod(0o777 if path.is_dir() or executable else 0o666)
 
 
 class Runtime:
@@ -201,7 +216,18 @@ class Runtime:
         self.wait_calls(session)
         return session, response.json()
 
-    def run_agent(self, work, prompt, *, phase, role, entry_message=None, **identity):
+    def run_agent(
+        self,
+        work,
+        prompt,
+        *,
+        phase,
+        role,
+        entry_message=None,
+        worker_image=None,
+        rendered_home=None,
+        **identity,
+    ):
         work = Path(work).resolve()
         if any(c["status"] == "unknown" for c in self.budget()["calls"]):
             raise CampaignStop("Unreconciled usage blocks execution")
@@ -250,6 +276,10 @@ class Runtime:
             "share": "disabled",
         }
         (control / "opencode.json").write_text(json.dumps(config))
+        v4 = self.manifest.get("schema_version") == 4
+        if v4:
+            config["permission"]["question"] = "deny"
+            (control / "opencode.json").write_text(json.dumps(config))
         # This is a short-lived gateway token, not a provider credential.
         (control / "opencode.json").chmod(0o644)
         name = "h2-" + session
@@ -278,7 +308,7 @@ class Runtime:
             "OPENCODE_DB=/home/runner/.local/share/opencode/opencode.db",
             "--env",
             f"OPENCODE_EXPERIMENTAL_OUTPUT_TOKEN_MAX={self.manifest['max_output_tokens']}",
-            self.manifest["image"],
+            worker_image or self.manifest["image"],
             "run",
             prompt,
             "--dir",
@@ -290,13 +320,39 @@ class Runtime:
         ]
         # The macOS bind mount retains host IDs. Only this disposable public workspace
         # is writable by the unprivileged Linux worker.
-        for path in [work, *work.rglob("*")]:
-            if path.is_symlink():
-                raise RuntimeError("Symlink in worker inputs")
-            path.chmod(0o777 if path.is_dir() else 0o666)
+        prepare_worker_permissions(work, v4=v4)
         started = time.time()
         directory = self.state / "executions" / session
         directory.mkdir(parents=True)
+        if v4:
+            database_dir = directory / "opencode-db"
+            database_dir.mkdir()
+            database_dir.chmod(0o777)
+            extra = [
+                "--env",
+                "HARNESS2_GATEWAY_RETRY_OWNER=1",
+                "--mount",
+                f"type=bind,src={database_dir},dst=/home/runner/.local/share/opencode",
+            ]
+            if rendered_home:
+                volume = json.loads((self.state / "runtime-volume.json").read_text())["name"]
+                extra.extend(["--mount", f"type=volume,src={volume},dst=/opt/opencode,readonly"])
+                for relative in (
+                    ".config/opencode/skill",
+                    ".config/opencode/agent",
+                    ".config/opencode/plugin",
+                    "harness_scripts",
+                ):
+                    source = Path(rendered_home) / relative
+                    if source.exists():
+                        extra.extend(
+                            [
+                                "--mount",
+                                f"type=bind,src={source},dst=/home/runner/{relative},readonly",
+                            ]
+                        )
+            position = argv.index(worker_image or self.manifest["image"])
+            argv[position:position] = extra
         (directory / "identity.json").write_text(json.dumps(identity, indent=2))
         (directory / "entry-message.txt").write_text(entry_message or prompt)
         public_config = json.loads(json.dumps(config))
@@ -323,7 +379,7 @@ class Runtime:
             # Never retain the gateway credential in exportable artifacts.
             (control / "opencode.json").unlink(missing_ok=True)
         rows = self.calls(session)
-        if rows:
+        if rows and not v4:
             rows = self.wait_calls(session)
         result = {
             "session": session,
@@ -336,7 +392,11 @@ class Runtime:
             "budget_blocked": any((r.get("error") or {}).get("http_status") == 402 for r in rows),
         }
         (directory / "execution.json").write_text(json.dumps(result, indent=2))
+        # V4 saves the child's exit status and collector evidence before any usage
+        # or export gate can interrupt the host. The database also survives Docker.
         event_path = directory / "events.jsonl"
+        if v4:
+            (directory / "events.raw.jsonl").write_bytes(event_path.read_bytes())
         events, audit, seen = [], [], set()
         for line in event_path.read_text().splitlines():
             try:
@@ -372,13 +432,17 @@ class Runtime:
             raise CampaignStop(
                 f"Collector incomplete for {session}; child exit {result['child_exit_code']}"
             )
+        if rows and v4:
+            self.wait_calls(session)
         return result, directory
 
 
-def fingerprint(directory):
+def fingerprint(directory, *, executable_modes=False):
     digest = hashlib.sha256()
     for path in sorted(Path(directory).rglob("*")):
         if path.is_file():
             digest.update(str(path.relative_to(directory)).encode())
+            if executable_modes:
+                digest.update(b"\0executable\0" if path.stat().st_mode & 0o111 else b"\0data\0")
             digest.update(path.read_bytes())
     return digest.hexdigest()

@@ -5,8 +5,26 @@ This fork compares the upstream baseline, Harness² refinement, and the same ref
 with deterministic diagnostics retrieved from Agent Lens. The original Harness² already
 provides trajectories to its improver. The treatment is how that evidence is organized.
 
-These are **JobBench-based pilots with frozen-harness transfer tests**. Their small task
-sets cannot establish a general benchmark ranking. Negative results are valid results.
+The earlier **JobBench-based pilots with frozen-harness transfer tests** remain preserved.
+Their small task sets cannot establish a general benchmark ranking. Negative results
+are valid results.
+
+## Repeated experiment
+
+[Study v4](study-v4-protocol.md) adds repository coding as the primary study and runs
+JobBench as a separate replication. Its [manifest](study-v4.json) fixes 216 coding
+evaluations across 24 tasks and 36 JobBench evaluations across six tasks, following
+fresh repeated adaptations. The new $500 ceiling is separate from prior pilot spending.
+
+The [reproduction instructions](study-v4-reproduce.md) cover fixture qualification,
+offline images, the four campaign phases, recovery, and publication. The
+[frozen task selection](study-v4-selection.json) comes from seeded metadata ordering
+and repeated native reference/control checks. No model scores were used to select tasks.
+
+The primary contrast is diagnostics minus raw feedback, with paired hierarchical
+bootstrap intervals and a predeclared ±5-point practical-equivalence band. Both studies
+retain unavailable judgments and failed adaptations. The article follows the completed
+evidence review; passing qualification does not establish a performance benefit.
 
 ## Six-job comparison
 

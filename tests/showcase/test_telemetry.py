@@ -126,6 +126,47 @@ def test_readback_preserves_tool_results_and_times():
             verify_readback([{**row, key: bad}], [], [tool])
 
 
+def test_empty_tool_arguments_accept_only_the_observed_empty_normalization():
+    tool = {
+        "callID": "empty",
+        "tool": "skill",
+        "state": {
+            "status": "error",
+            "input": {},
+            "error": "missing name",
+            "time": {"start": 1000, "end": 2000},
+        },
+    }
+    row = {
+        "operation_name": "execute_tool",
+        "tool_call_id": "empty",
+        "tool_name": "skill",
+        "tool_call_arguments": "",
+        "tool_call_result": "missing name",
+        "status_code": "ERROR",
+        "started_at": "1970-01-01T00:00:01+00:00",
+        "ended_at": "1970-01-01T00:00:02+00:00",
+    }
+    verify_readback([row], [], [tool])
+    tool["state"]["input"] = {"name": "actually-present"}
+    with pytest.raises((ValueError, RuntimeError)):
+        verify_readback([row], [], [tool])
+
+
+def test_partial_usage_does_not_invent_zero_output_tokens():
+    record = {
+        "call_id": "partial",
+        "started": 1,
+        "ended": 2,
+        "request": {"model": "model", "max_tokens": 100},
+        "response": {"id": "response", "model": "model", "usage": {"prompt_tokens": 80}},
+    }
+    span = spans_from_records([record], [])[0]
+    attributes = span._build_attrs(conversation_id="test", include_content=True)
+    assert "gen_ai.usage.output_tokens" not in attributes
+    assert "gen_ai.usage.input_tokens" not in attributes
+
+
 def test_readback_detects_changed_messages_and_retains_tool_calls():
     raw = {
         "role": "assistant",

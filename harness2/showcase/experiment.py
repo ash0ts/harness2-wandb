@@ -28,6 +28,12 @@ _INPUT_LOCK = threading.Lock()
 
 def session_cost(runtime, session):
     rows = [c for c in runtime.budget()["calls"] if c["session"] == session]
+    if runtime.manifest.get("schema_version") == 4:
+        if any(c["status"] in ("pending", "unknown") for c in rows):
+            raise CampaignStop("Session cost lacks a proven bound")
+        return (
+            sum(c["spent"] if c["spent"] is not None else c["reserved"] for c in rows) / 1_000_000
+        )
     if any(c["spent"] is None for c in rows):
         raise RuntimeError("Session cost is unresolved")
     return sum(c["spent"] for c in rows) / 1_000_000
@@ -107,7 +113,8 @@ class ExperimentAdapter(JobBenchAdapter):
         if self.runtime.manifest.get("render_date"):
             ctx["date"] = self.runtime.manifest["render_date"]
         render_opencode_tree(harness, work, ctx)
-        rendered_fingerprint = fingerprint(work)
+        v4 = self.runtime.manifest.get("schema_version") == 4
+        rendered_fingerprint = fingerprint(work, executable_modes=v4)
         shutil.copytree(self.task_files(task_id), work / "task_folder")
         (work / "output").mkdir()
         result, directory = self.runtime.run_agent(
@@ -120,7 +127,7 @@ class ExperimentAdapter(JobBenchAdapter):
             run_id=run_id,
             repetition=self.repetition,
             adaptation_replicate=getattr(self, "replicate", 0),
-            harness_fingerprint=fingerprint(harness),
+            harness_fingerprint=fingerprint(harness, executable_modes=v4),
             rendered_fingerprint=rendered_fingerprint,
         )
         record_dir.mkdir(parents=True)
@@ -140,13 +147,13 @@ class ExperimentAdapter(JobBenchAdapter):
         )
         marker.write_text(json.dumps(result, indent=2))
         if self.runtime.manifest.get("schema_version", 1) >= 2:
-            from .protocol import harness_record, inventory, write_json
+            from .protocol import harness_record, inventory, verify_executed_harness, write_json
 
             write_json(directory / "file-inventory.json", inventory(out))
-            write_json(
-                directory / "harness-record.json",
-                harness_record(harness, self.domain_of(task_id), self.runtime.manifest),
-            )
+            executed = harness_record(harness, self.domain_of(task_id), self.runtime.manifest)
+            if v4:
+                verify_executed_harness(result, executed)
+            write_json(directory / "harness-record.json", executed)
             shutil.copytree(harness, directory / "source-harness")
         try:
             trace = export_session(self.runtime, result["session"], result, directory)
@@ -214,7 +221,7 @@ class ExperimentAdapter(JobBenchAdapter):
             "--memory=2g",
             "--cpus=2",
             "--mount",
-            f"type=bind,src={config.jb_repo() / 'eval/judge.py'},dst=/judge.py,readonly",
+            f"type=bind,src={self.runtime.state / 'native-judge-v4.py' if self.runtime.manifest.get('schema_version') == 4 else config.jb_repo() / 'eval/judge.py'},dst=/judge.py,readonly",
             "--mount",
             f"type=bind,src={run_dir},dst=/output,readonly",
             "--mount",

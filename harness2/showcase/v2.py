@@ -130,7 +130,8 @@ class V2Proposer(ExperimentProposer):
     def _opencode(self, cwd, mission, system, wall):
         self.local.attempt += 1
         editing = self.local.editing
-        before = tree_hashes(cwd / "context/harness")
+        v4 = self.runtime.manifest.get("schema_version") == 4
+        before = tree_hashes(cwd / "context/harness", executable_modes=v4)
         old = (
             harness_record(
                 cwd / "context/harness", self.adapter.domain_of(self.task_id), self.runtime.manifest
@@ -189,15 +190,23 @@ class V2Proposer(ExperimentProposer):
             stage=self.local.label,
             proposal_attempt=self.local.attempt,
             input_fingerprint=fingerprint(cwd),
-            harness_fingerprint=fingerprint(cwd / "context/harness"),
+            harness_fingerprint=fingerprint(cwd / "context/harness", executable_modes=v4),
             rendered_fingerprint=old["rendered_fingerprint"] if old else "",
         )
+        if self.runtime.manifest.get("schema_version") == 4 and editing:
+            from .protocol import remove_generated_caches
+
+            remove_generated_caches(cwd / "context/harness")
         # Preserve decisions and evidence before upstream removes its temporary workspace.
-        shutil.copytree(cwd / "output", directory / "proposal-output")
+        shutil.copytree(cwd / "output", directory / "proposal-output", dirs_exist_ok=True)
         if editing:
-            shutil.copytree(cwd / "context/harness", directory / "proposed-harness")
+            shutil.copytree(
+                cwd / "context/harness", directory / "proposed-harness", dirs_exist_ok=True
+            )
         if (cwd / "context/diagnostics").exists():
-            shutil.copytree(cwd / "context/diagnostics", directory / "diagnostics")
+            shutil.copytree(
+                cwd / "context/diagnostics", directory / "diagnostics", dirs_exist_ok=True
+            )
         (directory / "mission.md").write_text(entry)
         try:
             export_session(self.runtime, result["session"], result, directory)
@@ -230,7 +239,12 @@ class V2Proposer(ExperimentProposer):
             )
         try:
             receipt = validate_completion(
-                cwd, before, result, directory / "events.jsonl", editing=editing
+                cwd,
+                before,
+                result,
+                directory / "events.jsonl",
+                editing=editing,
+                v4=self.runtime.manifest.get("schema_version") == 4,
             )
             available = {
                 r["span_id"]

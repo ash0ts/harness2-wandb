@@ -72,6 +72,13 @@ def tool_events(path):
     return rows
 
 
+def complete_usage(usage):
+    return isinstance(usage, dict) and all(
+        type(usage.get(key)) is int and usage[key] >= 0
+        for key in ("prompt_tokens", "completion_tokens")
+    )
+
+
 def spans_from_records(calls, tools):
     spans = []
     for record in calls:
@@ -97,7 +104,7 @@ def spans_from_records(calls, tools):
             ended_at=dt(record["ended"]),
             finish_reasons=[choice["finish_reason"]] if choice.get("finish_reason") else [],
         )
-        if usage:
+        if complete_usage(usage):
             llm.usage = tracing.Usage(
                 input_tokens=usage["prompt_tokens"],
                 output_tokens=usage["completion_tokens"],
@@ -225,17 +232,22 @@ def verify_readback(rows, calls, tools):
         if (row.get("system_instructions") or []) != instructions:
             raise RuntimeError("Stored system instructions differ")
         usage = response.get("usage") or {}
+        measured = complete_usage(usage)
+        if usage and not measured:
+            preserved = (row.get("attributes") or {}).get("harness2.provider_usage_json")
+            if preserved is None or json.loads(preserved) != usage:
+                raise RuntimeError("Partial provider usage was not preserved")
         for stored, original in (
             ("input_tokens", "prompt_tokens"),
             ("output_tokens", "completion_tokens"),
         ):
-            if usage and row.get(stored) != usage.get(original):
+            if measured and row.get(stored) != usage.get(original):
                 raise RuntimeError("Stored usage differs from provider usage")
         for stored, details, original in (
             ("cache_read_input_tokens", "prompt_tokens_details", "cached_tokens"),
             ("reasoning_tokens", "completion_tokens_details", "reasoning_tokens"),
         ):
-            if usage and row.get(stored, 0) != (usage.get(details) or {}).get(original, 0):
+            if measured and row.get(stored, 0) != (usage.get(details) or {}).get(original, 0):
                 raise RuntimeError("Stored detailed usage differs from provider usage")
         if row.get("request_max_tokens") != record["request"].get("max_tokens"):
             raise RuntimeError("Stored output limit differs")
@@ -259,7 +271,14 @@ def verify_readback(rows, calls, tools):
         if len(candidates) != 1 or candidates[0]["tool_name"] != part["tool"]:
             raise RuntimeError("Tool execution is missing or ambiguous")
         row = candidates[0]
-        if json.loads(row["tool_call_arguments"]) != part["state"].get("input"):
+        raw_arguments = row.get("tool_call_arguments")
+        expected_arguments = part["state"].get("input")
+        # Agent Lens stores an empty argument object as an empty string. Accept
+        # that exact normalization while preserving the original stored record.
+        arguments = (
+            {} if raw_arguments == "" and expected_arguments == {} else json.loads(raw_arguments)
+        )
+        if arguments != expected_arguments:
             raise RuntimeError("Stored tool arguments differ")
         state = part["state"]
         for field, source in (("started_at", "start"), ("ended_at", "end")):
@@ -290,6 +309,10 @@ def _export_session(runtime, session, execution=None, directory=None):
     directory = Path(directory or runtime.state / "executions" / session)
     directory.mkdir(parents=True, exist_ok=True)
     saved = directory / "trace.json"
+    if runtime.manifest.get("schema_version") == 4:
+        from .telemetry_v4 import export_recoverable
+
+        return export_recoverable(runtime, session, execution, directory)
     if runtime.manifest.get("schema_version", 1) >= 2 and (
         not saved.exists() or "trace_groups" in json.loads(saved.read_text())
     ):

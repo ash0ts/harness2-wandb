@@ -64,6 +64,14 @@ class Gateway:
         self.lock = threading.Lock()
         self.admin = os.environ["SHOWCASE_ADMIN_TOKEN"]
         self.api_key = os.environ["WANDB_API_KEY"]
+        if manifest.get("schema_version") == 4:
+            from .transport_v4 import Circuit
+
+            self.circuit = Circuit(
+                self.state / "circuit.json",
+                threshold=manifest["accounting"]["circuit_breaker_failures"],
+                cooldown=manifest["accounting"]["circuit_breaker_cooldown_seconds"],
+            )
 
     def handler(self):
         gateway = self
@@ -203,6 +211,10 @@ class Gateway:
                         return reject_call(413, "conservative input limit exceeded")
                 if body.get("stream"):
                     body["stream_options"] = {"include_usage": True}
+                if gateway.manifest.get("schema_version") == 4:
+                    from .transport_v4 import forward
+
+                    return forward(self, gateway, identity, body, input_limit)
                 try:
                     call_id = gateway.ledger.reserve(
                         identity["session"],

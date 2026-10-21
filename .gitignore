@@ -11,5 +11,7 @@ showcase/state/
 dependencies/job-bench-eval/
 dependencies/opencode/
 dependencies/tools/
+dependencies/workbuddy-bench/
+dependencies/workbuddy-code-data/
 .context-*.log
 wandb/
