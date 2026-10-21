@@ -740,6 +740,25 @@ def prepare_output(runtime, data):
     output.mkdir(exist_ok=True)
     save(runtime.state / "cost-ledger.json", runtime.budget())
     bundle(runtime, output / "evidence")
+    # Keep upstream attribution with the downloadable derivatives and records.
+    shutil.copy2(ROOT / "LICENSE", output / "LICENSE")
+    notices = output / "third_party"
+    notices.mkdir(exist_ok=True)
+    shutil.copytree(ROOT / "third_party/licenses", notices / "licenses", dirs_exist_ok=True)
+    (output / "NOTICE.md").write_text(
+        "# Source attribution\n\n"
+        "This archive contains experiment records, generated outputs, and harnesses "
+        "derived from [Harness²](https://github.com/google-research/harness2), "
+        "[WorkBuddy Bench](https://github.com/Tencent/workbuddy-bench), and "
+        "[JobBench](https://github.com/Job-Bench/job-bench-eval). "
+        "Source revisions and modifications are recorded in the evidence and the "
+        "[experiment fork](https://github.com/ash0ts/harness2-wandb).\n\n"
+        "Harness²'s license is in LICENSE. Copies of the upstream benchmark and "
+        "OpenCode licenses are in third_party/licenses. The WorkBuddy dataset "
+        "declares the Tencent license. Public task workspace archives retain their "
+        "original contents and any repository-specific notices. Generated patches "
+        "and harness diffs identify the experiment's changes.\n"
+    )
     save(output / "results.json", portable(runtime, data))
     fields = [
         "study",
