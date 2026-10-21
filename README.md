@@ -4,17 +4,22 @@ This fork tests whether structured Agent Lens diagnostics help an agent improve
 its harness beyond raw execution feedback alone. The model stays fixed while the
 agent edits instructions, skills, and scripts.
 
-**Pilot-v3 is running.** Runtime qualification and the campaign cost gate passed.
-The planned comparison uses six held-out JobBench tasks and three setups:
-the original harness, Harness² with raw feedback, and Harness² with diagnostics.
-Each setup runs once per task, for eighteen final evaluations. There is no result yet.
+**Study-v4 is in qualification.** The repeated comparison uses the original harness,
+Harness² with raw feedback, and Harness² with diagnostics. It plans 216 coding
+executions across 24 held-out tasks, plus 36 JobBench executions across six tasks
+as a separate replication. Each improving setup starts fresh in three coding trials
+and two JobBench trials per group. The new spending ceiling is $500; there is no
+complete result yet.
 
-[Experiment protocol](showcase/pilot-v3-protocol.md) ·
-[Reproduce the experiment](showcase/README.md#six-job-comparison) ·
-[Frozen manifest](showcase/pilot-v3.json)
+[Experiment protocol](showcase/study-v4-protocol.md) ·
+[Reproduce the experiment](showcase/study-v4-reproduce.md) ·
+[Frozen manifest](showcase/study-v4.json) ·
+[W&B project](https://wandb.ai/wandb/harness2-agent-lens-v4)
 
 <details>
 <summary>Earlier pilots</summary>
+
+**Pilot-v3:** [engineering preview](https://wandb.ai/wandb/harness2-agent-lens-v3/reports/Harness-Agent-Lens-engineering-preview--VmlldzoxODE1MzA3Mg==) · [protocol and status](showcase/README.md#six-job-comparison). Adaptation stopped on a provider failure with missing usage. Seventeen of eighteen harnesses froze; no held-out evaluations ran. Observed cost: **$42.99**, with **$0.038030** still reserved. There is no v3 diagnostics-benefit result.
 
 **Pilot-v2:** [qualification report](https://wandb.ai/wandb/harness2-agent-lens/reports/Harness-Agent-Lens-pilot-v2--VmlldzoxODE0NTEwMw==) · [evidence notes](showcase/pilot-v2-notes.md). The agent wrote and executed harness changes, including a checker with a false positive. Qualification and cost gates stopped the controlled comparison. New spend: **$5.18**; no held-out v2 results.
 
