@@ -16,6 +16,19 @@ adaptation per condition, two refinement rounds, and eighteen final evaluations.
 The original harness is the reference; diagnostics minus raw feedback is the primary
 contrast. The new project is `wandb/harness2-agent-lens-v3`.
 
+**Current status, 21 October 2026:** adaptation stopped after a provider HTTP 503
+returned no usage. Seventeen of eighteen harnesses are frozen; none of the eighteen
+final evaluations has run. Settled spending is $42.994017, with $0.038030 still reserved
+for the unresolved request. The budget guard remains active. No diagnostics-benefit
+result or v3 article is available.
+
+[Public engineering preview](https://wandb.ai/wandb/harness2-agent-lens-v3/reports/Harness-Agent-Lens-engineering-preview--VmlldzoxODE1MzA3Mg==) ·
+[Native screenshots and example evidence](https://wandb.ai/wandb/harness2-agent-lens-v3/runs/pilot-v3-engineering-preview/files)
+
+The preview follows one completed adaptation through stored spans, a checker diff,
+another execution, and its actual deliverables. It is separate from the final
+score-selected walkthrough and whole-campaign certification.
+
 ```sh
 harness2-showcase smoke --manifest showcase/pilot-v3.json --prepare
 harness2-showcase adapt --manifest showcase/pilot-v3.json
