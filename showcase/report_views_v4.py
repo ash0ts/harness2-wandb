@@ -31,7 +31,15 @@ def plans(manifest, start, end):
                 filters, columns = json.loads(query["filter"]), json.loads(query["cols"])
                 for name, kind, value in (("study", "string", study), ("trial", "int", trial)):
                     key = f"custom_attribute:custom_attrs_{kind}:harness2.{name}"
-                    filters.append({"id": key, "value": {"operator": "eq", "value": [value]}})
+                    filters.append(
+                        {
+                            "id": key,
+                            "value": {
+                                "operator": "eq",
+                                "value": value if kind == "int" else [value],
+                            },
+                        }
+                    )
                     columns[key] = True
                 columns["custom_attribute:custom_attrs_string:harness2.rendered_fingerprint"] = True
                 query.update(
