@@ -422,6 +422,7 @@ def allowed_files(runtime):
         "model-catalog.json",
         "preflight-environment.txt",
         "repository-roundtrip-checks.json",
+        "native-judge-v4.py",
         "presentation/views.json",
         "presentation/native-views-readback.json",
         "presentation/numeric-filter-readback.json",
