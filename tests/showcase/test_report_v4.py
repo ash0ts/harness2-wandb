@@ -83,6 +83,29 @@ def test_examples_require_complete_evidence_and_follow_rule():
     assert examples["regression"]["task"] == "regression"
 
 
+def test_example_selection_does_not_promote_floating_point_ties():
+    tasks = [
+        {"task": "rounding-tie", "diagnostics_minus_raw_pp": 1e-12},
+        {"task": "regression", "diagnostics_minus_raw_pp": -8},
+    ]
+    data = {
+        "analysis": {"code": {"tasks": tasks}},
+        "rows": [
+            {
+                "study": "code",
+                "task": row["task"],
+                "trace": {"verified": True},
+                "frozen_harness": {"fingerprint": "x"},
+                "judgment": {"score": 0.5},
+            }
+            for row in tasks
+        ],
+    }
+    examples = report_v4.choose_examples(data, "code")
+    assert examples["example"]["task"] == "regression"
+    assert examples["regression"]["task"] == "regression"
+
+
 def test_reject_score_that_disagrees_with_judge(tmp_path, monkeypatch):
     runtime = SimpleNamespace(
         state=tmp_path, manifest={"project": "test/project"}, budget=lambda: {"calls": []}

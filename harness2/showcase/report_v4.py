@@ -387,17 +387,20 @@ def choose_examples(data, study):
             for r in records
         ):
             eligible.append(task)
-    positive = [r for r in eligible if r["diagnostics_minus_raw_pp"] > 0]
+    positive = [r for r in eligible if r["diagnostics_minus_raw_pp"] > 1e-9]
     first = sorted(
         positive or eligible,
         key=lambda r: (
-            -(r["diagnostics_minus_raw_pp"] if positive else abs(r["diagnostics_minus_raw_pp"])),
+            -round(
+                r["diagnostics_minus_raw_pp"] if positive else abs(r["diagnostics_minus_raw_pp"]),
+                9,
+            ),
             r["task"],
         ),
     )
     negative = sorted(
-        [r for r in eligible if r["diagnostics_minus_raw_pp"] < 0],
-        key=lambda r: (r["diagnostics_minus_raw_pp"], r["task"]),
+        [r for r in eligible if r["diagnostics_minus_raw_pp"] < -1e-9],
+        key=lambda r: (round(r["diagnostics_minus_raw_pp"], 9), r["task"]),
     )
     return {"example": first[0] if first else None, "regression": negative[0] if negative else None}
 
