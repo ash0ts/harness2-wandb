@@ -665,6 +665,8 @@ def markdown(data, artifact_url="", download_url=""):
                     f"[Improvement decisions]({files}/decisions.json)",
                     f"[Deliverable]({files}/deliverable.zip)",
                 ]
+                if row.get("harness_artifact_url"):
+                    links.insert(1, f"[Harness version]({row['harness_artifact_url']})")
                 if trace:
                     links.append(f"[Agent Lens]({trace})")
                 lines.append(f"- Trial {row['trial']}, {row['condition']}: " + " · ".join(links))
@@ -863,6 +865,7 @@ def publish(runtime, data, output, archive):
     entity, project = runtime.manifest["project"].split("/")
     campaign = runtime.manifest["campaign"]
     settings = wandb.Settings(disable_git=True)
+    harness_artifacts = {}
     with wandb.init(
         entity=entity,
         project=project,
@@ -903,11 +906,18 @@ def publish(runtime, data, output, archive):
                 metadata=portable(runtime, freeze),
             )
             harness.add_dir(str(path.parent))
-            run.log_artifact(harness)
+            logged = run.log_artifact(harness)
+            logged.wait()
+            harness_artifacts[
+                freeze["study"], freeze["group"], freeze["trial"], freeze["condition"]
+            ] = logged
         campaign_url = run.url
     for row in data["rows"]:
         if not row.get("output"):
             continue
+        harness = harness_artifacts[row["study"], row["group"], row["trial"], row["condition"]]
+        row["harness_artifact_url"] = harness.url
+        row["harness_artifact_version"] = harness.qualified_name
         package = runtime.state / "row-publication" / row["run_id"]
         package.mkdir(parents=True, exist_ok=True)
         save(package / "evidence.json", portable(runtime, row))
@@ -928,11 +938,13 @@ def publish(runtime, data, output, archive):
             },
             settings=settings,
         ) as run:
+            run.use_artifact(harness.qualified_name)
             run.summary.update(
                 {
                     "score": row["score"],
                     "status": row["status"],
                     "trace_url": (row.get("trace") or {}).get("url"),
+                    "harness_artifact_url": harness.url,
                     "evidence_artifact": artifact.url,
                     "observed_cost_usd": row["observed_cost_usd"],
                     "bounded_unknown_cost_usd": row["bounded_unknown_cost_usd"],
