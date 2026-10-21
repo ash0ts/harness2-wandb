@@ -138,10 +138,15 @@ transport failures. Earlier pilots retain their original accounting rules.
 ## Review and publish
 
 ```sh
+.venv/bin/python showcase/report_views_v4.py --manifest showcase/study-v4.json
 .venv/bin/python -m harness2.showcase.cli report \
   --manifest showcase/study-v4.json --study all --publish
-.venv/bin/python showcase/report_views_v4.py --manifest showcase/study-v4.json
 ```
+
+Refresh the saved views after execution and before publishing. Their shared links
+include the campaign's time window; views created during qualification would omit
+later days of a long run. Refresh and republish if the judgment repeats cross into
+another day. Completed repeat judgments are reused on publication retries.
 
 Publication first performs the predetermined 20% blind JobBench judge repeats in a
 separate result store. Original judgments remain primary. The Report presents coding
