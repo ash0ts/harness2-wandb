@@ -18,7 +18,7 @@ import httpx
 from .runtime import ROOT, CampaignStop, command
 from .study import evaluation_schedule
 from .study_analysis import paired_analysis
-from .v3_report import execution_metrics
+from .v3_report import cited_evidence, execution_metrics
 from .workbuddy_preflight import save
 
 
@@ -198,7 +198,16 @@ def dataset(runtime):
                 session.get("condition"),
                 session.get("trial"),
             )
-            decisions[key].append({"evidence": read(path), "trace": session.get("trace")})
+            decision = read(path)
+            spans, missing = cited_evidence(runtime, {"decision": decision})
+            decisions[key].append(
+                {
+                    "evidence": decision,
+                    "trace": session.get("trace"),
+                    "cited_spans": spans,
+                    "unverified_cited_span_ids": missing,
+                }
+            )
     actual = {}
     for path in sorted((runtime.state / "evaluations").glob("*.json")):
         row = read(path)

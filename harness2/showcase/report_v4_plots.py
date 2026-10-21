@@ -22,7 +22,7 @@ def figures(source, output):
         fig, (scores, differences) = plt.subplots(
             1,
             2,
-            figsize=(15, max(4, len(rows) * 0.34 + 2.4)),
+            figsize=(15, max(5.5, len(rows) * 0.34 + 2.4)),
             gridspec_kw={"width_ratios": [2.0, 1.0]},
             sharey=True,
         )
@@ -100,7 +100,13 @@ def figures(source, output):
             fontsize=9,
         )
         height = fig.get_figheight()
-        fig.subplots_adjust(left=0.31, right=0.98, bottom=0.12, top=1 - 1.05 / height, wspace=0.08)
+        fig.subplots_adjust(
+            left=0.31,
+            right=0.98,
+            bottom=max(0.12, 0.9 / height),
+            top=1 - 1.35 / height,
+            wspace=0.08,
+        )
         fig.savefig(output / f"{study}-paired.png", dpi=180)
         fig.savefig(output / f"{study}-paired.svg", metadata={"Date": None})
         plt.close(fig)
