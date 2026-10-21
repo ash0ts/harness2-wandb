@@ -594,6 +594,24 @@ def markdown(data, artifact_url="", download_url=""):
         "",
         "The downloadable records separate qualification, adaptation, held-out execution, ordinary judging, and retries. Unavailable judgments remain missing; agent failures, infrastructure failures, and no-output native scores retain their original records.",
         "",
+        "| Study | Setup | Adaptation observed ($) | Adaptation bounded unknown ($) | Held-out observed ($) | Held-out bounded unknown ($) |",
+        "|---|---|---:|---:|---:|---:|",
+    ]
+    for row in data["operating_metrics"]:
+        values = [
+            row[phase + "_" + metric]
+            for phase in ("adaptation", "heldout")
+            for metric in ("observed_cost_usd", "bounded_unknown_cost_usd")
+        ]
+        lines.append(
+            f"| {row['study']} | {row['condition']} | "
+            + " | ".join(f"{value:.6f}" for value in values)
+            + " |"
+        )
+    lines += [
+        "",
+        "The Original adaptation row contains the shared starting executions used by both improving conditions. That cost is recorded once, without assigning it to either condition. These rows exclude qualification and judging; the campaign total includes both.",
+        "",
         "## Execution and adaptation",
         "",
         "These operational measurements are separate from quality. Repeated errors count repeated identical failed tool calls within an execution. Latency excludes queue time. Empty coding patches count as no delivered change, although the unchanged repository can still earn a native partial score.",
