@@ -4,8 +4,10 @@ This fork tests whether structured Agent Lens diagnostics help an agent improve
 its harness beyond raw execution feedback alone. The model stays fixed while the
 agent edits instructions, skills, and scripts.
 
-**Study-v4 is in qualification.** The repeated comparison uses the original harness,
-Harness² with raw feedback, and Harness² with diagnostics. It plans 216 coding
+**Study-v4 is running.** All four qualification groups passed. The full comparison
+forecasts at $256.51 including 25% contingency, within the $410 main allocation.
+It compares the original harness, Harness² with raw feedback, and Harness² with
+diagnostics. It plans 216 coding
 executions across 24 held-out tasks, plus 36 JobBench executions across six tasks
 as a separate replication. Each improving setup starts fresh in three coding trials
 and two JobBench trials per group. The new spending ceiling is $500; there is no
