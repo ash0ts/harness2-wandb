@@ -528,6 +528,7 @@ def bundle(runtime, destination):
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(raw)
+        target.chmod(0o755 if path.stat().st_mode & 0o111 else 0o644)
         index.append(
             {
                 "path": str(relative),

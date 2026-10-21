@@ -1,8 +1,11 @@
+import shutil
+import zipfile
 from types import SimpleNamespace
 
 import pytest
 
 from harness2.showcase import report_v4
+from harness2.showcase.runtime import fingerprint
 from harness2.showcase.workbuddy_preflight import save
 
 
@@ -89,3 +92,22 @@ def test_reject_score_that_disagrees_with_judge(tmp_path, monkeypatch):
     save(tmp_path / "evaluations/one.json", {**row, "score": 1, "judgment": {"score": 0}})
     with pytest.raises(ValueError, match="native judgment"):
         report_v4.dataset(runtime)
+
+
+def test_downloadable_harness_retains_executable_fingerprint(tmp_path):
+    state = tmp_path / "state"
+    harness = state / "executions/session/source-harness"
+    harness.mkdir(parents=True)
+    script = harness / "check.sh"
+    script.write_text("#!/bin/sh\nexit 0\n")
+    script.chmod(0o755)
+    (harness / "prompt.j2").write_text("Use the repository's tests.")
+    runtime = SimpleNamespace(state=state, admin="test-admin-secret")
+    destination = tmp_path / "evidence"
+    report_v4.bundle(runtime, destination)
+    copied = destination / harness.relative_to(state)
+    assert fingerprint(copied, executable_modes=True) == fingerprint(harness, executable_modes=True)
+    archive = shutil.make_archive(str(tmp_path / "download"), "zip", destination)
+    with zipfile.ZipFile(archive) as packaged:
+        mode = packaged.getinfo("executions/session/source-harness/check.sh").external_attr >> 16
+        assert mode & 0o111
