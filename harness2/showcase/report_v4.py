@@ -357,6 +357,9 @@ def dataset(runtime):
         "analysis": analysis,
         "rows": rows,
         "sessions": sessions,
+        "native_views": read(runtime.state / "presentation/views.json")
+        if (runtime.state / "presentation/views.json").exists()
+        else {},
         "freezes": freezes,
         "cost": cost,
         "operating_metrics": operating,
@@ -419,6 +422,9 @@ def allowed_files(runtime):
         "model-catalog.json",
         "preflight-environment.txt",
         "repository-roundtrip-checks.json",
+        "presentation/views.json",
+        "presentation/native-views-readback.json",
+        "presentation/numeric-filter-readback.json",
     ):
         if (state / name).is_file():
             yield state / name
@@ -668,8 +674,37 @@ def markdown(data, artifact_url="", download_url=""):
         "",
         "## Complete evidence",
         "",
-        f"[Download evidence]({download_url}) · [Versioned W&B artifact]({artifact_url})",
+        f"[Download evidence]({download_url}) · [Versioned W&B artifact]({artifact_url})"
+        if download_url and artifact_url
+        else "The evidence directory, results.json, results.csv, and examples.json accompany this report in the downloadable package.",
         "",
+    ]
+    if data.get("native_views"):
+        lines += [
+            "Native Agent Lens views separate each study, trial, and phase:",
+            "",
+            "| Study | Trial | Adaptation | Held-out execution | Model judging |",
+            "|---|---:|---|---|---|",
+        ]
+        for study, spec in data["manifest"]["studies"].items():
+            for trial in range(1, spec["adaptation_trials"] + 1):
+                links = []
+                for phase in ("adaptation", "heldout", "judging"):
+                    view = data["native_views"].get(f"{study} / Trial {trial} / {phase}")
+                    links.append(
+                        f"[Open]({view['url']})"
+                        if view
+                        else "Offline verifier records"
+                        if study == "code" and phase == "judging"
+                        else "View unavailable"
+                    )
+                lines.append(f"| {study} | {trial} | " + " | ".join(links) + " |")
+        lines += [
+            "",
+            "WorkBuddy uses offline test grading; its verifier records are linked from each result.",
+            "",
+        ]
+    lines += [
         "| Study | Task | Trial | Setup | Native score | Result and evidence | Execution |",
         "|---|---|---:|---|---:|---|---|",
     ]
