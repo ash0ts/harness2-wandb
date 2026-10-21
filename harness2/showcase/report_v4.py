@@ -587,6 +587,11 @@ def markdown(data, artifact_url="", download_url=""):
             "Scores are native task scores expressed as percentages. Trials are averaged within task; tasks have equal weight. Coding and JobBench are analyzed separately.",
             "",
         ]
+        if analysis["complete"]:
+            lines += [
+                f"Against the original harness, raw feedback changes the equal-task mean by {analysis['raw_minus_baseline_pp']:+.2f} points and diagnostics by {analysis['diagnostics_minus_baseline_pp']:+.2f} points.",
+                "",
+            ]
         if download_url:
             image_url = download_url.rsplit("/", 1)[0] + f"/{study}-paired.png"
             lines += [
@@ -623,11 +628,16 @@ def markdown(data, artifact_url="", download_url=""):
         "",
         "These operational measurements are separate from quality. Repeated errors count repeated identical failed tool calls within an execution. Latency excludes queue time. Empty coding patches count as no delivered change, although the unchanged repository can still earn a native partial score.",
         "",
-        "| Study | Setup | Deliverables / planned | Complete adaptations | Executable harness changes | Mean tool errors | Mean execution seconds |",
-        "|---|---|---:|---:|---:|---:|---:|",
+        "| Study | Setup | Deliverables / planned | Complete adaptations | Executable harness changes | Mean tool errors | Mean repeated errors | Mean execution seconds |",
+        "|---|---|---:|---:|---:|---:|---:|---:|",
     ]
     for row in data["operating_metrics"]:
         errors = "missing" if row["mean_tool_errors"] is None else f"{row['mean_tool_errors']:.2f}"
+        recurring = (
+            "missing"
+            if row["mean_repeated_error_occurrences"] is None
+            else f"{row['mean_repeated_error_occurrences']:.2f}"
+        )
         latency = (
             "missing"
             if row["mean_latency_seconds"] is None
@@ -639,7 +649,7 @@ def markdown(data, artifact_url="", download_url=""):
             else f"{row['complete_adaptations']}/{row['frozen_harnesses']}"
         )
         lines.append(
-            f"| {row['study']} | {row['condition']} | {row['delivered']}/{row['planned_executions']} | {adaptations} | {row['executable_harness_changes']} | {errors} | {latency} |"
+            f"| {row['study']} | {row['condition']} | {row['delivered']}/{row['planned_executions']} | {adaptations} | {row['executable_harness_changes']} | {errors} | {recurring} | {latency} |"
         )
     lines += [
         "",
@@ -664,6 +674,7 @@ def markdown(data, artifact_url="", download_url=""):
                     f"[Result]({row['run_url']})",
                     f"[Harness diff]({files}/harness.diff)",
                     f"[Improvement decisions]({files}/decisions.json)",
+                    f"[Native judgment]({files}/judgment.json)",
                     f"[Deliverable]({files}/deliverable.zip)",
                 ]
                 if row.get("harness_artifact_url"):
@@ -708,14 +719,20 @@ def markdown(data, artifact_url="", download_url=""):
             "",
         ]
     lines += [
-        "| Study | Task | Trial | Setup | Native score | Result and evidence | Execution |",
-        "|---|---|---:|---|---:|---|---|",
+        "| Study | Task | Trial | Setup | Native score | Result and evidence | Judgment | Execution |",
+        "|---|---|---:|---|---:|---|---|---|",
     ]
     for row in data["rows"]:
         score = "missing" if row["score"] is None else f"{row['score'] * 100:.2f}"
         trace = (row.get("trace") or {}).get("url")
         lines.append(
             f"| {row['study']} | {row['task']} | {row['trial']} | {row['condition']} | {score} | [record]({row['run_url']}) | "
+            + (
+                f"[native record]({row['files_url']}/judgment.json)"
+                if row.get("output")
+                else "Not available"
+            )
+            + " | "
             + (f"[trace]({trace})" if trace else row["status"])
             + " |"
         )
@@ -732,6 +749,12 @@ def markdown(data, artifact_url="", download_url=""):
         "Agent Lens may require authentication. Screenshots and the recorded walkthrough accompany publication so the evidence path remains understandable without product access.",
         "",
     ]
+    stability = data["judge_stability"]["mean_absolute_difference_pp"]
+    if stability is not None:
+        lines += [
+            f"The blind repeats differ from their original scores by {stability:.2f} percentage points on average in absolute value. The downloadable records contain every original/repeat pair.",
+            "",
+        ]
     return "\n".join(lines)
 
 
@@ -942,6 +965,12 @@ def publish(runtime, data, output, archive):
         package.mkdir(parents=True, exist_ok=True)
         save(package / "evidence.json", portable(runtime, row))
         save(package / "decisions.json", portable(runtime, row.get("improvement_decisions", [])))
+        judgment = (
+            read(row["judge_evidence"])
+            if row.get("judge_evidence")
+            else {"status": row["status"], "judgment": row.get("judgment")}
+        )
+        save(package / "judgment.json", portable(runtime, judgment))
         shutil.copy2(Path(row["freeze"]) / "harness.diff", package / "harness.diff")
         shutil.make_archive(str(package / "deliverable"), "zip", row["output"])
         with wandb.init(
@@ -964,6 +993,8 @@ def publish(runtime, data, output, archive):
                     "score": row["score"],
                     "status": row["status"],
                     "trace_url": (row.get("trace") or {}).get("url"),
+                    "judge_evidence_url": row["files_url"] + "/judgment.json",
+                    "judge_trace_url": (row.get("judge_trace") or {}).get("url"),
                     "harness_artifact_url": harness.url,
                     "evidence_artifact": artifact.url,
                     "observed_cost_usd": row["observed_cost_usd"],
