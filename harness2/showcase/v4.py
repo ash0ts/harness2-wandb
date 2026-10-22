@@ -352,10 +352,45 @@ def forecast(runtime):
     return value
 
 
+def verify_qualified_engine(runtime):
+    qualified = read(runtime.state / "qualification.json")["engine"]
+    current = engine_snapshot(runtime)
+    if current == qualified:
+        return
+    # A documented transport repair may resume saved work without replacing the
+    # historical qualification. Agent, fixture, image and analysis changes still stop.
+    receipt_path = runtime.state / "runtime-repairs/provider-stream-errors.json"
+    if receipt_path.exists():
+        receipt = read(receipt_path)
+        changed = {
+            path
+            for path in qualified["source"].keys() | current["source"].keys()
+            if qualified["source"].get(path) != current["source"].get(path)
+        }
+        allowed = {
+            "harness2/showcase/transport_v4.py",
+            "harness2/showcase/runtime.py",
+            "harness2/showcase/v4.py",
+        }
+        validation = receipt.get("validation", {})
+        log = runtime.state / "runtime-repairs" / validation.get("log", "missing")
+        if (
+            receipt.get("qualified_engine") == qualified
+            and receipt.get("repaired_engine") == current
+            and changed <= allowed
+            and current["images"] == qualified["images"]
+            and current["analysis_sha256"] == qualified["analysis_sha256"]
+            and validation.get("passed") is True
+            and log.is_file()
+            and hashlib.sha256(log.read_bytes()).hexdigest() == validation.get("sha256")
+        ):
+            return
+    raise CampaignStop("Runtime differs from qualified source or images")
+
+
 def adapt(runtime):
     forecast(runtime)
-    if read(runtime.state / "qualification.json")["engine"] != engine_snapshot(runtime):
-        raise CampaignStop("Runtime differs from qualified source or images")
+    verify_qualified_engine(runtime)
     trials = runtime.manifest["studies"][runtime.study]["adaptation_trials"]
     jobs = [(group, trial) for group in groups(runtime) for trial in range(1, trials + 1)]
 
@@ -390,8 +425,7 @@ def schedule(runtime):
 def evaluate(runtime):
     if not (runtime.state / "adapt-complete.json").exists():
         raise CampaignStop("Freeze every adaptation in both studies before any transfer execution")
-    if read(runtime.state / "qualification.json")["engine"] != engine_snapshot(runtime):
-        raise CampaignStop("Runtime differs from qualified source or images")
+    verify_qualified_engine(runtime)
     jobs = [row for row in schedule(runtime) if row["study"] == runtime.study]
 
     def execute(row):

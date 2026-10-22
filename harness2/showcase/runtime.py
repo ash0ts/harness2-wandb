@@ -180,11 +180,16 @@ class Runtime:
 
     def calls(self, session):
         directory = self.state / "gateway/sessions" / session
-        records = [
-            json.loads(p.read_text())
-            for p in sorted(directory.glob("*.json"))
-            if p.name != "identity.json"
-        ]
+        records = []
+        for path in sorted(directory.glob("*.json")):
+            if path.name == "identity.json":
+                continue
+            record = json.loads(path.read_text())
+            if self.manifest.get("schema_version") == 4:
+                from .transport_v4 import normalize_saved_call
+
+                record = normalize_saved_call(record, path)
+            records.append(record)
         return sorted(records, key=lambda record: (record["started"], record["call_id"]))
 
     def wait_calls(self, session):
@@ -192,6 +197,13 @@ class Runtime:
             rows = self.calls(session)
             if rows and all("ended" in r for r in rows):
                 for row in rows:
+                    if self.manifest.get("schema_version") == 4:
+                        from .transport_v4 import model_identity_problem
+
+                        problem = model_identity_problem(row)
+                        if problem:
+                            raise CampaignStop(problem)
+                        continue
                     response = row.get("response") or {}
                     if response and response.get("model") != row["request"]["model"]:
                         raise CampaignStop("Returned model differs from frozen requested model")

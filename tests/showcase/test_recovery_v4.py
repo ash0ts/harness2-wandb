@@ -99,6 +99,73 @@ def test_completed_execution_resumes_without_launch_and_preserves_deletions(tmp_
     assert (work / "changed.txt").read_text() == "delivered"
 
 
+def test_transport_repair_keeps_qualification_and_rejects_other_drift(tmp_path, monkeypatch):
+    import hashlib
+
+    from harness2.showcase.v4 import verify_qualified_engine
+
+    runtime = StudyRuntime(manifest(), tmp_path / "state")
+    original = {
+        "source": {"harness2/showcase/transport_v4.py": "old", "showcase/study-v4.json": "fixed"},
+        "images": {"executor": "same"},
+        "analysis_sha256": "same",
+    }
+    current = {
+        **original,
+        "source": {**original["source"], "harness2/showcase/transport_v4.py": "new"},
+    }
+    qualification = runtime.state / "qualification.json"
+    saved = json.dumps({"engine": original})
+    qualification.write_text(saved)
+    monkeypatch.setattr("harness2.showcase.v4.engine_snapshot", lambda _: current)
+    with pytest.raises(CampaignStop, match="differs"):
+        verify_qualified_engine(runtime)
+    directory = runtime.state / "runtime-repairs"
+    directory.mkdir()
+    log = directory / "tests.log"
+    log.write_text("passed")
+    receipt = {
+        "qualified_engine": original,
+        "repaired_engine": current,
+        "validation": {
+            "passed": True,
+            "log": log.name,
+            "sha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+        },
+    }
+    path = directory / "provider-stream-errors.json"
+    path.write_text(json.dumps(receipt))
+    verify_qualified_engine(runtime)
+    assert qualification.read_text() == saved
+    current["source"]["showcase/study-v4.json"] = "model-change"
+    path.write_text(json.dumps(receipt))
+    with pytest.raises(CampaignStop, match="differs"):
+        verify_qualified_engine(runtime)
+    current["source"]["showcase/study-v4.json"] = "fixed"
+    path.write_text(json.dumps(receipt))
+    log.write_text("changed validation")
+    with pytest.raises(CampaignStop, match="differs"):
+        verify_qualified_engine(runtime)
+
+
+def test_evaluation_checks_repair_receipt_before_scheduling(tmp_path, monkeypatch):
+    from harness2.showcase.v4 import evaluate
+
+    runtime = StudyRuntime(manifest(), tmp_path / "state")
+    (runtime.state / "adapt-complete.json").write_text('{"complete": true}')
+    events = []
+
+    def verify(_):
+        events.append("verify")
+        raise CampaignStop("unapproved runtime")
+
+    monkeypatch.setattr("harness2.showcase.v4.verify_qualified_engine", verify)
+    monkeypatch.setattr("harness2.showcase.v4.schedule", lambda _: events.append("schedule"))
+    with pytest.raises(CampaignStop, match="unapproved runtime"):
+        evaluate(runtime)
+    assert events == ["verify"]
+
+
 def test_collector_recovers_child_failures_and_child_tools(tmp_path):
     execution = tmp_path / "execution"
     database = execution / "opencode-db/opencode.db"
